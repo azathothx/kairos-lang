@@ -1,0 +1,41 @@
+# GitHub Pages (Jekyll) — ドキュメントサイトの設定
+# 公開 URL: https://azathothx.github.io/kairos-lang/
+title: Kairos
+tagline: A schedule definition language
+description: >-
+  Kairos is a schedule definition language — a composable time-stream DSL with
+  first-class calendars, business days, windows, and projections.
+  「月末 3 営業日前」のようなスケジュールを式で書けるスケジュール定義言語。
+url: "https://azathothx.github.io"
+baseurl: "/kairos-lang"
+repository: azathothx/kairos-lang
+
+theme: jekyll-theme-primer
+
+# Google Search Console の所有権確認（jekyll-seo-tag が meta タグとして出力）
+google_site_verification: okKRCjydoI4gS7iU43Bfdtws-Qh4DfXP0-gVzbpl3Bo
+
+# 素の Markdown 群（front matter なし）をそのままページ化するための定番プラグイン
+# （いずれも GitHub Pages ホワイトリスト内）
+plugins:
+  - jekyll-optional-front-matter
+  - jekyll-readme-index
+  - jekyll-relative-links
+  - jekyll-titles-from-headings
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+optional_front_matter:
+  remove_originals: true
+readme_index:
+  remove_originals: true
+relative_links:
+  enabled: true
+# strip_title は false（true だと各ページの H1 が本文から剥がれ、どのページも同じ見た目になる）
+titles_from_headings:
+  enabled: true
+  strip_title: false
+
+exclude:
+  - impl/node_modules/
+  - impl/package-lock.json

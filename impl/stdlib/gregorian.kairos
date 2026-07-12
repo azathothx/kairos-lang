@@ -1,0 +1,31 @@
+# 標準 premise: Gregorian（stdlib/gregorian.md §1 の完全定義を Kairos ソースにしたもの）
+# 注: 紀元（span 序数の起点）は spec 未規定のため、プロトタイプは 1970-01-01 に固定する（FINDINGS）。
+#     stdlib/gregorian.md の補助値関数の「紀元年」もこれに合わせ epochYear = 1970。
+
+premise Gregorian {
+  day     = chronos grid 1d                                 # 原子（連続基底 Chronos を市民日で分割）
+  weekday = day cycle [Mon, Tue, Wed, Thu, Fri, Sat, Sun] anchor: 2000-01-03
+
+  epochYear    = 1970
+  monthOf      = m => m mod 12
+  yearOf       = m => epochYear + m div 12
+  monthLengths = leap => [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  isLeap      = y => y mod 4 == 0 and not(y mod 100 == 0 and y mod 400 != 0)
+  daysInMonth = m => monthLengths(isLeap(yearOf(m)))[monthOf(m)]
+  month   = day   span daysInMonth label: (p => monthNo(p))        # 基本の括り：day を束ねる（year 非依存）
+  year    = month span (_ => 12) phase: 0 label: (p => yearNo(p))  # month を 12 ずつ束ねる
+  quarter = year  split (_ => [3, 3, 3, 3]) by: month       # year の従属窓
+
+  weekStart = day |> filter(d => weekday(d) == wkst)        # wkst は利用側前文の宣言を遅延解決
+  week      = day |> segmentBy(weekStart, edges: clip, empties: error)
+
+  monthStart = month |> first                               # 公開境界語（選択子の再利用）
+  monthEnd   = month |> last
+  yearStart  = year  |> first
+
+  # 暦座標糖衣（spec §4.9: epochOrdinal＋ordinalIn＋既存値関数の糖衣）
+  yearNo  = d => yearOf(epochOrdinal(month, d))             # 暦年（2026 など）
+  monthNo = d => monthOf(epochOrdinal(month, d)) + 1        # 暦月（1..12）
+  dayNo   = d => ordinalIn(day, month, d)                   # 暦日（1..31）
+}

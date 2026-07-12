@@ -1,0 +1,12 @@
+# 標準 premise: Fiscal（会計暦・4 月始まり。stdlib/fiscal.md §1 の完全定義）
+# Gregorian の派生的定義。上書きは year 一行だけで、quarter・yearStart は機構 A で自動追従（spec §3.7）。
+# 糖衣形 `Gregorian |> shiftBoundary(+3, on: year, unit: month)` と同じ展開（shiftBoundary は仮称）。
+
+premise Fiscal = Gregorian with {
+  year = month span (_ => 12) phase: 3 label: (p => yearNo(p))   # 暦月を 4 月始まりで 12 ずつ束ね直す。
+                                                            # ラベル＝開始暦年（窓先頭 4/1 の暦年＝年度番号。
+                                                            # 上書きはラベルを継承しない——同時付与が統治。ADR-42/F96）
+
+  fiscalYearNo  = d => yearOf(epochOrdinal(month, d) - 3)   # 年度番号（開始暦年の規約。「2026 年度」= 2026）
+  fiscalMonthNo = d => ordinalIn(month, year, d)            # 会計月番号（4 月 = 1 … 3 月 = 12）
+}

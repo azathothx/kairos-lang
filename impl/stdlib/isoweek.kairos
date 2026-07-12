@@ -1,0 +1,16 @@
+# 標準 premise: ISOWeek（ISO 8601 週暦。stdlib/iso-week.md §1 の完全定義）
+# 週は月曜始まり・W01 はその年の最初の木曜を含む週（= 1/4 を含む週）。
+# 等価変形「W01 の月曜は必ず 12/29〜1/4 に落ちる」（任意の連続 7 日は月曜をちょうど 1 つ含む）により
+# label: 付与式なしの確定語彙だけで立つ（設計注記は stdlib/iso-week.md）。wkst には依存しない（月曜固定）。
+
+premise ISOWeek = Gregorian with {
+  isoWeekStart = day |> filter(x => weekday(x) == Mon)
+  isoWeek      = day |> segmentBy(isoWeekStart, edges: clip, empties: error)
+
+  isoYearStart = isoWeekStart |> filter(x => (monthNo(x) == 12 and dayNo(x) >= 29) or (monthNo(x) == 1 and dayNo(x) <= 4))
+  isoYear      = day |> segmentBy(isoYearStart, edges: clip, empties: error)
+
+  isoWeekNo    = d => ordinalIn(isoWeek, isoYear, d)        # 1..52/53
+  isoWeekday   = d => ordinalIn(day, isoWeek, d)            # 月 = 1 … 日 = 7
+  isoYearNo    = d => monthNo(d) == 1 and isoWeekNo(d) >= 52 ? yearNo(d) - 1 : (monthNo(d) == 12 and isoWeekNo(d) == 1 ? yearNo(d) + 1 : yearNo(d))
+}

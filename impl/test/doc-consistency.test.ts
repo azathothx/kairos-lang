@@ -1,0 +1,117 @@
+// 文書の整合性検査（機械化できる範囲の陳腐化を npm test で捕まえる）
+// 発端: spec/00-intro の「ADR-01〜36」が 8 本分陳腐化していた（2026-07-11・ユーザー指摘）。
+// doctest（例の実行検証）と同じ発想で、「現在形の文書」の機械検査可能な主張を実態と照合する。
+// 対象は現在形の文書のみ——design/ の ADR・綻びログ・INDEX 現在地は歴史記録なので対象外。
+import { readFileSync, readdirSync } from 'node:fs';
+import { describe, it, expect } from 'vitest';
+
+const root = new URL('../../', import.meta.url);
+const read = (p: string) => readFileSync(new URL(p, root), 'utf8');
+const mdFiles = (dir: string) =>
+  readdirSync(new URL(dir, root)).filter(f => f.endsWith('.md')).map(f => `${dir}${f}`);
+
+// 現在形の文書（歴史記録を除く）
+const CURRENT_DOCS = [
+  'README.md',
+  'README.ja.md',
+  'impl/README.md',
+  ...mdFiles('spec/'),
+  ...mdFiles('reference/'),
+  ...mdFiles('stdlib/'),
+  ...mdFiles('en/spec/'), // 英語版ミラー（日本語が正・順次拡充）
+];
+
+describe('文書の整合性（現在形の文書 vs 実態）', () => {
+  it('「ADR-01〜NN」の範囲表記が design/20-adr/ のファイル数と一致する', () => {
+    const adrCount = readdirSync(new URL('design/20-adr/', root))
+      .filter(f => /^adr-\d+.*\.md$/.test(f)).length;
+    const targets = [...CURRENT_DOCS, 'design/00-overview.md'];
+    const stale: string[] = [];
+    for (const p of targets) {
+      for (const m of read(p).matchAll(/ADR-01〜(\d+)/g)) {
+        if (Number(m[1]) !== adrCount) stale.push(`${p}: ADR-01〜${m[1]}（実態は ${adrCount} 本）`);
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('改名済みの旧名 opens/closes が識別子として残っていない（F51・2026-07-09 改名）', () => {
+    const stale: string[] = [];
+    for (const p of CURRENT_DOCS) {
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (/\bopens\b|\bcloses\b/.test(line) && !/旧仮称|改名/.test(line)) stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 60)}`);
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('仮称印は shiftBoundary（唯一の残存仮称）の行にしか付かない', () => {
+    // 「（仮称）」を記法として説明する行（凡例・運用説明）は対象外
+    const legend = /「（仮称）」|仮称印|と記す/;
+    // spec/CHANGELOG は RC 変更履歴（当時の記録）なので対象外
+    const docs = CURRENT_DOCS.filter(p => p !== 'spec/CHANGELOG.md');
+    const stale: string[] = [];
+    for (const p of docs) {
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (/（仮称[）・]|\*\*仮称\*\*/.test(line) && !legend.test(line) && !line.includes('shiftBoundary')) {
+          stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 60)}`);
+        }
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('確定済みの綻び（F 番号）を「宿題」と書いている行がない', () => {
+    // 90-findings の全件表から「処置が確定・解消・明文化済み」の F 番号を集める
+    const findings = read('design/40-examples/90-findings.md');
+    const confirmed = new Set<number>();
+    for (const row of findings.matchAll(/^\| F(\d+) \|.*\|([^|]*)\|$/gm)) {
+      if (/確定（|解消（|明文化済み/.test(row[2])) confirmed.add(Number(row[1]));
+    }
+    // spec/CHANGELOG の RC 差分ログは当時の記録なので対象外
+    const docs = CURRENT_DOCS.filter(p => p !== 'spec/CHANGELOG.md');
+    const stale: string[] = [];
+    for (const p of docs) {
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (!/宿題/.test(line) || /確定|解消|だった/.test(line)) continue;
+        for (const m of line.matchAll(/F(\d+)/g)) {
+          if (confirmed.has(Number(m[1]))) stale.push(`${p}:${i + 1}: F${m[1]} を宿題と記載: ${line.trim().slice(0, 50)}`);
+        }
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('対話痕跡の役割語が文書に残っていない（公式体裁への正規化・2026-07-12）', () => {
+    // 裁定・判断の主体は「設計者」、機械検証は「N 観点レビュー」（凡例は design/README）。
+    // 「ユーザー」単独は言語の利用者の意（ユーザー定義 等）で正当——複合語だけを検査する。
+    const banned = /ユーザー(裁定|判断|確認|指示|指摘|提案|要望|決定|協働|レビュー|の洞察|の直観|の読み)|エージェント|チャット|AskUserQuestion|SendMessage|Claude/;
+    // 規約自体を説明する行は対象外
+    const legend = /役割語|正規化|対話痕跡/;
+    const designDocs = readdirSync(new URL('design/', root), { recursive: true })
+      .map(f => `design/${f}`).filter(p => p.endsWith('.md'));
+    const stale: string[] = [];
+    for (const p of [...CURRENT_DOCS, ...designDocs]) {
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (banned.test(line) && !legend.test(line)) stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 60)}`);
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('stdlib の .kairos と解説 .md の §1 完全定義が乖離していない（label: の有無）', () => {
+    // 完全一致比較は書式差で壊れるため、乖離しやすい要点（year/month の label: 付与）だけ照合
+    const greg = read('impl/stdlib/gregorian.kairos');
+    const gregDoc = read('stdlib/gregorian.md');
+    for (const w of ['year', 'month']) {
+      const inKairos = new RegExp(`${w}\\s*=[^\\n]*label:`).test(greg);
+      const inDoc = new RegExp(`${w}\\s*=[^\\n]*label:`).test(gregDoc);
+      expect(inKairos, `${w} の label: が gregorian.kairos に無い`).toBe(true);
+      expect(inDoc, `${w} の label: が stdlib/gregorian.md §1 に無い`).toBe(true);
+    }
+    const fiscal = read('impl/stdlib/fiscal.kairos');
+    const fiscalDoc = read('stdlib/fiscal.md');
+    expect(/year\s*=[^\n]*label:/.test(fiscal), 'Fiscal.year の label: が fiscal.kairos に無い').toBe(true);
+    expect(/year\s*=[^\n]*label:/.test(fiscalDoc), 'Fiscal.year の label: が stdlib/fiscal.md に無い').toBe(true);
+  });
+});

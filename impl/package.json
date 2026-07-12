@@ -1,0 +1,21 @@
+{
+  "name": "kairos-reference",
+  "version": "0.0.1",
+  "description": "Kairos schedule DSL — reference implementation prototype",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "azathothx",
+  "license": "Apache-2.0",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

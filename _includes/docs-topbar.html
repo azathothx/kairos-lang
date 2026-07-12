@@ -1,0 +1,53 @@
+{%- comment -%}
+  パンくず＋言語切り替え（Pages 専用・全ページ共通）。
+  日本語が正（現行パス）・英語版は en/ ミラーに順次追加（未訳は「English（未訳）」表示）。
+  ルートだけ特例: /（英語 README＝GitHub の顔）↔ /README.ja.html（日本語）。
+{%- endcomment -%}
+{%- assign clean = page.url | replace: '/index.html', '/' -%}
+{%- assign prefix4 = clean | slice: 0, 4 -%}
+{%- assign cur_en = false -%}
+{%- if clean == '/' -%}
+  {%- assign cur_en = true -%}{%- assign other = '/README.ja.html' -%}
+{%- elsif clean == '/README.ja.html' -%}
+  {%- assign other = '/' -%}
+{%- elsif prefix4 == '/en/' -%}
+  {%- assign cur_en = true -%}{%- assign other = clean | remove_first: '/en' -%}
+{%- else -%}
+  {%- assign other = '/en' | append: clean -%}
+{%- endif -%}
+{%- assign other_page = nil -%}
+{%- for p in site.pages -%}
+  {%- assign purl = p.url | replace: '/index.html', '/' -%}
+  {%- if purl == other -%}{%- assign other_page = p -%}{%- break -%}{%- endif -%}
+{%- endfor -%}
+<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 16px;font-size:.85em;color:#57606a;border-bottom:1px solid #d8dee4;padding-bottom:8px;margin-bottom:24px">
+  <nav aria-label="breadcrumbs">
+    <a href="{{ '/' | relative_url }}">Kairos</a>
+    {%- assign acc = '' -%}
+    {%- assign parts = clean | split: '/' -%}
+    {%- for part in parts -%}
+      {%- if part == '' or forloop.last -%}{%- continue -%}{%- endif -%}
+      {%- assign acc = acc | append: '/' | append: part -%}
+      {%- assign diridx = acc | append: '/' -%}
+      {%- assign dir_page = nil -%}
+      {%- for p in site.pages -%}
+        {%- assign purl = p.url | replace: '/index.html', '/' -%}
+        {%- if purl == diridx -%}{%- assign dir_page = p -%}{%- break -%}{%- endif -%}
+      {%- endfor -%}
+      <span> / </span>
+      {%- if dir_page -%}<a href="{{ diridx | relative_url }}">{{ part }}</a>{%- else -%}<span>{{ part }}</span>{%- endif -%}
+    {%- endfor -%}
+    {%- unless clean == '/' -%}
+      <span> / </span><span aria-current="page">{{ page.title | default: page.name }}</span>
+    {%- endunless -%}
+  </nav>
+  <div>
+    {%- if cur_en -%}
+      {%- if other_page -%}<a href="{{ other | relative_url }}">日本語</a>{%- else -%}<span>日本語（—）</span>{%- endif -%}
+      <span> · </span><strong>English</strong>
+    {%- else -%}
+      <strong>日本語</strong><span> · </span>
+      {%- if other_page -%}<a href="{{ other | relative_url }}">English</a>{%- else -%}<span title="English translation not yet available">English（未訳）</span>{%- endif -%}
+    {%- endif -%}
+  </div>
+</div>

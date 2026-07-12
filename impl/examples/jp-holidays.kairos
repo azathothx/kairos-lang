@@ -1,0 +1,21 @@
+# 祝日カスケード: 法定祝日から振替休日・国民の休日を導出する（spec §7.5）
+# 実行: node src/cli.ts examples/jp-holidays.kairos --from 2026-01-01 --to 2027-01-01
+# 2026 年は 5/3(日)→振替 5/6、敬老 9/21・秋分 9/23 に挟まれた 9/22 が国民の休日になる。
+
+premise JP {
+  calendar-system: Gregorian
+  tz: "Asia/Tokyo"
+  wkst: Mon
+}
+
+@JP
+statutory   = [2026-01-01, 2026-01-12, 2026-02-11, 2026-02-23, 2026-03-20,
+               2026-04-29, 2026-05-03, 2026-05-04, 2026-05-05, 2026-07-20,
+               2026-08-11, 2026-09-21, 2026-09-23, 2026-10-12, 2026-11-03,
+               2026-11-23] covering: 2026..2026
+nonHoliday  = everyDay \ statutory
+substitutes = statutory |> filter(d => weekday(d) == Sun) |> roll(Following, on: nonHoliday)
+sandwiched  = ((statutory |> shift(+1, unit: day)) & (statutory |> shift(-1, unit: day))) \ statutory
+holidays    = statutory | substitutes | sandwiched
+
+holidays

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://azathothx.github.io/kairos-lang/sitemap.xml

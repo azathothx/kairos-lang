@@ -1,0 +1,61 @@
+# Kairos
+
+> Kairos is a schedule definition language: a composable time-stream DSL with first-class calendars,
+> business days, windows, and projections. Every expression maps a time stream to a time stream
+> (closure), so derived dates — substitute holidays, fiscal periods, lunisolar months — can feed
+> further definitions. It expresses schedules that cron, Quartz, and iCalendar RRULE cannot, such as
+> "3 business days before month-end" or "the first business day on or after February 1".
+
+Key facts:
+
+- Status: release candidate RC5 (July 2026). Semantics, operators, grammar (EBNF), and lexis are
+  frozen; one placeholder name (`shiftBoundary`) remains for 1.0.
+- Architecture: two layers — a premise layer that defines calendars (the Gregorian calendar itself is
+  a transparent standard library written in Kairos) and a body layer that composes schedules from
+  stream-to-stream operators (`roll`, `shift`, `filter`, `nth`, `stride`, `segmentBy`, combinators).
+- Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
+  the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
+  computation from an injected instant, which is in scope.
+- Reference implementation: TypeScript with zero runtime dependencies; 363 tests including doctests
+  over the documentation and cross-checks against the official ephemeris of the National Astronomical
+  Observatory of Japan (NAOJ).
+- Documentation language: Japanese documentation is canonical; the README is English with a Japanese
+  counterpart (README.ja.md), and English pages are added progressively under en/. Code examples and
+  the EBNF grammar are language-neutral.
+- License: Apache-2.0.
+- Repository: https://github.com/azathothx/kairos-lang
+
+## Specification (Japanese)
+
+- [Introduction and comparison](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/00-intro.md):
+  problem statement, capability matrix vs cron/Quartz/RRULE/business-day products, design spine
+- [Types and layers](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/10-types.md):
+  time-stream type, premise type, value type, the two layers
+- [Premise layer](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/20-premise-layer.md):
+  user-defined calendars, window generators (grid/span/split/cycle), labels, timezone model, calendar entities
+- [Body layer](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/30-body-layer.md):
+  operators, combinators, alignment checks, projections, coverage annotations
+- [Grammar (EBNF) and lexis](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/40-grammar.md)
+- [Glossary](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/50-glossary.md)
+- [Worked examples](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/90-examples.md):
+  payday, Japanese-holiday cascade, fiscal quarters, "N business days after an injected instant"
+
+## Reference
+
+- [Descriptor reference index](https://raw.githubusercontent.com/azathothx/kairos-lang/main/reference/README.md):
+  one page per operator; all examples are doctested against the reference implementation
+- [Standard premises](https://raw.githubusercontent.com/azathothx/kairos-lang/main/stdlib/README.md):
+  Gregorian, Fiscal, ISOWeek, Kyureki (Japanese lunisolar calendar)
+
+## Examples
+
+- [Expressiveness studies](https://raw.githubusercontent.com/azathothx/kairos-lang/main/design/40-examples/README.md):
+  20 schedule families — Japanese holidays, sexagenary cycle, rokuyō, 24 solar terms, lunisolar
+  calendar, Easter, ISO week numbers, business hours, injected-origin schedules
+- [Runnable examples](https://github.com/azathothx/kairos-lang/tree/main/impl/examples):
+  payday, Japanese-holiday derivation, rokuyō via the reference CLI
+
+## Optional
+
+- [Design records index](https://raw.githubusercontent.com/azathothx/kairos-lang/main/design/INDEX.md):
+  44 architecture decision records and the full design history (Japanese)
