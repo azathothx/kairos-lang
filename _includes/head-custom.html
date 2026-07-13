@@ -1,3 +1,8 @@
+<!-- favicon（SVG 主・PNG フォールバック。マスターは assets/logo/） -->
+<link rel="icon" type="image/svg+xml" href="{{ '/assets/logo/kairos-mark.svg' | relative_url }}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ '/assets/logo/favicon-32.png' | relative_url }}">
+<link rel="apple-touch-icon" href="{{ '/assets/logo/apple-touch-icon.png' | relative_url }}">
+
 <!-- Mermaid コードブロックのクライアント描画（kramdown/Rouge の出力形と素の pre>code の両形に対応） -->
 <script type="module">
   const blocks = document.querySelectorAll('div.language-mermaid, pre > code.language-mermaid');

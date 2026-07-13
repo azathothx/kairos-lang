@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Kairos pipe operator">
+  <!-- |> アイコン・単色版（currentColor）。インライン埋め込みで文字色に追従する。白抜きは透過。 -->
+  <defs>
+    <mask id="kairos-pipe-mono-cut">
+      <rect width="64" height="64" fill="#fff"/>
+      <line x1="22" y1="20" x2="22" y2="44" stroke="#000" stroke-width="5.5" stroke-linecap="round"/>
+      <polyline points="31,20 43,32 31,44" fill="none" stroke="#000" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <rect x="8" y="8" width="48" height="48" rx="13" fill="currentColor" mask="url(#kairos-pipe-mono-cut)"/>
+</svg>

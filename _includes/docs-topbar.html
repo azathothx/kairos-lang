@@ -22,7 +22,7 @@
 {%- endfor -%}
 <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 16px;font-size:.85em;color:#57606a;border-bottom:1px solid #d8dee4;padding-bottom:8px;margin-bottom:24px">
   <nav aria-label="breadcrumbs">
-    <a href="{{ '/' | relative_url }}">Kairos</a>
+    <a href="{{ '/' | relative_url }}"><img src="{{ '/assets/logo/kairos-mark.svg' | relative_url }}" width="15" height="15" alt="" style="vertical-align:-3px;margin-right:4px">Kairos</a>
     {%- assign acc = '' -%}
     {%- assign parts = clean | split: '/' -%}
     {%- for part in parts -%}
