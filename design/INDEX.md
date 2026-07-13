@@ -11,7 +11,7 @@
    `../reference/` — **記述語リファレンス**（1 語 1 ファイルの解説。実行例は impl の doctest で検証）。
 1. [00-overview.md](00-overview.md) — 目的・スコープ・既存方式との関係・設計の背骨。まずこれで全体像。
 2. [10-domain-model.md](10-domain-model.md) — premise 定義・ドメインモデル・不変条件 I1〜I8。現在の姿（上書き型）。
-3. [20-adr/](20-adr/README.md) — 設計判断の履歴（ADR-01〜45）。なぜそうなったかを遡るとき。相互に参照し合う。
+3. [20-adr/](20-adr/README.md) — 設計判断の履歴（ADR-01〜46）。なぜそうなったかを遡るとき。相互に参照し合う。
 4. [30-syntax/00-syntax-draft.md](30-syntax/00-syntax-draft.md) — 構文の作業中ドラフト。設計を進める層（区切りで spec/ に反映）。
 5. [40-examples/](40-examples/README.md) — 表現力検証（既知スケジュールのサンプル集＝綻び出しの作業層）。判定マトリクスと綻びログ。
 6. [60-reviews/](60-reviews/README.md) — 外部レビューの受領と処置の記録。
@@ -65,6 +65,7 @@
 - [ADR-43](20-adr/adr-43-literal-tightening.md) リテラルと値束縛の締め（日付値域・固定オフセット正準形・点の値束縛＝F66/F97）
 - [ADR-44](20-adr/adr-44-line-continuation.md) 文の区切りと複数行継続（括弧内自由改行・行頭/行末の段・結合子継続＝F91）
 - [ADR-45](20-adr/adr-45-empty-table-literal.md) 空テーブルリテラル——「点ゼロだが覆域は主張したい」の一次形（F98＝発報層還流第一次・整列に空虚適合の第三状態）
+- [ADR-46](20-adr/adr-46-external-supply.md) 外部供給宣言 `external`——実行時に解決されるテーブルリテラル（socket の確定・kind＝整列の主張・供給契約・供給エラーの部分類）
 
 ## 運用メモ
 

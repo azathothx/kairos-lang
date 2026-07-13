@@ -71,6 +71,7 @@
 | `cycle(labels) anchor:` | パーティション窓に反復ラベルを付す。窓でなくラベル。周期長・適用先は任意（`year cycle` 可）。`anchor:` は属する対象窓が先頭ラベル。束縛名は点→ラベルの値関数として読める | §3.6・`stdlib/gregorian.md`§4・ADR-27 |
 | `week` 窓 | WKST 位相の 7 日並列窓。`wkst:` を遅延解決する Gregorian 公開語。パーティション性は I5 検査で認定 | §3.6・`stdlib/gregorian.md`§4.5 |
 | テーブルリテラル | 時点リストの時間ストリーム定数への昇格（`[2026-03-20, …]`）。昇順必須・出所統治・`covering:` で有効範囲。`labels:` で並行ラベル列（点→ラベル射影の定義）。空形 `[] covering: …` は covering 明示必須（「点ゼロだが覆域は主張したい」の一次形・ADR-45） | §3.8・ADR-26/30/45 |
+| `external` | 外部供給宣言＝実行時に解決されるテーブルリテラル。premise 束縛の右辺（先頭）限定。`kind:`＝整列の主張（`dates`/`instants`・空でも宣言どおり）・`labels:`＝値域の列挙・covering/asof は解決値が必ず運ぶ（供給契約）。解決は評価文脈の随伴（一評価一解決・要求駆動）・失敗は供給エラー（機械可読な部分類） | §3.8・ADR-46 |
 | 公開語 | premise ブロック top-level の束縛。`.` で参照（`Gregorian.month`） | §3.6 |
 | 公開境界語 | 境界を選択子の再利用で導く公開語（`monthEnd = month |> last`）。生成子の正体 | §3.6 |
 | `with` | 派生の core。base の公開語を上書き/追加（`Fiscal = Gregorian with {…}`） | §3.7 |

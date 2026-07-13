@@ -25,6 +25,13 @@ export function parse(src: string): Program {
   return new Parser(lex(src)).program();
 }
 
+/** covering-list 字面の単体パース（external の解決値 wire 用。ADR-46）——
+ *  端の含意・年略記・開端・区間リストの意味論をテーブルリテラルと完全共有するための入口 */
+export function parseCoveringText(text: string): CoveringRange[] {
+  const p = new Parser(lex(text));
+  return p.coveringOnly();
+}
+
 class Parser {
   private i = 0;
   private toks: Token[];
@@ -483,6 +490,15 @@ class Parser {
       return this.coveringList();
     }
     return undefined;
+  }
+
+  /** covering-list 単体のパース（parseCoveringText の実体。末尾は EOF を要求） */
+  coveringOnly(): CoveringRange[] {
+    this.skipNewlines();
+    const list = this.coveringList();
+    this.skipNewlines();
+    if (!this.at('eof')) throw new ParseError('covering-list の末尾に余分な字句', this.peek());
+    return list;
   }
 
   /** covering-list = covering-range { "," covering-range }（§5.6・ADR-37 判断 9） */

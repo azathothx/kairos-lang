@@ -23,8 +23,13 @@ import type {
 } from './ast.ts';
 import type { DateVal, WidthVal } from './lexer.ts';
 import { getTz, Tz } from './tz.ts';
+import { parseCoveringText } from './parser.ts';
 
 export class KairosError extends Error {}
+
+/** 供給エラー（ADR-46 判断 7 (a)）: 解決失敗の機械可読な部分類。実装系（発報層等）は本分類を
+ *  boot throw から除外して劣化運転に落としてよい——契約違反（KairosError）とは区別される */
+export class SupplyError extends KairosError {}
 
 const DAY_MS = 86_400_000;
 
@@ -150,6 +155,13 @@ export class PremiseInstance {
   findDef(name: string): BindingDecl | undefined {
     return this.defs.get(name) ?? this.base?.findDef(name);
   }
+  /** 定義側 premise の特定（external のスナップショット単位＝ADR-46 判断 5。member 解決規則の
+   *  「定義側優先」〈ADR-35 判断 8〉と同じ向きの探索） */
+  findDefOwner(name: string): { def: BindingDecl; owner: PremiseInstance } | undefined {
+    const def = this.defs.get(name);
+    if (def) return { def, owner: this };
+    return this.base?.findDefOwner(name);
+  }
 }
 
 export interface Env {
@@ -170,7 +182,25 @@ export interface RunOptions {
   from: string;                       // YYYY-MM-DD
   to: string;                         // YYYY-MM-DD（排他）
   tz?: string;                        // 既定 Asia/Tokyo（前文 tz: があれば優先）
+  resolve?: ExternalResolver;         // 外部供給宣言 external の解決子（ADR-46。無ければ解決時に供給エラー）
 }
+
+/** external 束縛の宣言（解決子に渡す静的知識。ADR-46） */
+export interface ExternalDecl {
+  kind: 'dates' | 'instants';
+  labels?: string[];                  // ラベル値域の列挙（宣言＝静的知識）
+  source: string;                     // 解決後の source:（named-arg 上書き済み）
+}
+/** external の解決値（wire）。kind ごとの形——dates は市民日付の字面（言語側で錨打ち＝派生 tz
+ *  上書きで再錨可能）・instants は epoch ms（壁時計字面は DST 重複で二意になり得るため） */
+export interface ExternalData {
+  dates?: string[];                   // kind: dates — "YYYY-MM-DD"
+  instants?: number[];                // kind: instants — epoch ms（有限整数）
+  covering: string;                   // covering-list 字面（"2026..2026"・"2026-01-01.."・".."・区間リスト可）。必須
+  asof: string;                       // データの観測日。必須（欠落＝契約違反）
+  labels?: string[];                  // 宣言済みのときのみ・時点列と同長
+}
+export type ExternalResolver = (premise: string, binding: string, decl: ExternalDecl) => ExternalData;
 
 /** 区間註釈の表面形（ADR-37 判断 5/7 (a)）: 評価範囲 [from, to) にクリップ済み */
 export interface ResultAnnotation {
@@ -206,6 +236,8 @@ export class Runtime {
   premises = new Map<string, PremiseInstance>();
   topBindings = new Map<string, BindingDecl>();
   warnings: string[] = [];
+  /** external の解決子（ADR-46。RunOptions.resolve から） */
+  resolver?: ExternalResolver;
   /** 被覆サマリの収集（ADR-37 判断 7 (b)）: 評価が参照した各データ源・被覆主張 */
   coverage = new Map<string, { source: string; covering: string; asof?: string; concluded: boolean; covEnd: number }>();
   vocab = new Set<string>(['Following', 'Preceding', 'Modified', 'latest',
@@ -465,7 +497,19 @@ interface BizFine {
 const CORE_STAGES = new Set(['within', 'segmentBy', 'first', 'nth', 'last', 'roll', 'shift',
   'snapTo', 'rebase', 'filter', 'stride', 'strideBy']);
 const CORE_WORDS = new Set([...CORE_STAGES, 'everyDay', 'everyInstant', 'chronos',
-  'grid', 'span', 'split', 'cycle', 'ordinalIn', 'epochOrdinal', 'coincides']);
+  'grid', 'span', 'split', 'cycle', 'ordinalIn', 'epochOrdinal', 'coincides', 'external']);
+
+/** 実在日の検査（ADR-43 の字句検査の解決値向け再執行——external は字句層を経ないため。ADR-46） */
+function isRealDate(y: number, mo: number, d: number): boolean {
+  if (mo < 1 || mo > 12 || d < 1) return false;
+  const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  return d <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
+}
+/** external 呼び出しの構造判定（位置検査・tz 必須執行が共用） */
+function isExternalCall(x: unknown): x is Extract<Expr, { t: 'call' }> {
+  return !!x && typeof x === 'object' && (x as any).t === 'call'
+    && (x as any).callee?.t === 'name' && (x as any).callee.name === 'external';
+}
 
 export class Evaluator {
   /** premise 公開語のメモ（参照しうる文脈メンバー wkst・tz・calendar-system をキーに含める。I6） */
@@ -477,6 +521,12 @@ export class Evaluator {
   private derivingEntities = new Set<string>();
   /** 細粒度導出（ADR-41）のメモ——実体名＋文脈キー（defCache と同じ面。ADR-41 帰結） */
   private fineCache = new Map<string, BizFine>();
+  /** external のスナップショット（ADR-46 判断 5）: 一評価一解決。キー＝定義側 premise#束縛#解決後 source
+   *  ——with 派生・多文脈・修飾参照は同一スナップショットを見る。変換（錨打ち・covering 端）は
+   *  defCache 側＝評価文脈ごと（リテラルの再錨と同型） */
+  private socketCache = new Map<string, ExternalData>();
+  /** 評価中の premise 束縛（external の合法位置の文脈。null＝本体層・top-level＝external 不可） */
+  private externalCtx: { root: PremiseInstance; name: string } | null = null;
   /** filter 述語に流れている点列の整列（免除系 tz 検査の評価時近似＝ADR-36 改訂 2/ADR-40。
    *  点はデータを運ばない（ADR-30/33）ため、静的検査の近似として評価文脈で運ぶ） */
   private predicateAlign: GridTag | null = null;
@@ -636,9 +686,11 @@ export class Evaluator {
     this.err('shiftBoundary の射程は k 定数の span のみ（§3.7）');
   }
 
-  /** rhs が covering: つき、または日付要素を含むテーブルリテラルを含むか（tz: 必須の執行の判定） */
+  /** rhs が covering: つき、または日付要素を含むテーブルリテラルを含むか（tz: 必須の執行の判定）。
+   *  external 束縛も対象（解決値 covering の端と kind: dates の錨は定義側 tz で解決——ADR-46 判断 4） */
   private hasDateTable(e: Expr | ListElem): boolean {
     if (!e || typeof e !== 'object') return false;
+    if (isExternalCall(e)) return true;
     if (e.t === 'list') {
       if (e.covering) return true;
       if (e.elems.some(el => ('t' in el) && (el.t === 'date' || el.t === 'range'))) return true;
@@ -719,7 +771,12 @@ export class Evaluator {
     if (this.rt.topBindings.has(name)) {
       const b = this.rt.topBindings.get(name)!;
       if (b.params.length > 0) this.err(`${name} は引数付き束縛（呼び出しが必要）`);
-      let v = this.evalExpr(b.rhs, env);
+      // top-level 束縛は external 不可（source: 統治が premise に要る。ADR-46）——premise 定義の
+      // 評価中に参照されても文脈を継がない（合法位置のすり抜け防止）
+      const prevCtx = this.externalCtx;
+      this.externalCtx = null;
+      let v: V;
+      try { v = this.evalExpr(b.rhs, env); } finally { this.externalCtx = prevCtx; }
       if (isObj(v) && v.k === 'table' && !v.src) v = { ...v, src: name };   // 出自の焼印（ADR-37 判断 2）
       if (isObj(v) && v.k === 'windows' && !v.name) v = { ...v, name };     // 診断用の束縛名（ADR-42）
       if (b.covering) v = this.applyClaim(v, b.covering, name, env);        // 明示の被覆主張（判断 5）
@@ -781,6 +838,7 @@ export class Evaluator {
   private evalDef(root: PremiseInstance, name: string, def: BindingDecl, env: Env): V {
     const members = this.overlayMembers(env.members, root);
     const defEnv: Env = { ...env, premise: root, members };
+    this.checkExternalPositions(root, name, def);   // external の合法位置（ADR-46 判断 1）
     if (def.params.length > 0) {
       // 引数付き束縛は lambda 値として返す
       return { k: 'lambda', params: def.params.map(p => p.name), body: def.rhs, env: defEnv };
@@ -791,7 +849,10 @@ export class Evaluator {
         .map(k => this.memberStr(members, k)).join('#');
     const hit = this.defCache.get(key);
     if (hit !== undefined) return hit;
-    let v = this.evalExpr(def.rhs, defEnv);
+    const prevCtx = this.externalCtx;
+    this.externalCtx = { root, name };
+    let v: V;
+    try { v = this.evalExpr(def.rhs, defEnv); } finally { this.externalCtx = prevCtx; }
     if (isObj(v) && v.k === 'table' && !v.src) v = { ...v, src: `${root.name}.${name}` };  // 出自の焼印
     if (isObj(v) && v.k === 'windows' && !v.name) v = { ...v, name: `${root.name}.${name}` };  // 診断用の束縛名（ADR-42）
     if (def.covering) v = this.applyClaim(v, def.covering, `${root.name}.${name}`, defEnv); // 被覆主張
@@ -822,6 +883,173 @@ export class Evaluator {
     }));
     this.registerCoverage(source, desc, iv, concluded, asof);   // 主張は被覆サマリに常時表示
     return { ...s, ann };
+  }
+
+  /** external の合法位置の静的検査（ADR-46 判断 1）: premise 束縛の rhs 自身または pipe の先頭のみ。
+   *  引数つき束縛・深い位置（ラムダ内・引数内・結合子の枝）は静的エラー */
+  private checkExternalPositions(root: PremiseInstance, name: string, def: BindingDecl): void {
+    const legal = new Set<unknown>();
+    if (isExternalCall(def.rhs)) legal.add(def.rhs);
+    if (def.rhs.t === 'pipe' && isExternalCall(def.rhs.head)) legal.add(def.rhs.head);
+    let found = false;
+    const walk = (x: unknown): void => {
+      if (!x || typeof x !== 'object') return;
+      if (isExternalCall(x)) {
+        found = true;
+        if (!legal.has(x)) {
+          this.err(`external は premise 束縛の右辺の先頭でのみ書ける: ${root.name}.${name}`
+            + '（合成は external(…) |> … の形・本体層/ラムダ内/引数位置は不可。ADR-46）');
+        }
+      }
+      for (const v of Object.values(x)) {
+        if (Array.isArray(v)) v.forEach(walk);
+        else walk(v);
+      }
+    };
+    walk(def.rhs);
+    if (found && def.params.length > 0) {
+      this.err(`external は引数なしの束縛にのみ書ける: ${root.name}.${name}（ADR-46）`);
+    }
+  }
+
+  /** 外部供給宣言 external（ADR-46）: 実行時に解決されるテーブルリテラル。宣言（kind・labels 値域・
+   *  source）が字面の代役＝静的知識を先取りし、解決値にリテラルと同一の統治検査を課す */
+  private evalExternal(e: Extract<Expr, { t: 'call' }>, env: Env): V {
+    const ctx = this.externalCtx;
+    if (!ctx) {
+      this.err('external は premise 束縛の右辺（先頭）でのみ書ける'
+        + '（source: 統治が premise に要る——本体層・top-level 束縛は不可。ADR-46）');
+    }
+    // 宣言の構造読み（kind 値・labels 値域は評価しない——位置依存のキーワード解釈＝ADR-42 の統一原理）
+    let kind: 'dates' | 'instants' | undefined;
+    let declLabels: string[] | undefined;
+    let srcOverride: string | undefined;
+    for (const a of e.args) {
+      if (!a.name) this.err('external は named-arg のみを取る（kind: が必須。ADR-46）');
+      if (a.name === 'kind') {
+        if (a.value.t !== 'name' || (a.value.name !== 'dates' && a.value.name !== 'instants')) {
+          this.err('external の kind: は dates | instants（整列の主張＝字面クラスの宣言。ADR-46）');
+        }
+        kind = a.value.name as 'dates' | 'instants';
+      } else if (a.name === 'labels') {
+        if (a.value.t !== 'list') this.err('external の labels: はラベル値域の列挙リスト（ADR-46）');
+        declLabels = a.value.elems.map(el =>
+          ('t' in el && el.t === 'name') ? el.name : this.err('external の labels: の要素はラベル名'));
+        if (declLabels.length === 0) this.err('external の labels: は空にできない（無宣言＝ラベルなし。ADR-46）');
+      } else if (a.name === 'source') {
+        const v = this.evalExpr(a.value, env);
+        if (typeof v !== 'string') this.err(`external の source: は文字列リテラル: ${kindOf(v)}`);
+        srcOverride = v;
+      } else {
+        this.err(`external の未知の引数: ${a.name}:（黙って捨てない——ADR-39/46）`);
+      }
+    }
+    if (!kind) this.err('external は kind: が必須（dates | instants＝整列の主張。ADR-46）');
+    const owner = ctx.root.findDefOwner(ctx.name)?.owner ?? ctx.root;
+    const source = srcOverride ?? this.memberStr(env.members, 'source');
+    if (!source) {
+      this.err(`external は source: が必須（premise メンバーまたは named-arg。ADR-46）: ${owner.name}.${ctx.name}`);
+    }
+    // スナップショット（判断 5）: 一評価一解決——キー＝定義側 premise#束縛#解決後 source
+    const snapKey = `${owner.name}#${ctx.name}#${source}`;
+    let data = this.socketCache.get(snapKey);
+    if (data === undefined) {
+      const decl: ExternalDecl = { kind, ...(declLabels ? { labels: declLabels } : {}), source };
+      if (!this.rt.resolver) {
+        throw new SupplyError(`供給エラー: 解決子がない——external ${owner.name}.${ctx.name}`
+          + `（source: "${source}"）は解決できない（ADR-46 判断 7 (a)）`);
+      }
+      try {
+        data = this.rt.resolver(owner.name, ctx.name, decl);
+      } catch (err) {
+        if (err instanceof KairosError) throw err;
+        throw new SupplyError(`供給エラー: 解決に失敗——external ${owner.name}.${ctx.name}`
+          + `（source: "${source}"）: ${(err as Error).message}`);
+      }
+      if (!data) {
+        throw new SupplyError(`供給エラー: 解決値が無い——external ${owner.name}.${ctx.name}（source: "${source}"）`);
+      }
+      this.socketCache.set(snapKey, data);
+    }
+    return this.externalToTable(owner, ctx.name, kind, declLabels, data, env);
+  }
+
+  /** 解決値→テーブル値の変換と契約検査（ADR-46 判断 6。リテラルと同一の統治・文言体系） */
+  private externalToTable(owner: PremiseInstance, name: string, kind: 'dates' | 'instants',
+                          declLabels: string[] | undefined, data: ExternalData, env: Env): TableV {
+    const src = `${owner.name}.${name}`;
+    if (typeof data.covering !== 'string' || data.covering.trim() === '') {
+      this.err(`契約違反: covering がない——external ${src}（解決値は覆域の主張を必ず運ぶ。ADR-46）`);
+    }
+    let claim: CoveringRange[];
+    try {
+      claim = parseCoveringText(data.covering);
+    } catch (err) {
+      this.err(`契約違反: covering が読めない——external ${src}: ${(err as Error).message}`);
+    }
+    const r = this.resolveCovering(claim, env);
+    if (typeof data.asof !== 'string' || data.asof.trim() === '') {
+      this.err(`契約違反: asof がない——external ${src}（データの観測日はデータと一緒に来る。ADR-46）`);
+    }
+    let asof = data.asof;
+    const staticAsof = this.asofOf(env.members);
+    if (staticAsof && staticAsof !== 'latest' && staticAsof !== asof) {
+      asof = `${asof}（宣言 asof ${staticAsof} と不一致）`;   // 黙って上書きしない——被覆サマリ・註釈に常時表示
+    }
+    let pts: number[];
+    if (kind === 'dates') {
+      if (!Array.isArray(data.dates)) {
+        this.err(`契約違反: kind: dates の解決値は dates（"YYYY-MM-DD" の列）を運ぶ——external ${src}`);
+      }
+      if (data.instants) this.err(`契約違反: kind: dates に instants が来た——external ${src}`);
+      const tz = this.tzObjOf(env);   // 定義側 tz（覆域端と同じ解決＝判断 4）で錨打ち——派生の tz 上書きで再錨可能
+      pts = data.dates.map(s => {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s))
+          ?? this.err(`契約違反: 日付の形式が不正——external ${src}: ${s}（"YYYY-MM-DD"）`);
+        const y = +m[1], mo = +m[2], d = +m[3];
+        if (!isRealDate(y, mo, d)) {
+          this.err(`契約違反: 実在しない日付——external ${src}: ${s}`
+            + '（黙ったロールオーバーの封止＝ADR-43 の字句検査の解決値向け再執行。ADR-46）');
+        }
+        return tz.civilDayStart(y, mo, d);
+      });
+    } else {
+      if (!Array.isArray(data.instants)) {
+        this.err(`契約違反: kind: instants の解決値は instants（epoch ms の列）を運ぶ——external ${src}`);
+      }
+      if (data.dates) this.err(`契約違反: kind: instants に dates が来た——external ${src}`);
+      for (const v of data.instants) {
+        if (typeof v !== 'number' || !Number.isInteger(v)) {
+          this.err(`契約違反: instants は有限整数の epoch ms——external ${src}: ${v}`);
+        }
+      }
+      pts = data.instants.slice();
+    }
+    for (let i = 1; i < pts.length; i++) {
+      if (pts[i] <= pts[i - 1]) this.err(`契約違反: 解決値は昇順・重複なし——external ${src}（§3.8 と同じ整列則）`);
+    }
+    for (const p of pts) {
+      if (!ivContainsPoint(r.iv, p)) {
+        this.err(`契約違反: 解決値の点が covering の外——external ${src}: ${this.rt.fmt(p)}`
+          + '（列の全要素は covering に包含——ADR-37 判断 1）');
+      }
+    }
+    let labels: string[] | undefined;
+    if (declLabels) {
+      if (!Array.isArray(data.labels)) this.err(`契約違反: labels 宣言つきの external にラベルが来ない——${src}`);
+      if (data.labels.length !== pts.length) this.err(`契約違反: labels は時点列と同長——external ${src}（ADR-30）`);
+      for (const l of data.labels) {
+        if (!declLabels.includes(l)) {
+          this.err(`契約違反: 宣言値域の外のラベル——external ${src}: ${l}（域外の封止＝ADR-42 判断 7 の契約版）`);
+        }
+      }
+      labels = data.labels.slice();
+    } else if (data.labels) {
+      this.err(`契約違反: labels 無宣言の external にラベルが来た——${src}（黙って捨てない＝ADR-39 の統治）`);
+    }
+    // 整列は宣言から静的に決まる（空でも宣言どおり＝ADR-46 判断 2。dates の目盛り所属は錨打ちの構成で保証）
+    const align = kind === 'dates' ? this.dayGrain(env) : null;
+    return { k: 'table', pts, labels, covIv: r.iv, covDesc: r.desc, concluded: r.concluded, asof, src, align };
   }
 
   /** asof: メンバーの表示形（註釈・被覆サマリの属性） */
@@ -1406,6 +1634,7 @@ export class Evaluator {
   private evalCall(e: Extract<Expr, { t: 'call' }>, env: Env): V {
     if (e.callee.t === 'name') {
       const name = e.callee.name;
+      if (name === 'external') return this.evalExternal(e, env);   // 外部供給宣言（ADR-46）
       // 射影（§4.9・ADR-30）。窓所属の失敗は実効被覆域で分類（ADR-37 判断 6）
       if (name === 'ordinalIn') {
         const [uV, wV, dV] = e.args.map(a => this.evalExpr(a.value, env));

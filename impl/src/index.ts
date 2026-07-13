@@ -8,8 +8,8 @@ import type { Expr } from './ast.ts';
 
 export { parse } from './parser.ts';
 export { lex } from './lexer.ts';
-export { KairosError, formatAnnotation } from './eval.ts';
-export type { RunOptions, RunResult } from './eval.ts';
+export { KairosError, SupplyError, formatAnnotation } from './eval.ts';
+export type { RunOptions, RunResult, ExternalDecl, ExternalData, ExternalResolver } from './eval.ts';
 
 // 標準 premise の読み込み順は依存順（派生は base の登録が先に要る）。readdir の辞書順は不可
 const STDLIB_FILES = ['gregorian.kairos', 'fiscal.kairos', 'isoweek.kairos'];
@@ -27,6 +27,7 @@ export function run(source: string, opts: RunOptions): RunResult {
     return tzObj.civilDayStart(+m[1], +m[2], +m[3]);   // 評価範囲の端は実行 tz の市民日
   };
   const rt = new Runtime(d(opts.from), d(opts.to), tz);
+  if (opts.resolve) rt.resolver = opts.resolve;   // external の解決子（ADR-46）
   const ev = new Evaluator(rt);
 
   const stdlib = parse(stdlibSource);

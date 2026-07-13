@@ -6,10 +6,31 @@
 //   行が無ければ「註釈ゼロ・警告ゼロ」の主張——地平線降格（ADR-37）で年タイポ等が警告止まりになっても
 //   doctest が黙って通る盲点の封止。被覆サマリは常時表示の監視面のため照合対象外）
 // - `@JP` を使い `premise JP` を自前定義しないブロックには標準前提（helpers の PRELUDE）を前置
+// - `# resolve: 束縛名 = dates 日付… covering: … asof: …` 行が external の解決子固定材
+//   （ADR-46。データが文書内に書かれ CI で外部 IO なし。第一段は dates wire のみ——instants の
+//   実行例は external.test.ts の関数注入で担保）
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { run, formatAnnotation, KairosError } from '../src/index.ts';
+import type { ExternalData } from '../src/index.ts';
 import { PRELUDE } from './helpers.ts';
+
+/** `# resolve:` 行のパース（doctest の external 固定材）:
+ *  `# resolve: h = dates 2026-01-01 2026-02-11 covering: 2026..2026 asof: 2026-01-15 [labels: a b]` */
+function parseResolveDirectives(b: string): Map<string, ExternalData> | undefined {
+  const lines = [...b.matchAll(/^# resolve: (\w+) = dates((?: \d{4}-\d{2}-\d{2})*) covering: (.+?) asof: (\S+)(?: labels:((?: \S+)+))?\s*$/gm)];
+  if (lines.length === 0) return undefined;
+  const table = new Map<string, ExternalData>();
+  for (const m of lines) {
+    table.set(m[1], {
+      dates: m[2].trim() === '' ? [] : m[2].trim().split(/\s+/),
+      covering: m[3].trim(),
+      asof: m[4],
+      ...(m[5] ? { labels: m[5].trim().split(/\s+/) } : {}),
+    });
+  }
+  return table;
+}
 
 for (const sub of ['reference', 'stdlib', 'design/40-examples']) {
   const dir = new URL(`../../${sub}/`, import.meta.url);
@@ -32,7 +53,13 @@ for (const sub of ['reference', 'stdlib', 'design/40-examples']) {
           const expectedNotes = [...b.matchAll(/^#~> (.+)$/gm)].map(m => m[1].trim());
           // @JP の判定は語境界（@JPX 等の別 premise 名に PRELUDE を誤注入しない）
           const source = (/@JP\b/.test(b) && !b.includes('premise JP ')) ? PRELUDE + b : b;
-          const r = run(source, { from: evalLine[1], to: evalLine[2], ...(evalLine[3] ? { tz: evalLine[3] } : {}) });
+          const fixtures = parseResolveDirectives(b);
+          const resolve = fixtures
+            ? (_p: string, binding: string) => fixtures.get(binding)
+                ?? (() => { throw new Error(`doctest に # resolve: ${binding} がない`); })()
+            : undefined;
+          const r = run(source, { from: evalLine[1], to: evalLine[2],
+            ...(evalLine[3] ? { tz: evalLine[3] } : {}), ...(resolve ? { resolve } : {}) });
           if (r.results.length === 0) throw new KairosError('本体式がない');
           const last = r.results[r.results.length - 1];
           const notes = [

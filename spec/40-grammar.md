@@ -58,6 +58,9 @@
 - 公開語は premise ブロック top-level の束縛（`Gregorian.month`）。境界は選択子の再利用（`monthStart = month |> first`）。
 - **テーブルリテラル**（§3.8・ADR-26）: 時点リストは時間ストリーム定数。`covering:` で有効範囲、`labels:` で
   並行ラベル列（点→ラベル射影の定義。ADR-30）。空リスト `[]` は `covering:` 後置に限り昇格（ADR-45）。
+- **`external(kind: dates | instants [, labels: [値域]] [, source: "…"]) : → Stream`**（§3.8・ADR-46）:
+  外部供給宣言＝実行時に解決されるテーブルリテラル。premise 束縛の右辺（先頭）限定・解決値に
+  リテラルと同一の統治検査（供給契約）。
 - premise 束縛の右辺には本体層のストリーム式も書ける（層またぎ。`week` の定義が例。§3.6）。
 
 **派生的定義**:
@@ -83,6 +86,10 @@
 確定（ADR-30）と綻び出し（`40-examples/04-projections.md`・F34〜F42）で名への綻びが出なかったため RC2 で確定。
 本体層の記号・演算子名（`|>`・`within`・`segmentBy`・`roll`・`shift`・`stride`・`strideBy`・`filter`・選択子・
 結合子）も確定。日付・幅リテラルの字句は ADR-28 で確定（§5.5）。
+
+**確定（2026-07-14・ADR-46＝設計者裁定）**: 外部供給宣言 **`external`**（比較候補 `socket` は
+英語版文書の ADR-15 の比喩 "socket" と同綴り別義になるため不採用）と kind 値 **`dates`/`instants`**
+（`everyInstant`・date-literal と語感整合・既存識別子との衝突なしを掃引確認）。
 
 **確定（2026-07-09・F51 の一括確定＝設計者裁定）**: `nonWorking`（実体の予約公開語・§3.9）・
 `coincides`（窓所属述語・§4.9。比較候補 `hits`/`anyIn`/`sharesWindow` は不採用）・`rebase`（再錨・
@@ -165,7 +172,8 @@ args           = arg , { "," , arg } ;
 arg            = named-arg | lambda | stream-expr | value-expr ;
 named-arg      = param-key , ":" , ( lambda | stream-expr | value-expr ) ;
 param-key      = "on" | "unit" | "of" | "from" | "edges" | "empties"
-               | "by" | "anchor" | "phase" | "covering" | "label" | "labels" ;
+               | "by" | "anchor" | "phase" | "covering" | "label" | "labels"
+               | "kind" | "source" ;                     (* kind:/source: は external（ADR-46） *)
 
 (* ---- premise 層の窓生成（中置） ---- *)
 gen-expr       = operand , gen-word , gen-arg , { named-arg } ;
@@ -225,6 +233,6 @@ comment        = "#" , { ? 行末までの任意文字 ? } ;
 ## 5.7 未確定事項
 
 未確定事項・宿題の**正本は `../design/90-open-questions.md`**（構文レベルの詳細は `../design/30-syntax/00-syntax-draft.md` §4）。
-本仕様の範囲では、`shiftBoundary`（名と、`k` 可変組の射程外を扱う別演算子）・`of:` の匿名窓ラベル付け・
-外部供給宣言（socket）が未確定として残る。いずれも意味論を変えない
+本仕様の範囲では、`shiftBoundary`（名と、`k` 可変組の射程外を扱う別演算子）・`of:` の匿名窓ラベル付けが
+未確定として残る（外部供給宣言は **`external` として確定**＝ADR-46・§3.8）。いずれも意味論を変えない
 （純命名または追加拡張。DoD の分類は `../design/90-open-questions.md` 冒頭）。

@@ -16,7 +16,7 @@ Key facts:
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 396 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 432 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
 - Documentation language: Japanese documentation is canonical; the README is English with a Japanese
@@ -58,4 +58,4 @@ Key facts:
 ## Optional
 
 - [Design records index](https://raw.githubusercontent.com/azathothx/kairos-lang/main/design/INDEX.md):
-  45 architecture decision records and the full design history (Japanese)
+  46 architecture decision records and the full design history (Japanese)
