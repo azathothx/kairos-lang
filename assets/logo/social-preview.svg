@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <rect width="1280" height="640" fill="#FBFAF8"/>
+  <g transform="translate(100,170) scale(4.6875)">
+    <defs>
+      <mask id="cut">
+        <rect width="64" height="64" fill="#fff"/>
+        <line x1="21" y1="20" x2="21" y2="44" stroke="#000" stroke-width="5.5" stroke-linecap="round"/>
+        <polyline points="43,20 31,32 43,44" fill="none" stroke="#000" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </mask>
+    </defs>
+    <rect x="8" y="8" width="48" height="48" rx="13" fill="#A9701F" mask="url(#cut)"/>
+  </g>
+  <text x="470" y="330" font-family="Ubuntu" font-weight="500" font-size="120" fill="#24272B">Kairos</text>
+  <text x="474" y="392" font-family="Ubuntu" font-size="38" fill="#63686E">A schedule definition language</text>
+  <text x="100" y="548" font-family="Ubuntu Mono" font-size="27" fill="#24272B">monthEnd <tspan fill="#A9701F">|&gt;</tspan> roll(Preceding, on: bizDay) <tspan fill="#A9701F">|&gt;</tspan> shift(-3, unit: bizDay)</text>
+</svg>
