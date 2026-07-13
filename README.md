@@ -1,4 +1,4 @@
-# <img src="assets/logo/kairos-mark.svg" height="30" alt=""> Kairos
+# <img src="assets/logo/kairos-mark.svg" width="30" height="30" alt=""> Kairos
 
 **English** | [日本語版 README](README.ja.md)（ドキュメントは日本語が正）
 

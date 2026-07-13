@@ -3,19 +3,27 @@
 <link rel="icon" type="image/png" sizes="32x32" href="{{ '/assets/logo/favicon-32.png' | relative_url }}">
 <link rel="apple-touch-icon" href="{{ '/assets/logo/apple-touch-icon.png' | relative_url }}">
 
-<!-- Mermaid コードブロックのクライアント描画（kramdown/Rouge の出力形と素の pre>code の両形に対応） -->
+<!-- Mermaid コードブロックのクライアント描画（kramdown/Rouge の出力形と素の pre>code の両形に対応）。
+     読み込みは遅延——最初の図が視界に近づいてから import する（初期ロードから CDN チェーンを除外。
+     rootMargin で視界到達の手前に描画を終え、レイアウトシフトを避ける）。 -->
 <script type="module">
   const blocks = document.querySelectorAll('div.language-mermaid, pre > code.language-mermaid');
   if (blocks.length > 0) {
-    const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
-    for (const el of blocks) {
-      const container = el.tagName === 'DIV' ? el : el.parentElement;
-      const pre = document.createElement('pre');
-      pre.className = 'mermaid';
-      pre.textContent = el.textContent;
-      container.replaceWith(pre);
-    }
-    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
-    await mermaid.run();
+    const render = async () => {
+      const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+      for (const el of blocks) {
+        const container = el.tagName === 'DIV' ? el : el.parentElement;
+        const pre = document.createElement('pre');
+        pre.className = 'mermaid';
+        pre.textContent = el.textContent;
+        container.replaceWith(pre);
+      }
+      mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+      await mermaid.run();
+    };
+    const io = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting)) { io.disconnect(); render(); }
+    }, { rootMargin: '800px 0px' });
+    for (const el of blocks) io.observe(el.tagName === 'DIV' ? el : el.parentElement);
   }
 </script>

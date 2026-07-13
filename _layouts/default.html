@@ -10,6 +10,9 @@
 
 {% seo %}
     <link rel="stylesheet" href="{{ "/assets/css/style.css?v=" | append: site.github.build_revision | relative_url }}">
+    {%- if content contains 'language-mermaid' %}
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    {%- endif %}
     {% include head-custom.html %}
   </head>
   <body>
