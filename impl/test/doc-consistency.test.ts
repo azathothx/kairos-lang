@@ -3,6 +3,7 @@
 // doctest（例の実行検証）と同じ発想で、「現在形の文書」の機械検査可能な主張を実態と照合する。
 // 対象は現在形の文書のみ——design/ の ADR・綻びログ・INDEX 現在地は歴史記録なので対象外。
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
 
 const root = new URL('../../', import.meta.url);
@@ -177,6 +178,20 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
       for (const m of read(p).matchAll(/F1〜F(\d+)/g)) {
         if (Number(m[1]) !== maxF) stale.push(`${p}: F1〜F${m[1]}（実態は F${maxF} まで）`);
       }
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('英語版ミラーの対訳元ハッシュが日本語正本と一致する（翻訳ドリフトの検出）', () => {
+    // en/spec/X.md の front matter `source_sha:` ＝対訳元 spec/X.md の sha256 先頭 12 桁。
+    // 日本語側が更新されたらここが割れる——英訳の追従漏れを黙らせない。
+    const stale: string[] = [];
+    for (const p of mdFiles('en/spec/')) {
+      const m = /^---\n[\s\S]*?source_sha: ([0-9a-f]{12})[\s\S]*?\n---\n/.exec(read(p));
+      if (!m) continue;   // ハッシュ宣言のないページ（README 等）は対象外
+      const ja = p.replace('en/spec/', 'spec/');
+      const actual = createHash('sha256').update(read(ja)).digest('hex').slice(0, 12);
+      if (actual !== m[1]) stale.push(`${p}: source_sha ${m[1]} だが ${ja} は ${actual}（日本語側が更新済み——英訳を追従させ source_sha を更新する）`);
     }
     expect(stale).toEqual([]);
   });

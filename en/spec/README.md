@@ -1,21 +1,22 @@
 # Kairos Language Specification (English orientation)
 
 > The **Japanese specification is canonical**; English pages are added progressively under `en/`.
-> Chapter links below point to the Japanese documents ([日本語版はこちら](../../spec/README.md)).
+> Chapter links below point to the Japanese documents unless marked **English**
+> ([日本語版はこちら](../../spec/README.md)).
 
 **Status: Release candidate (RC5, declared 2026-07-08; addenda through no. 6, 2026-07-09).**
 Semantics, the operator family, the grammar (EBNF, §5.6), and the lexis are frozen. Naming is final
 except one placeholder — `shiftBoundary` (tied to an out-of-scope variable-`k` family; deferred to 1.0;
 see §5.4). Expressiveness is validated against 20 well-known schedule families
-(`design/40-examples/`) and by the reference implementation (`impl/`, 370 tests). All remaining
+(`design/40-examples/`) and by the reference implementation (`impl/`, 371 tests). All remaining
 homework items are catalogued in `design/90-open-questions.md`, and none of them changes the semantics.
 
 For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese).
 
-## Chapters (Japanese)
+## Chapters
 
-1. [Introduction](../../spec/00-intro.md) — what Kairos is, comparison with cron/Quartz/RRULE, design spine
-2. [Types and layers](../../spec/10-types.md) — the three types, the two layers, closure, core vs sugar, invariants
+1. [Introduction](00-intro.md) (**English**, [日本語](../../spec/00-intro.md)) — what Kairos is, comparison with cron/Quartz/RRULE, design spine
+2. [Types and layers](../../spec/10-types.md) (Japanese) — the three types, the two layers, closure, core vs sugar, invariants
 3. [Premise layer](../../spec/20-premise-layer.md) — preambles, name resolution, value expressions, defining calendars
 4. [Body layer](../../spec/30-body-layer.md) — generators, windows, selectors, point transforms, combinators, filters, strides
 5. [Grammar and symbols](../../spec/40-grammar.md) — symbols, operator signatures, naming status, lexis, EBNF
