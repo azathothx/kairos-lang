@@ -236,7 +236,7 @@ wednesdays = everyDay |> filter(d => weekday(d) == Wed)
 **期待値**: 2024-02-04・2024-02-18 は営業日。2024-02-12（月）〜02-16（金）は休日。
 
 ```text
-premise CN2024 { source: gov.cn/official; asof: 2023-10-25 }
+premise CN2024 { source: "gov.cn/official"; asof: 2023-10-25 }
 
 springFestival = [2024-02-10, 2024-02-11, 2024-02-12, 2024-02-13,
                   2024-02-14, 2024-02-15, 2024-02-16, 2024-02-17]

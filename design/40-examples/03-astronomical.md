@@ -16,7 +16,7 @@
 
 ```text
 premise Sekki24 {
-  source: nao.ac.jp/koyomi          # 暦要項
+  source: "nao.ac.jp/koyomi"        # 暦要項
   asof:   2025-02-03                # 令和8年暦要項の告示日
 
   # 節気の瞬間列（テーブルリテラル・実データ。時刻は暦要項の値。24 個の全列は 95-reference-data.md）
@@ -66,7 +66,7 @@ sekkiW |> first
 
 ```text
 premise Lunisolar {
-  source: nao.ac.jp/koyomi
+  source: "nao.ac.jp/koyomi"
   asof:   2025-02-03
 
   # 朔の瞬間列（実データ・12 回。NAOJ 令和8年暦要項）
@@ -116,8 +116,8 @@ premise Lunisolar {
 ```text
 @Sekki24
 # 立春＝黄経 315°。だが暦年の最初の節気は小寒（1/5）なので nth(1, of: year) は小寒を返す（実データで判明・F33）。
-# 節気を名前/黄経で一意に選ぶには labelOf（射影一族）とラベル付きデータが要る:
-risshun     = sekkiTable |> filter(s => sekkiTable(s) == 立春)  # 束縛名射影で一意（2026 は 2/4。F48 で字面統一）
+# 節気を名前で一意に選ぶには窓ラベル（§3.1 の sekkiW＝labels: 付き segmentBy）の束縛名射影を使う:
+risshun     = sekkiDays |> filter(s => sekkiW(s) == "立春")  # 束縛名射影で一意（2026 は 2/4。F48 で字面統一）
 hachijuhachiya = risshun |> shift(+87, unit: day)     # 立春 2/4 → 5/2（実データの八十八夜 5/2 と一致）
 nihyakutoka    = risshun |> shift(+209, unit: day)    # 立春 2/4 → 9/1（実データの二百十日 9/1 と一致）
 
@@ -149,7 +149,7 @@ higan(mid) = mid | (mid |> shift(-1, unit: day)) | (mid |> shift(-2, unit: day))
 
 ```text
 premise Moon {
-  source: nao.ac.jp/koyomi
+  source: "nao.ac.jp/koyomi"
   asof:   2025-02-03
   # 望（満月）の瞬間列（実データ・13 回。NAOJ 令和8年暦要項）
   fullMoons = [2026-01-03T19:03, 2026-02-02T07:09, 2026-03-03T20:38, 2026-04-02T11:12,

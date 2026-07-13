@@ -7,7 +7,7 @@
 Semantics, the operator family, the grammar (EBNF, §5.6), and the lexis are frozen. Naming is final
 except one placeholder — `shiftBoundary` (tied to an out-of-scope variable-`k` family; deferred to 1.0;
 see §5.4). Expressiveness is validated against 20 well-known schedule families
-(`design/40-examples/`) and by the reference implementation (`impl/`, 363 tests). All remaining
+(`design/40-examples/`) and by the reference implementation (`impl/`, 368 tests). All remaining
 homework items are catalogued in `design/90-open-questions.md`, and none of them changes the semantics.
 
 For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese).

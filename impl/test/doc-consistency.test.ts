@@ -99,6 +99,51 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     expect(stale).toEqual([]);
   });
 
+  it('「残る仮称」の語数主張が横断で一致する（shiftBoundary 一語・2026-07-13 レビュー指摘 A の再発防止）', () => {
+    // 歴史記録（ADR・作業ジャーナル・CHANGELOG・綻びログ）は対象外。draft は「作業層だが現状主張を含む」ため対象
+    const docs = [...CURRENT_DOCS.filter(p => p !== 'spec/CHANGELOG.md'),
+      'design/00-overview.md', 'design/10-domain-model.md',
+      'design/30-syntax/00-syntax-draft.md', 'design/90-open-questions.md', 'design/INDEX.md', 'llms.txt'];
+    const stale: string[] = [];
+    for (const p of docs) {
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (!/残る仮称|one placeholder|remaining placeholder/.test(line)) continue;
+        if (!line.includes('shiftBoundary') || /二語|三語|two placeholder/.test(line)) {
+          stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 70)}`);
+        }
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('テスト数の記載が入口間で一致する（README 英日・llms.txt・en/spec——2026-07-13 レビュー指摘 B の再発防止）', () => {
+    const entries: [string, RegExp][] = [
+      ['README.md', /\((\d+) tests\)/],
+      ['README.ja.md', /(\d+) テスト/],
+      ['llms.txt', /(\d+) tests/],
+      ['en/spec/README.md', /(\d+) tests/],
+    ];
+    const found = entries.map(([p, re]) => {
+      const m = read(p).match(re);
+      return { p, n: m ? m[1] : '記載なし' };
+    });
+    const nums = new Set(found.map(f => f.n));
+    expect(nums.size, `テスト数が入口間で不一致: ${found.map(f => `${f.p}=${f.n}`).join('・')}`).toBe(1);
+  });
+
+  it('不可視文字（SOFT HYPHEN・ゼロ幅）が本文に混入していない（2026-07-13 レビュー指摘 I の再発防止）', () => {
+    const banned = /[\u00AD\u200B\u200C\u200D\u2060\uFEFF]/;
+    const designDocs = readdirSync(new URL('design/', root), { recursive: true })
+      .map(f => `design/${f}`).filter(p => p.endsWith('.md'));
+    const stale: string[] = [];
+    for (const p of [...CURRENT_DOCS, ...designDocs, 'llms.txt']) {
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (banned.test(line)) stale.push(`${p}:${i + 1}`);
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
   it('stdlib の .kairos と解説 .md の §1 完全定義が乖離していない（label: の有無）', () => {
     // 完全一致比較は書式差で壊れるため、乖離しやすい要点（year/month の label: 付与）だけ照合
     const greg = read('impl/stdlib/gregorian.kairos');

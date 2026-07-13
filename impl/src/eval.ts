@@ -512,10 +512,13 @@ export class Evaluator {
             const v = this.evalExpr(st.expr, cur);
             const s = this.toStream(v);
             const trimmed = s.pts.filter(p => p >= this.rt.fromMs && p < this.rt.toMs);
-            // 区間註釈は評価範囲 [from, to) にクリップして結果と同格に返す（表面で一度だけ＝ADR-37 判断 8）
+            // 区間註釈は評価範囲 [from, to) にクリップして結果と同格に返す（表面で一度だけ＝ADR-37 判断 8）。
+            // 表示形は閉端→半開端変換の ε（+1ms。輸送の依存像で生じる）を正規化する——正規化しないと
+            // 真夜中の端が「2026-01-02T00:00」と印字され日付裸の端と不統一になる。fromMs/toMs は正確なまま
+            const disp = (ms: number) => this.rt.fmt(ms % 1000 === 1 ? ms - 1 : ms);
             const annotations: ResultAnnotation[] = clipAnn(s.ann, this.rt.fromMs, this.rt.toMs).map(a => ({
               kind: 'out-of-coverage' as const,
-              from: this.rt.fmt(a.from), to: this.rt.fmt(a.to), fromMs: a.from, toMs: a.to,
+              from: disp(a.from), to: disp(a.to), fromMs: a.from, toMs: a.to,
               source: a.source, covering: a.covering, ...(a.asof ? { asof: a.asof } : {}),
             }));
             results.push({ source: '', points: trimmed, dates: trimmed.map(p => this.rt.fmt(p)), annotations });

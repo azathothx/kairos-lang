@@ -23,7 +23,7 @@
 ## 例
 
 単一セッション 9:00–15:00・半日休（1/6 は 11:30 引け）・祝日 1/1。「営業時間内の毎正時」は
-`isOpen` 一語（40-examples/06 §6.3 の帯＋証人パターンの手組みがこの一語に縮む）:
+`isOpen` 一語（[`../design/40-examples/06-business-hours.md`](../design/40-examples/06-business-hours.md) §6.3 の帯＋証人パターンの手組みがこの一語に縮む）:
 
 ```kairos
 # eval: 2026-01-05..2026-01-08

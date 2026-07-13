@@ -29,8 +29,10 @@ premise Gregorian {
   monthStart = month |> first                               # 公開境界語（選択子の再利用）
   monthEnd   = month |> last
   yearStart  = year  |> first
+  # yearEnd は未定義（需要が立っていないため非対称のまま。必要なら year |> last の一行・会計年度末は
+  # Fiscal の within(year) |> last で到達——fiscal.md）
 
-  yearNo  = d => yearOf(epochOrdinal(month, d))             # 暦座標糖衣（§4.9）: 暦年（2026 など）
+  yearNo  = d => yearOf(epochOrdinal(month, d))             # 暦座標糖衣（spec §4.9）: 暦年（2026 など）
   monthNo = d => monthOf(epochOrdinal(month, d)) + 1        # 暦月（1..12）
   dayNo   = d => ordinalIn(day, month, d)                   # 暦日（1..31）
 }
@@ -145,8 +147,8 @@ month(5) & year(2026)
   （`java.time`・Python の一部）は月曜始まり。「番号の起点」と「週の開始表示」は別問題。
 
 これらの違いは「**Gregorian 暦の上の週の数え方の規約**」であって、暦法そのものではない。ゆえに `Gregorian` には
-週開始を焼き込まず、WKST として用途ごとに宣言する。これは「WKST の非二択性」（`90-open-questions.md`。土曜始まりの
-組織も実在）と一貫する。
+週開始を焼き込まず、WKST として用途ごとに宣言する。これは「WKST の非二択性」（`../design/90-open-questions.md`。
+土曜始まりの組織も実在）と一貫する。
 
 ### 4.4 WKST が効く／効かない例
 

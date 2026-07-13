@@ -2,6 +2,11 @@
 
 **English** | [日本語版 README](README.ja.md)（ドキュメントは日本語が正）
 
+> The deep documentation (spec / reference / stdlib) is currently **Japanese-first**. This README and
+> [`llms.txt`](llms.txt) carry the English overview; code examples, the EBNF grammar, and the reference
+> implementation are language-neutral. English requests are welcome —
+> [open an issue](https://github.com/azathothx/kairos-lang/issues).
+
 **Kairos** is a **schedule definition language** — a small, composable DSL that defines *when things
 should happen*. It goes beyond cron-style patterns: schedules like "3 business days before month-end",
 "the first business day on or after February 1", or dates derived from the lunisolar calendar are all
@@ -125,9 +130,9 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 ## Status and documentation
 
-**Release candidate (RC5, 2026-07-09).** Semantics, the operator family, grammar (EBNF), and lexis are
+**Release candidate (RC5, declared 2026-07-08; addenda through 2026-07-09).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final except one placeholder (`shiftBoundary`, to be settled for 1.0). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (364 tests),
+is validated against 20 well-known schedule families and by a reference implementation (368 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
@@ -137,11 +142,6 @@ including cross-checks against the official ephemeris of the National Astronomic
 | [`stdlib/`](stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek`, `Kyureki` |
 | [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype) |
 | [`design/`](design/) | Design records: 44 ADRs, domain model, expressiveness studies |
-
-> **Note on language**: the specification and design records are currently written in Japanese. This
-> README is the English entry point; the code examples, the EBNF grammar, and the reference
-> implementation are language-neutral. If you would like an English version of a particular document,
-> please open an issue.
 
 ## License
 
