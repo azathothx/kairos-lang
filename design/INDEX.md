@@ -9,13 +9,13 @@
 0. `../spec/` — **レビュー可能な言語仕様**（Kairos の通読用。全体を掴む・レビューするならまずここ）。
    `../stdlib/` — 標準 premise（Gregorian 等）の解説。spec が例として引用する中身の網羅資料。
    `../reference/` — **記述語リファレンス**（1 語 1 ファイルの解説。実行例は impl の doctest で検証）。
-1. `00-overview.md` — 目的・スコープ・既存方式との関係・設計の背骨。まずこれで全体像。
-2. `10-domain-model.md` — premise 定義・ドメインモデル・不変条件 I1〜I8。現在の姿（上書き型）。
-3. `20-adr/` — 設計判断の履歴（ADR-01〜44）。なぜそうなったかを遡るとき。相互に参照し合う。
-4. `30-syntax/00-syntax-draft.md` — 構文の作業中ドラフト。設計を進める層（区切りで spec/ に反映）。
-5. `40-examples/` — 表現力検証（既知スケジュールのサンプル集＝綻び出しの作業層）。判定マトリクスと綻びログ。
-6. `60-reviews/` — 外部レビューの受領と処置の記録。
-7. `90-open-questions.md` — 宿題・保留事項。
+1. [00-overview.md](00-overview.md) — 目的・スコープ・既存方式との関係・設計の背骨。まずこれで全体像。
+2. [10-domain-model.md](10-domain-model.md) — premise 定義・ドメインモデル・不変条件 I1〜I8。現在の姿（上書き型）。
+3. [20-adr/](20-adr/README.md) — 設計判断の履歴（ADR-01〜44）。なぜそうなったかを遡るとき。相互に参照し合う。
+4. [30-syntax/00-syntax-draft.md](30-syntax/00-syntax-draft.md) — 構文の作業中ドラフト。設計を進める層（区切りで spec/ に反映）。
+5. [40-examples/](40-examples/README.md) — 表現力検証（既知スケジュールのサンプル集＝綻び出しの作業層）。判定マトリクスと綻びログ。
+6. [60-reviews/](60-reviews/README.md) — 外部レビューの受領と処置の記録。
+7. [90-open-questions.md](90-open-questions.md) — 宿題・保留事項。
 8. `../impl/` — リファレンス実装の試作（TypeScript。spec §7＋実データの実行検証。制約は impl/README）。
 
 ## ADR 一覧（20-adr/）

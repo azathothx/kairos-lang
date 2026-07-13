@@ -196,6 +196,65 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     expect(stale).toEqual([]);
   });
 
+  it('公開ツリーの全 Markdown がルート README からリンクで到達できる——孤立ページなし（2026-07-13・INDEX→ADR/40-examples の同型欠陥の再発防止）', () => {
+    // 対象＝公開ツリーの md 全部。非公開の作業層は同期スクリプトの除外リスト（PRIVATE_PATHS）を
+    // 実行時に読んで差し引く——公開スナップショットではスクリプトも除外対象も存在しないため空で同じ結果。
+    // 辺＝相対リンク（コードフェンス外）・ディレクトリリンク→その index・Pages の言語トグル（ja→en 対応ページ）
+    const privatePaths: string[] = [];
+    if (existsSync(new URL('tools/publish.sh', root))) {
+      const m = /PRIVATE_PATHS=\(([^)]*)\)/.exec(read('tools/publish.sh'));
+      if (m) privatePaths.push(...m[1].split(/\s+/).filter(Boolean));
+    }
+    const isPrivate = (p: string) => privatePaths.some(x => p === x || p.startsWith(`${x}/`));
+    const all = new Set<string>();
+    const walk = (dir: string) => {
+      for (const e of readdirSync(new URL(dir, root), { withFileTypes: true })) {
+        const p = `${dir}${e.name}`;
+        if (e.isDirectory()) {
+          if (['.git', 'node_modules'].includes(e.name) || isPrivate(p)) continue;
+          walk(`${p}/`);
+        } else if (p.endsWith('.md') && !isPrivate(p)) all.add(p);
+      }
+    };
+    walk('');
+    const normalize = (base: string, target: string): string => {
+      const out: string[] = [];
+      for (const seg of `${base.split('/').slice(0, -1).join('/')}/${target}`.split('/')) {
+        if (seg === '' || seg === '.') continue;
+        if (seg === '..') out.pop(); else out.push(seg);
+      }
+      return out.join('/');
+    };
+    const linksOf = (p: string): string[] => {
+      const out: string[] = [];
+      let inFence = false;
+      for (const line of read(p).split('\n')) {
+        if (/^\s*```/.test(line)) { inFence = !inFence; continue; }
+        if (inFence) continue;
+        for (const m of line.matchAll(/\]\(([^)\s]+)\)/g)) {
+          if (/^(https?:|mailto:|#)/.test(m[1])) continue;
+          const t = m[1].split('#')[0];
+          if (!t) continue;
+          const r = normalize(p, t);
+          if (all.has(r)) out.push(r);
+          else for (const idx of ['README.md', 'INDEX.md']) if (all.has(`${r}/${idx}`)) out.push(`${r}/${idx}`);
+        }
+      }
+      return out;
+    };
+    const seen = new Set<string>();
+    const queue = ['README.md'];
+    while (queue.length) {
+      const p = queue.pop()!;
+      if (seen.has(p) || !all.has(p)) continue;
+      seen.add(p);
+      queue.push(...linksOf(p));
+      if (all.has(`en/${p}`)) queue.push(`en/${p}`);   // Pages の言語トグル
+    }
+    const orphan = [...all].filter(p => !seen.has(p)).sort();
+    expect(orphan).toEqual([]);
+  });
+
   it('stdlib の .kairos と解説 .md の §1 完全定義が乖離していない（label: の有無）', () => {
     // 完全一致比較は書式差で壊れるため、乖離しやすい要点（year/month の label: 付与）だけ照合
     const greg = read('impl/stdlib/gregorian.kairos');

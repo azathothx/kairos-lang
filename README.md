@@ -132,7 +132,7 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 **Release candidate (RC5, declared 2026-07-08; addenda through 2026-07-09).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final except one placeholder (`shiftBoundary`, to be settled for 1.0). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (371 tests),
+is validated against 20 well-known schedule families and by a reference implementation (372 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
@@ -147,5 +147,5 @@ including cross-checks against the official ephemeris of the National Astronomic
 
 [Apache-2.0](LICENSE) (attribution in [NOTICE](NOTICE)). Contributions are accepted under Apache-2.0 §5
 with a [DCO](https://developercertificate.org/) sign-off (`Signed-off-by:` line). The "Kairos" name and
-logo are excluded from the license (Apache-2.0 §6).
+logo ([assets/logo/](assets/logo/README.md)) are excluded from the license (Apache-2.0 §6).
 
