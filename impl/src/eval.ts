@@ -70,18 +70,26 @@ export class OutOfCoverageSignal extends KairosError {
  *  日内オフセットを持つ anchor（毎日 09:00 級）は既定 day と別 G になる。
  *  プロトタイプは評価時にタグとして伝播する（束縛解決後静的検査の近似）。 */
 export interface GridTag {
-  kind: 'civil' | 'elapsed';
-  step: number;                 // civil: 日数 / elapsed: ms
+  kind: 'civil' | 'elapsed' | 'vacuous';
+  step: number;                 // civil: 日数 / elapsed: ms / vacuous: 0
   phase: number;                // 正規化位相（幅を法とする。civil は市民日序数 mod step）
   off: number;                  // civil: anchor の日内オフセット ms（既定整列は 0）/ elapsed: 0
-  tz: string;                   // civil のみ（elapsed は '' ＝位相が幾何を全て持つ）
+  tz: string;                   // civil のみ（elapsed/vacuous は ''）
 }
+/** 空テーブルの整列＝空虚適合（ADR-45・F98）: 違反しうる点が無いため全ての整列に空虚に適合する
+ *  第三状態。「なし」（主張できない＝検査に落ちる）と別で、検査には**通り**、結合では相手の整列を
+ *  継承する。tz 名検査（checkTzMembership）は kind が civil でないため自動で素通し（点ゼロに
+ *  1 日ずれは起き得ない） */
+const VACUOUS_GRAIN: GridTag = { kind: 'vacuous', step: 0, phase: 0, off: 0, tz: '' };
+const isVacuous = (a: GridTag | null | undefined): boolean => a?.kind === 'vacuous';
 function gridEq(a: GridTag | null | undefined, b: GridTag | null | undefined): boolean {
+  if (isVacuous(a) || isVacuous(b)) return true;   // 空虚適合は相手が「なし」でも通す（ADR-45）
   return !!a && !!b && a.kind === b.kind && a.step === b.step && a.phase === b.phase
     && a.off === b.off && a.tz === b.tz;
 }
 const gridDesc = (a: GridTag | null | undefined) =>
-  a ? `${a.kind === 'civil' ? `市民日 ${a.step}d` : `経過 ${a.step}ms`} 位相 ${a.phase}`
+  isVacuous(a) ? '空虚適合（空テーブル）'
+    : a ? `${a.kind === 'civil' ? `市民日 ${a.step}d` : `経過 ${a.step}ms`} 位相 ${a.phase}`
     + `${a.off ? ` 日内 +${a.off}ms` : ''}${a.tz ? ` tz "${a.tz}"` : ''}` : 'なし';
 
 export type V =
@@ -366,7 +374,9 @@ function clipAnn(ann: Ann[], from: number, to: number): Ann[] {
   return normAnn(ann.map(a => ({ ...a, from: Math.max(a.from, from), to: Math.min(a.to, to) })));
 }
 
-/** roll による入力註釈の像（過大近似・単調）: 区間内の点の着地はこの包に収まる */
+/** roll による入力註釈の像（過大近似・単調）: 区間内の点の着地はこの包に収まる。
+ *  軸が空のときの早期 return は健全（F99 検証で確認）——未知入力の着地は既知軸点が無ければ
+ *  成立せず、未知の軸点への着地依存は dependImageAnn（軸註釈の依存像）が引き受ける */
 function rollImageAnn(ann: Ann[], axis: number[], conv: 'Following' | 'Preceding'): Ann[] {
   if (axis.length === 0) return normAnn(ann);
   return normAnn(ann.map(a => {
@@ -382,9 +392,10 @@ function rollImageAnn(ann: Ann[], axis: number[], conv: 'Following' | 'Preceding
 }
 
 /** 軸の註釈区間の依存像（ADR-37 判断 4 roll 行）: 規約の逆方向へ直前（Following）／
- *  直後（Preceding）の既知軸点まで拡張——その帯の入力は未知の軸点へ着地し得た */
+ *  直後（Preceding）の既知軸点まで拡張——その帯の入力は未知の軸点へ着地し得た。
+ *  軸が空（点ゼロのテーブル等・F99）でも一般則がそのまま働く——既知軸点が無ければ帯は ±∞ へ
+ *  広がり、開端 covering（完結主張）なら axisAnn が空で拡張対象なし＝註釈なしの空が保存される */
 function dependImageAnn(axisAnn: Ann[], axis: number[], conv: 'Following' | 'Preceding'): Ann[] {
-  if (axis.length === 0) return normAnn(axisAnn);
   return normAnn(axisAnn.map(a => {
     if (conv === 'Following') {
       if (a.from === -Infinity) return { ...a };
@@ -1223,13 +1234,15 @@ export class Evaluator {
       case 'combine': {
         const ls = this.toStream(this.evalExpr(e.l, env));
         const rs = this.toStream(this.evalExpr(e.r, env));
-        // ADR-36: & と \ は両辺同一 G を要求。| は不問（混合の出力は整列なし）
+        // ADR-36: & と \ は両辺同一 G を要求。| は不問（混合の出力は整列なし）。
+        // 空虚適合（空テーブル・ADR-45）は検査に通り、出力整列は相手側を継承する
         let align: GridTag | null;
         if (e.op === '|') {
-          align = gridEq(ls.align, rs.align) ? ls.align : null;
+          align = isVacuous(ls.align) ? rs.align : isVacuous(rs.align) ? ls.align
+            : gridEq(ls.align, rs.align) ? ls.align : null;
         } else {
           this.checkAlign(ls.align, rs.align, `結合子 ${e.op}`);
-          align = ls.align;
+          align = isVacuous(ls.align) ? rs.align : ls.align;
         }
         const a = ls.pts, b = rs.pts;
         const pts = e.op === '|' ? ptUnion(a, b) : e.op === '&' ? ptInter(a, b) : ptDiff(a, b);
@@ -1298,6 +1311,24 @@ export class Evaluator {
           : (el as Expr).t === 'date' && !(el as Extract<Expr, { t: 'date' }>).v.hasTime);
       return { k: 'table', pts, labels, covIv, covDesc, concluded, ...(asof ? { asof } : {}),
                align: dateOnly ? this.dayGrain(env) : null };
+    }
+    // 空テーブル（ADR-45・F98）: 空リストは covering: 後置に限り時間ストリーム定数に昇格する。
+    // 「点ゼロだが覆域は主張したい」の一次形——包含・昇順・同長の各検査は空虚に成立し、
+    // 整列は空虚適合（全整列に適合する第三状態）。生成器は行数 0..N で同一の出力形になる
+    if (vals.length === 0 && e.covering) {
+      let labels: string[] | undefined;
+      if (e.labels) {
+        if (e.labels.t !== 'list') this.err('labels: はリストを取る');
+        if (e.labels.elems.length !== 0) this.err('labels: は時点列と同長（ADR-30）——空テーブルに付く labels: は [] のみ');
+        labels = [];
+      }
+      const r = this.resolveCovering(e.covering, env);
+      const asof = this.asofOf(env.members);
+      return { k: 'table', pts: [], labels, covIv: r.iv, covDesc: r.desc, concluded: r.concluded,
+               ...(asof ? { asof } : {}), align: VACUOUS_GRAIN };
+    }
+    if (vals.length === 0 && e.labels) {
+      this.err('空テーブルは covering: を明示する（省略既定「列の端」が空列で定義できない。ADR-45）');
     }
     if (e.labels || e.covering) this.err('labels:/covering: は時点列（テーブルリテラル）にのみ付く');
     return vals;
@@ -2234,6 +2265,7 @@ export class Evaluator {
         }
         // 入力は既定整列の day グリッド（G＝幅 1d・日内オフセット 0・tz 名つき）——source tz は整列から
         const g = stream.align;
+        if (isVacuous(g)) return stream;   // 空テーブル＝点ゼロの再錨は恒等（空虚適合。ADR-45）
         if (!g || g.kind !== 'civil' || g.step !== 1 || g.off !== 0 || !g.tz) {
           this.err('rebase: 入力は既定整列の day グリッド（幅 1d・日内オフセット 0・tz 名つき）を要求'
             + `——現在の整列=${gridDesc(g)}。時刻つき・anchor つき・整列なしは静的エラー`
@@ -2380,7 +2412,8 @@ export class Evaluator {
       if (v.k === 'point') return { k: 'stream', pts: [v.ms], wins: [], align: null, ann: [], endless: false };
       if (v.k === 'instant') this.err('everyInstant は strideBy(w, from:) と併用する（プロトタイプ）');
     }
-    this.err(`時間ストリームではない: ${kindOf(v)}`);
+    this.err(`時間ストリームではない: ${kindOf(v)}`
+      + (Array.isArray(v) && v.length === 0 ? '（空リストは covering: を付ければ空テーブル。ADR-45）' : ''));
   }
 
   /** snapTo/within の対象窓の要素グリッド（ADR-36 判断 2 の「要素グリッド」）。

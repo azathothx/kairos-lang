@@ -132,7 +132,7 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 **Release candidate (RC5, declared 2026-07-08; addenda through 2026-07-09).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final except one placeholder (`shiftBoundary`, to be settled for 1.0). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (372 tests),
+is validated against 20 well-known schedule families and by a reference implementation (396 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
@@ -141,7 +141,7 @@ including cross-checks against the official ephemeris of the National Astronomic
 | [`reference/`](reference/) | **Descriptor reference** — one page per operator; examples are doctested |
 | [`stdlib/`](stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek`, `Kyureki` |
 | [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype) |
-| [`design/`](design/) | Design records: 44 ADRs, domain model, expressiveness studies |
+| [`design/`](design/) | Design records: 45 ADRs, domain model, expressiveness studies |
 
 ## License
 

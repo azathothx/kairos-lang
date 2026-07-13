@@ -57,7 +57,7 @@
   任意、`anchor:` は属する対象窓が先頭ラベル。束縛名は点→ラベルの値関数として読める（ADR-27）。
 - 公開語は premise ブロック top-level の束縛（`Gregorian.month`）。境界は選択子の再利用（`monthStart = month |> first`）。
 - **テーブルリテラル**（§3.8・ADR-26）: 時点リストは時間ストリーム定数。`covering:` で有効範囲、`labels:` で
-  並行ラベル列（点→ラベル射影の定義。ADR-30）。
+  並行ラベル列（点→ラベル射影の定義。ADR-30）。空リスト `[]` は `covering:` 後置に限り昇格（ADR-45）。
 - premise 束縛の右辺には本体層のストリーム式も書ける（層またぎ。`week` の定義が例。§3.6）。
 
 **派生的定義**:
@@ -146,8 +146,8 @@ preamble       = ( "@" , name , { member } )            (* 軽量形＋後置畳
 (* ---- 束縛（公開語・糖衣・値関数が同じ機構） ---- *)
 binding        = name , [ "(" , params , ")" ] , "=" , rhs ,
                  [ "covering" , ":" , covering-list ] ;  (* 束縛後置＝合成の明示被覆主張（ADR-37 判断 5）。
-                                                            rhs がテーブルリテラル単体のときはテーブルの
-                                                            属性と同義 *)
+                                                            rhs がテーブルリテラル単体のときはテーブル属性
+                                                            として読む（正規の構文解釈。ADR-45） *)
 params         = param , { "," , param } ;
 param          = name | named-param ;
 named-param    = param-key , ":" , name ;
@@ -194,8 +194,9 @@ list-literal   = "[" , [ list-elem , { "," , list-elem } ] , "]" ;
 list-elem      = value-expr | date-range ;
 date-range     = date-literal , ".." , date-literal ;    (* 連続日へ展開される糖衣 *)
 table-literal  = list-literal , [ "covering" , ":" , covering-list ] ,
-                 [ "labels" , ":" , list-literal ] ;     (* 要素が時点ならストリーム定数（§3.8）。
-                                                            labels: は並行ラベル列（ADR-30） *)
+                 [ "labels" , ":" , list-literal ] ;     (* 要素が時点ならストリーム定数（§3.8）。要素ゼロは
+                                                            covering: 後置に限りストリーム定数（空テーブル・
+                                                            ADR-45）。labels: は並行ラベル列（ADR-30） *)
 covering-list  = covering-range , { "," , covering-range } ;   (* 区間リスト＝中抜けの申告（ADR-37） *)
 covering-range = [ covering-edge ] , ".." , [ covering-edge ] ; (* 端の省略＝開端（完結主張）。
                                                                    ".." 単独＝全域完結。ADR-37 判断 9 *)
@@ -214,8 +215,9 @@ comment        = "#" , { ? 行末までの任意文字 ? } ;
 ```
 
 注記: 列挙ラベル（`Mon`・`甲`・`Following`）は字句上 `name` と同じで、意味論（在圏 premise の解決）で区別する。
-`table-literal` と `list-literal` は同一構文で、型が要素で決まる（ADR-26）。`labels:` のラベル列は時点列と同長
-（意味論検査。ADR-30）。演算子の優先順位は上の生成規則の入れ子がそのまま定義（結合子は同一優先度・左結合、
+`table-literal` と `list-literal` は同一構文で、型が要素で決まる（ADR-26。**要素ゼロは `covering:` の有無で
+決まる**——covering つき＝空テーブル・なし＝空の値リスト。ADR-45）。`labels:` のラベル列は時点列と同長
+（意味論検査。ADR-30。空テーブルは `labels: []` のみ合法）。演算子の優先順位は上の生成規則の入れ子がそのまま定義（結合子は同一優先度・左結合、
 `&` 混在は括弧必須の規約を検査で課す。§4.5）。前文（preamble）は文法上独立の文で、束縛・本体式はその下に並べて
 よい（§7.5 の祝日カスケードが例）。効力は次の前文まで（§3.2）——これは文法でなくスコープ規則。危険メンバーが
 未解決のまま評価に至る本体式は静的エラー（§3.3——同じく文法でなく統治の検査）。
