@@ -2,7 +2,7 @@
 // 発端: spec/00-intro の「ADR-01〜36」が 8 本分陳腐化していた（2026-07-11・ユーザー指摘）。
 // doctest（例の実行検証）と同じ発想で、「現在形の文書」の機械検査可能な主張を実態と照合する。
 // 対象は現在形の文書のみ——design/ の ADR・綻びログ・INDEX 現在地は歴史記録なので対象外。
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 
 const root = new URL('../../', import.meta.url);
@@ -139,6 +139,43 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     for (const p of [...CURRENT_DOCS, ...designDocs, 'llms.txt']) {
       for (const [i, line] of read(p).split('\n').entries()) {
         if (banned.test(line)) stale.push(`${p}:${i + 1}`);
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('Markdown の相対リンクが実在のファイル/ディレクトリに解決される（2026-07-13 再レビュー提案の常設化）', () => {
+    const designDocs = readdirSync(new URL('design/', root), { recursive: true })
+      .map(f => `design/${f}`).filter(p => p.endsWith('.md'));
+    const all = [...new Set([...CURRENT_DOCS, ...designDocs])];
+    const broken: string[] = [];
+    for (const p of all) {
+      const base = new URL(p, root);
+      let inFence = false;
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (/^\s*```/.test(line)) { inFence = !inFence; continue; }
+        if (inFence) continue;   // コード例内の ](…) は対象外
+        for (const m of line.matchAll(/\]\(([^)\s]+)\)/g)) {
+          const raw = m[1];
+          if (/^(https?:|mailto:|#)/.test(raw)) continue;
+          const target = raw.split('#')[0];
+          if (!target) continue;
+          if (!existsSync(new URL(target, base))) broken.push(`${p}:${i + 1}: ${raw}`);
+        }
+      }
+    }
+    expect(broken).toEqual([]);
+  });
+
+  it('綻び番号のレンジ主張（F1〜FNN）が綻びログの実態と一致する（2026-07-13 再レビュー提案の常設化）', () => {
+    const findings = read('design/40-examples/90-findings.md');
+    const maxF = Math.max(...[...findings.matchAll(/\bF(\d+)\b/g)].map(m => Number(m[1])));
+    const targets = [...CURRENT_DOCS, 'design/40-examples/README.md',
+      'design/40-examples/90-findings.md', 'design/INDEX.md', 'design/00-overview.md'];
+    const stale: string[] = [];
+    for (const p of targets) {
+      for (const m of read(p).matchAll(/F1〜F(\d+)/g)) {
+        if (Number(m[1]) !== maxF) stale.push(`${p}: F1〜F${m[1]}（実態は F${maxF} まで）`);
       }
     }
     expect(stale).toEqual([]);
