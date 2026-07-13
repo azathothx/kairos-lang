@@ -1,0 +1,17 @@
+---
+---
+@import "jekyll-theme-primer";
+
+/* ユーザー補助の補正（PageSpeed Insights / Lighthouse 指摘への対応） */
+
+/* 1) リンクを色だけで識別させない——本文リンクに下線（見出しのアンカー記号は除外） */
+.markdown-body a { text-decoration: underline; }
+.markdown-body a.anchorjs-link { text-decoration: none; }
+
+/* 2) コードハイライトの低コントラスト色を補正（rouge github テーマの上書き。
+      地 #f8f8f8 に対しコメント #999988≈2.5:1・組み込み語 #0086B3≈3.4:1 → 4.5:1 以上へ） */
+.highlight .c,
+.highlight .cd,
+.highlight .c1,
+.highlight .cm { color: #57606a; }
+.highlight .nb { color: #005c87; }

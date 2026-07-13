@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- pages-themes/primer の default.html を基にしたオーバーライド。
-     変更点: サイト名 h1 をパンくず＋言語切り替え（docs-topbar）に置き換え。 -->
+     変更点: サイト名 h1 をパンくず＋言語切り替え（docs-topbar）に置き換え・
+     本文を main ランドマークで包む（ユーザー補助）。 -->
 <html lang="{{ page.lang | default: site.lang | default: "en-US" }}">
   <head>
     <meta charset="UTF-8">
@@ -15,7 +16,9 @@
     <div class="container-lg px-3 my-5 markdown-body">
       {% include docs-topbar.html %}
 
+      <main>
       {{ content }}
+      </main>
 
       {% if site.github.private != true and site.github.license %}
       <div class="footer border-top border-gray-light mt-5 pt-3 text-right text-gray">

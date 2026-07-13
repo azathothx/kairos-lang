@@ -36,6 +36,16 @@ titles_from_headings:
   enabled: true
   strip_title: false
 
+# html lang をページ言語に合わせる（日本語が正・en/ ミラーとルート README は英語。
+# _layouts/default.html が page.lang を参照する。読み上げ音声の取り違え防止）
+defaults:
+  - scope: { path: "" }
+    values: { lang: "ja" }
+  - scope: { path: "en" }
+    values: { lang: "en" }
+  - scope: { path: "README.md" }
+    values: { lang: "en" }
+
 exclude:
   - impl/node_modules/
   - impl/package-lock.json
