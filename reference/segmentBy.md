@@ -32,6 +32,8 @@ newMoons = [2026-01-19T04:52, 2026-02-17T21:01, 2026-03-19T10:23, 2026-04-17T20:
 lunarStart = newMoons |> snapTo(day)
 everyDay |> segmentBy(lunarStart, edges: drop, empties: drop) |> first
 #=> 2026-01-19 2026-02-17 2026-03-19
+#~> 範囲外 2026-01-01..2026-01-19（newMoons covering 2026-01-19T04:52..2026-04-17T20:52）
+#~> 範囲外 2026-04-17..2026-05-01（newMoons covering 2026-01-19T04:52..2026-04-17T20:52）
 ```
 
 `edges: drop` なので最後のマーカー 4/17 以降は窓にならない（データの端で黙って続けない）。
@@ -52,6 +54,8 @@ lunarMonth = everyDay |> segmentBy((newMoons |> snapTo(day)), edges: drop, empti
                                    labels: [12, 1, 2, 3])
 lunarMonth |> first |> filter(d => lunarMonth(d) == 1)
 #=> 2026-02-17
+#~> 範囲外 2026-01-01..2026-01-19（newMoons covering 2026-01-19..2026-04-30）
+#~> 範囲外 2026-05-01..2026-07-01（newMoons covering 2026-01-19..2026-04-30）
 ```
 
 **前提条件と締め**（すべて静的エラー・ADR-39 判断 4）: `edges: clip` とは組めない（擬似窓が序数を

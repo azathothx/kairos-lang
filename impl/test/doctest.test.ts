@@ -2,10 +2,13 @@
 // - ```kairos フェンスのうち `# eval: FROM..TO` 行を持つブロックが実行対象
 //   （任意後置 `tz: Zone` で実行・表示 tz を上書き——多 TZ 例の期待値を premise の壁時計で書くため）
 // - `#=>` 行が期待値（最後の本体式の日付列。空白区切り・複数行可。行が無ければ空列を期待）
+// - `#~>` 行が註釈・警告の期待値（最後の本体式の区間註釈＝formatAnnotation の正準形、警告＝`警告: ` 前置。
+//   行が無ければ「註釈ゼロ・警告ゼロ」の主張——地平線降格（ADR-37）で年タイポ等が警告止まりになっても
+//   doctest が黙って通る盲点の封止。被覆サマリは常時表示の監視面のため照合対象外）
 // - `@JP` を使い `premise JP` を自前定義しないブロックには標準前提（helpers の PRELUDE）を前置
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
-import { evalDates } from '../src/index.ts';
+import { run, formatAnnotation, KairosError } from '../src/index.ts';
 import { PRELUDE } from './helpers.ts';
 
 for (const sub of ['reference', 'stdlib', 'design/40-examples']) {
@@ -26,10 +29,18 @@ for (const sub of ['reference', 'stdlib', 'design/40-examples']) {
         it(`実行例 ${i + 1}`, () => {
           if (!evalLine) throw new Error(`# eval: FROM..TO [tz: Zone] の形式が不正:\n${b}`);
           const expected = [...b.matchAll(/^#=> (.+)$/gm)].flatMap(m => m[1].trim().split(/\s+/));
+          const expectedNotes = [...b.matchAll(/^#~> (.+)$/gm)].map(m => m[1].trim());
           // @JP の判定は語境界（@JPX 等の別 premise 名に PRELUDE を誤注入しない）
           const source = (/@JP\b/.test(b) && !b.includes('premise JP ')) ? PRELUDE + b : b;
-          const dates = evalDates(source, { from: evalLine[1], to: evalLine[2], ...(evalLine[3] ? { tz: evalLine[3] } : {}) });
-          expect(dates).toEqual(expected);
+          const r = run(source, { from: evalLine[1], to: evalLine[2], ...(evalLine[3] ? { tz: evalLine[3] } : {}) });
+          if (r.results.length === 0) throw new KairosError('本体式がない');
+          const last = r.results[r.results.length - 1];
+          const notes = [
+            ...last.annotations.map(formatAnnotation),
+            ...r.warnings.map(w => `警告: ${w}`),
+          ];
+          expect(last.dates).toEqual(expected);
+          expect(notes).toEqual(expectedNotes);
         });
       }
     });

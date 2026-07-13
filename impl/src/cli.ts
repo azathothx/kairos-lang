@@ -1,7 +1,7 @@
 // Kairos CLI（プロトタイプ）
 // 使い方: node src/cli.ts <file.kairos> --from YYYY-MM-DD --to YYYY-MM-DD [--tz Asia/Tokyo]
 import { readFileSync } from 'node:fs';
-import { run } from './index.ts';
+import { run, formatAnnotation } from './index.ts';
 
 const args = process.argv.slice(2);
 const file = args.find(a => !a.startsWith('--'));
@@ -25,10 +25,7 @@ try {
     if (r.results.length > 1) console.log(`# 式 ${i + 1}（${res.dates.length} 件）`);
     for (const d of res.dates) console.log(d);
     // 区間註釈（ADR-37 判断 5/7 (a)）: 結果の後に表示——対処は呼び手の責務（判定は外部）
-    for (const a of res.annotations) {
-      console.log(`# ⚠ 範囲外 ${a.from}..${a.to}（${a.source} covering ${a.covering}`
-        + `${a.asof ? `, asof ${a.asof}` : ''}）`);
-    }
+    for (const a of res.annotations) console.log(`# ⚠ ${formatAnnotation(a)}`);
   });
   // 被覆サマリ（ADR-37 判断 7 (b)）: クリップしない・完結主張も常時表示
   if (r.coverage.length > 0) {

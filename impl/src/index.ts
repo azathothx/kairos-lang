@@ -8,7 +8,7 @@ import type { Expr } from './ast.ts';
 
 export { parse } from './parser.ts';
 export { lex } from './lexer.ts';
-export { KairosError } from './eval.ts';
+export { KairosError, formatAnnotation } from './eval.ts';
 export type { RunOptions, RunResult } from './eval.ts';
 
 // 標準 premise の読み込み順は依存順（派生は base の登録が先に要る）。readdir の辞書順は不可

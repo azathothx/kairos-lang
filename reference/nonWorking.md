@@ -68,6 +68,7 @@ premise Tokyo {
 @Tokyo
 everyDay |> within(month) |> nth(25) |> roll(Preceding, on: TSE)
 #=> 2026-01-23
+#~> 範囲外 2026-01-01..2026-01-02T00:00（TSE.holidays covering 2026-01-01..2026-12-31）
 ```
 
 組織ローカルの上書きは既存の `with`（`source:` も上書きする——宣言必須寄り）:

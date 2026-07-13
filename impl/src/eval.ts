@@ -172,6 +172,11 @@ export interface ResultAnnotation {
   source: string; covering: string; asof?: string;
 }
 
+/** 区間註釈の正準一行表示。CLI と doctest（`#~>` 照合）で共有——書式のズレを封じる */
+export function formatAnnotation(a: ResultAnnotation): string {
+  return `範囲外 ${a.from}..${a.to}（${a.source} covering ${a.covering}${a.asof ? `, asof ${a.asof}` : ''}）`;
+}
+
 /** 被覆サマリの一行（ADR-37 判断 7 (b)）: クリップしない静的な監視面 */
 export interface CoverageEntry {
   source: string;

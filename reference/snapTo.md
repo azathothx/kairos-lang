@@ -36,6 +36,7 @@ sekki |> filter(s => sekki(s) == 立春) |> snapTo(day)
 newMoons = [2026-01-19T04:52]
 newMoons |> snapTo(day)
 #=> 2026-01-19
+#~> 範囲外 2026-01-01..2026-02-01（newMoons covering 2026-01-19T04:52..2026-01-19T04:52）
 ```
 
 ## 落とし穴

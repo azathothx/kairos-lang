@@ -43,6 +43,8 @@ premise UNY { calendar-system: Gregorian; tz: "America/New_York"; wkst: Mon }
 (Tok.biz |> rebase(to: "America/New_York")) & NYk.biz
 #=> 2026-01-02T14:00 2026-01-05T14:00 2026-01-06T14:00 2026-01-07T14:00
 #=> 2026-01-08T14:00 2026-01-09T14:00
+#~> 範囲外 2026-01-01..2026-01-01T14:00（Tok.hol covering 2026-01-01..2026-12-31, asof 2026-01-01）
+#~> 範囲外 2026-01-01..2026-01-01T14:00（NYk.hol covering 2026-01-01..2026-12-31, asof 2026-01-01）
 ```
 
 `rebase` が「ラベル対応」の再整列を宣言し、`&` は既存の chronos 等値のまま——両辺とも NY の

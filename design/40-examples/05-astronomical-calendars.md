@@ -36,6 +36,9 @@ premise Panchanga { calendar-system: Astro; tz: "Asia/Tokyo"; wkst: Mon }
 # 「ティティ 3 の日」＝その市民日の日の出がティティ窓 3 に入る日
 sunrises |> within(day) |> first |> filter(s => tithiW(s) == 3) |> snapTo(day)
 #=> 2026-01-03
+#~> 範囲外 2026-01-01..2026-01-02（Astro.sunrises covering 2026-01-01T06:51..2026-01-06T06:51）
+#~> 範囲外 2026-01-06..2026-01-07（Astro.sunrises covering 2026-01-01T06:51..2026-01-06T06:51）
+#~> 範囲外 2026-01-06..2026-01-07（Astro.tithiB covering 2026-01-01T03:00..2026-01-06T02:30）
 ```
 
 欠日（kshaya）——ティティ 6 の窓（01-05T09:00〜01-06T02:30）はどの日の出も含まないので、
@@ -56,6 +59,9 @@ premise Astro = Gregorian with {
 premise Panchanga { calendar-system: Astro; tz: "Asia/Tokyo"; wkst: Mon }
 @Panchanga
 sunrises |> within(day) |> first |> filter(s => tithiW(s) == 6) |> snapTo(day)
+#~> 範囲外 2026-01-01..2026-01-02（Astro.sunrises covering 2026-01-01T06:51..2026-01-06T06:51）
+#~> 範囲外 2026-01-06..2026-01-07（Astro.sunrises covering 2026-01-01T06:51..2026-01-06T06:51）
+#~> 範囲外 2026-01-06..2026-01-07（Astro.tithiB covering 2026-01-01T03:00..2026-01-06T02:30）
 ```
 
 **(3) core との差**: 糖衣なし（すべて core と確定射影のみ）。
