@@ -80,6 +80,23 @@ premise MyCompany = TSE with {
 }
 ```
 
+実体のメンバーは**修飾参照**で本体式から読める（ADR-17「曖昧なら修飾」・還流第 3 便 F100 への
+回答——祝前日リマインド級は予約名の追加なしで書ける。裸名は premise 相対解決のため実体の中身を
+自動では晒さない＝設計どおり）:
+
+```kairos
+# eval: 2026-01-02..2026-03-01
+premise Cal { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon; source: "hr-db"
+  holidays = [2026-01-01, 2026-01-12, 2026-02-11] covering: 2026..2026
+  satSun = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+  nonWorking = satSun | holidays
+}
+premise Use { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon; calendar: Cal }
+@Use
+Cal.holidays |> shift(-1, unit: day)
+#=> 2026-01-11 2026-02-10
+```
+
 ## 落とし穴
 
 - `nonWorking` に**時刻付きの点は置けない**（正体判定＝day 整列。ADR-36 の検査と標準導出が噛み合う

@@ -19,6 +19,7 @@ premise Gregorian {
 
   isLeap      = y => y mod 4 == 0 and not(y mod 100 == 0 and y mod 400 != 0)
   daysInMonth = m => monthLengths(isLeap(yearOf(m)))[monthOf(m)]
+  daysInMonthOf = d => daysInMonth(epochOrdinal(month, d))       # 点→その月の日数（§4.9 暦座標糖衣ファミリ。ADR-46 期・還流第 3 便 F101）
   month   = day   span daysInMonth label: (p => monthNo(p))        # 基本の括り：day を束ねる（year 非依存）
   year    = month span (_ => 12) phase: 0 label: (p => yearNo(p))  # month を 12 ずつ束ねる
   quarter = year  split (_ => [3, 3, 3, 3]) by: month       # year の従属窓
@@ -73,6 +74,7 @@ grid の**位相**は既定で整列する——市民時幅（`d`）は在圏 `
 | `weekday` | 並列ラベル | 各 `day` に曜日ラベルを巡回で付す（`cycle`）。窓ではなくラベル。詳細は §4。 |
 | `isLeap` | 値式 | 閏年判定（グレゴリオ暦の規則）。引数は暦年（値）。 |
 | `daysInMonth` | 値式 | month 序数から日数を返す。閏を**値**として見る（§3）。 |
+| `daysInMonthOf` | 値式 | **点**からその月の日数を返す糖衣（`daysInMonth(epochOrdinal(month, d))`）。「月の後半のみ」「月末 N 日前から」が近似なしで書ける（還流第 3 便 F101） |
 | `month` | 窓 | 基本の括り。`day` を可変個（28〜31）束ねる（`span`）。`year` に依存しない。標準ラベル＝暦月番号（ADR-42）——`month(5)`＝毎年 5 月の日々（窓インスタンス参照）。 |
 | `year` | 窓 | `month` を 12 個ずつ束ねる（`span`）。`phase: 0`＝1 月始まり。標準ラベル＝暦年（ADR-42）——`year(2026)`＝2026 年の日々。 |
 | `quarter` | 窓 | `year` を 3 か月ずつに割る従属窓（`split by: month`）。`year` の変化に自動追従。 |
@@ -89,6 +91,16 @@ grid の**位相**は既定で整列する——市民時幅（`d`）は在圏 `
 @JP
 month(5) & year(2026)
 #=> 2026-05-01 2026-05-02
+```
+
+`daysInMonthOf`（点→月長）で「月の後半のみ」「月末 N 日前から」が `dayNo(d) > 15` 級の近似なしで
+書ける（還流第 3 便 F101＝§4.9 糖衣ファミリの対称完成）:
+
+```kairos
+# eval: 2026-02-01..2026-03-05
+@JP
+everyDay |> filter(d => dayNo(d) > daysInMonthOf(d) - 3)
+#=> 2026-02-26 2026-02-27 2026-02-28
 ```
 
 ## 3. 依存方向と「閏は窓でなく値」

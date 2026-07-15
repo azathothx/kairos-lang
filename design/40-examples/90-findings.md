@@ -233,17 +233,18 @@ reference/segmentBy.md に帯＋証人パターンの例。F79 裁定時＝refer
 還流ルートの第 3 便（受領収蔵＝適用検討 04・非公開）。日本の B2B 業務定型 25 種を実装系アプリ側の
 評価器（公開 HEAD 29585ef 追随・2026 実祝日フィクスチャ）で 1 件ずつ実評価した記述可否報告——
 **21/25 は現行言語で記述可能**（うち 9 種は挙動固定テスト付きでアプリの標準カタログに登録＝
-40-examples の判定マトリクスを実務定型で外部再検証した形）。残る 4 種が下記。処置はいずれも
-**裁定待ち**（受領時採番のみ・候補設計は未着手・全件［追加拡張］見込み）。付随の仕様確認 1 件:
-`roll(on:)` が匿名軸（インライン・ストリーム式）を受ける挙動（実測で動作）は仕様として保証されるか
-——保証なら doctest 化を推奨（F7 の系）。
+40-examples の判定マトリクスを実務定型で外部再検証した形）。残る 4 種が下記——**受領翌日の実測
+検証で 4 件中 3 件（F100/F102/F103）は既存語彙で記述可能と判明**（報告側の語彙認識ギャップ＝
+発見性の問題として reference に doctest を追補・設計者裁定 2026-07-15＝回答で閉じる）。F101 のみ
+stdlib へ糖衣を同梱。付随の仕様確認（`roll(on:)` の匿名軸）は**保証**——named-arg は stream-expr を
+受け（§5.6）導出ストリームは軸と同型（F7）＝reference/roll.md に doctest 化。
 
 | # | 綻び | 初出 | 処置 |
 |---|---|---|---|
-| F100 | **calendar 実体のメンバー（holidays/nonWorking）を本体式から参照できない**——祝前日リマインド `holidays \|> shift(-1, unit: day)` が `未解決の名前`（premise 相対解決）。データは実体としてそこに在るのに消費者式から読めない。「祝日の前日に締めを前倒す」「連休前の在庫確認」は総務・物流の定番＝業務価値高。候補: ①calendar 在圏で `bizDay` 同様に `holidays`/`nonWorking` を言語予約の導出名として公開（ADR-35 の対称拡張・最小）②`calendarOf(...)` 級アクセサ | 適用検討 04 G1（非公開） | 裁定待ち（候補 2 形を 90-open-questions に整理）｜［追加拡張］ |
-| F101 | **点から月長（daysInMonth）を引けない**——`daysInMonth` は月序数引数で点を渡せず、「月の後半のみ」が `dayNo(d) > 15` の近似になる（28〜31 日月で意味がずれる）。候補: 点引数の stdlib 糖衣 `daysInMonthOf = d => daysInMonth(epochOrdinal(month, d))`——`yearNo/monthNo/dayNo` と同じ §4.9 糖衣ファミリの欠落に見える | 適用検討 04 G2（非公開） | 裁定待ち（stdlib 糖衣候補）｜［追加拡張］ |
-| F102 | **「窓内の第 N 要素」の直接選択がない**——`ordinalIn` の軸は窓系のみ（派生ストリーム不可）・`segmentBy` は `empties:` に skip がなく窓端の空窓で落ちる。回避形 `monthStart \|> roll(Following, on: bizDay) \|> shift(+N-1, unit: bizDay)` は動くが「営業日 N 日未満の月」の縁ケース保証が filter 型と違い自明でない。「第 N 営業日」「第 2 月曜（ハッピーマンデー）」は日本の制度日程の基本語彙＝業務価値高。候補: ①`nth(N, in: month)` 級の選択子②`segmentBy` の `empties: skip` 追加＋`first`/`last` 合成。F11（nth の複数序数）と隣接 | 適用検討 04 G3（非公開） | 裁定待ち（候補 2 形を 90-open-questions に整理）｜［追加拡張］ |
-| F103 | **特定日起点の隔週（bi-weekly anchored）が書けない**——現行最善 `week \|> filter(w => ordinalIn(week, year, w) mod 2 == 0)` は年アンカーの偶奇＝年の週数（52/53）で年跨ぎ位相が反転し得る。「2026-01-05 起点の隔週」の指定は不可。月 2 回型（第 2・第 4 水曜）で代替されがち＝優先度は F100/F102 より下。候補: cycle の `anchor:`（weekday が既に持つ構文）を週より粗い周期へ一般化 | 適用検討 04 G4（非公開） | 裁定待ち（anchor 一般化候補）｜［追加拡張］ |
+| F100 | **calendar 実体のメンバー（holidays/nonWorking）を本体式から参照できない**——祝前日リマインド `holidays \|> shift(-1, unit: day)` が `未解決の名前`（premise 相対解決）。データは実体としてそこに在るのに消費者式から読めない。「祝日の前日に締めを前倒す」「連休前の在庫確認」は総務・物流の定番＝業務価値高。候補: ①calendar 在圏で `bizDay` 同様に `holidays`/`nonWorking` を言語予約の導出名として公開（ADR-35 の対称拡張・最小）②`calendarOf(...)` 級アクセサ | 適用検討 04 G1（非公開） | **回答で確定（2026-07-15）**: 既存語彙で記述可——**修飾参照** `Cal.holidays \|> shift(-1, unit: day)`（ADR-17「曖昧なら修飾」・実測一致）。裸名の自動公開はしない（premise 相対解決＝設計どおり・衝突規約が不要）。doctest 追補＝reference/nonWorking.md |
+| F101 | **点から月長（daysInMonth）を引けない**——`daysInMonth` は月序数引数で点を渡せず、「月の後半のみ」が `dayNo(d) > 15` の近似になる（28〜31 日月で意味がずれる）。候補: 点引数の stdlib 糖衣 `daysInMonthOf = d => daysInMonth(epochOrdinal(month, d))`——`yearNo/monthNo/dayNo` と同じ §4.9 糖衣ファミリの欠落に見える | 適用検討 04 G2（非公開） | **確定（2026-07-15・設計者裁定＝stdlib 同梱）**: `daysInMonthOf = d => daysInMonth(epochOrdinal(month, d))` を Gregorian に追加（§4.9 糖衣ファミリの対称完成）。doctest 追補＝stdlib/gregorian.md |
+| F102 | **「窓内の第 N 要素」の直接選択がない**——`ordinalIn` の軸は窓系のみ（派生ストリーム不可）・`segmentBy` は `empties:` に skip がなく窓端の空窓で落ちる。回避形 `monthStart \|> roll(Following, on: bizDay) \|> shift(+N-1, unit: bizDay)` は動くが「営業日 N 日未満の月」の縁ケース保証が filter 型と違い自明でない。「第 N 営業日」「第 2 月曜（ハッピーマンデー）」は日本の制度日程の基本語彙＝業務価値高。候補: ①`nth(N, in: month)` 級の選択子②`segmentBy` の `empties: skip` 追加＋`first`/`last` 合成。F11（nth の複数序数）と隣接 | 適用検討 04 G3（非公開） | **回答で確定（2026-07-15）**: 既存語彙で記述可——正準形 **within＋nth** `bizDay \|> within(month) \|> nth(2)`（営業日 N 日未満の月は正当な空＝I15・filter 型と同じ縁ケース保証。実測一致）。専用選択子・empties: skip は不要。F11（複数序数）は独立の宿題のまま。doctest 追補＝reference/nth.md |
+| F103 | **特定日起点の隔週（bi-weekly anchored）が書けない**——現行最善 `week \|> filter(w => ordinalIn(week, year, w) mod 2 == 0)` は年アンカーの偶奇＝年の週数（52/53）で年跨ぎ位相が反転し得る。「2026-01-05 起点の隔週」の指定は不可。月 2 回型（第 2・第 4 水曜）で代替されがち＝優先度は F100/F102 より下。候補: cycle の `anchor:`（weekday が既に持つ構文）を週より粗い周期へ一般化 | 適用検討 04 G4（非公開） | **回答で確定（2026-07-15）**: 既存語彙で記述可——**stride(2, from: 特定日)**（位相は from: が持つ＝ADR-31/38。年跨ぎ位相反転なし・実測一致）。anchor 一般化は不要。doctest 追補＝reference/stride.md |
 
 ## 補完機構への写像（フェーズ 3 の設計対象）
 

@@ -13,6 +13,7 @@ premise Gregorian {
 
   isLeap      = y => y mod 4 == 0 and not(y mod 100 == 0 and y mod 400 != 0)
   daysInMonth = m => monthLengths(isLeap(yearOf(m)))[monthOf(m)]
+  daysInMonthOf = d => daysInMonth(epochOrdinal(month, d))       # 点→その月の日数（§4.9 暦座標糖衣ファミリ。ADR-46 期・還流第 3 便 F101）
   month   = day   span daysInMonth label: (p => monthNo(p))        # 基本の括り：day を束ねる（year 非依存）
   year    = month span (_ => 12) phase: 0 label: (p => yearNo(p))  # month を 12 ずつ束ねる
   quarter = year  split (_ => [3, 3, 3, 3]) by: month       # year の従属窓

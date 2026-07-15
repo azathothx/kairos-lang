@@ -42,6 +42,17 @@ statutory |> filter(d => weekday(d) == Sun) |> roll(Following, on: nonHoliday)
 #=> 2026-05-06
 ```
 
+**匿名軸**（インライン・ストリーム式）も受ける——named-arg は stream-expr を取り（spec §5.6）、
+導出ストリームは軸と同じ型（F7・ADR-26）。名前を付けずに「月内最終金曜」が書ける
+（実装系還流第 3 便の「良い発見」を保証として明文化）:
+
+```kairos
+# eval: 2026-01-01..2026-03-01
+@JP
+month |> last |> roll(Preceding, on: (everyDay |> filter(d => weekday(d) == Fri)))
+#=> 2026-01-30 2026-02-27
+```
+
 ## 落とし穴
 
 - `roll` は点を**間引かない**（各点 → 1 点）。間引くのは [`filter`](filter.md)。
