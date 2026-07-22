@@ -31,7 +31,33 @@ Kairos は二層からなる（SQL の DDL/DML に対応）。
 （テーブルリテラル §3.8・ADR-26。空リスト `[]` は `covering:` 後置に限り昇格＝空テーブル・ADR-45）。
 
 premise を評価すると時間ストリームが出る（逆は不可）。両層は非対称で、境界に基底座標（asof・TZ・粒度スケール・
-データ位相 §3.8）が premise を確定する一本の管がある。
+データ位相 §3.8）が premise を確定する一本の管がある。三つの型と両層の全体像（§2.3 の閉包・§2.4 の
+片方向階層を図に含む）:
+
+```mermaid
+flowchart TD
+  subgraph P["premise 層——内包（生成規則）。複雑さを引き受ける"]
+    PRIM["原始的定義（Gregorian 等）<br/>基底から暦法を組む"]
+    DERIV["派生的定義（会計暦・実体の上書き等）<br/>premise → premise の閉包"]
+    DATA["データ束縛<br/>（テーブルリテラル・external。§3.8）"]
+    PRIM -- "with 上書き（原始へは展開できない＝片方向）" --> DERIV
+  end
+  P == "評価——境界の一本の管（asof・TZ・粒度スケール・データ位相が premise を確定）<br/>逆は不可: ストリームから premise は作れない" ==> ST
+  P -. "premise 引数（on:/unit:/axis: の軸・在圏 calendar:）" .-> CORE
+  subgraph B["本体層——外延（点の列）。薄く保つ"]
+    ST["時間ストリーム型——遅延・無限・順序付き<br/>本体層の唯一の第一級値"]
+    CORE["core 族（生成子・点変換・結合子・<br/>フィルタ・窓・選択子・ストライド）"]
+    SUGAR["糖衣（monthEnd・businessDays 等）"]
+    SUGAR -- "core への展開で消せる（片方向）" --> CORE
+    ST -- "入力" --> CORE
+    CORE -- "出力——型から逃げない（I2 閉包）" --> ST
+  end
+  VAL["値型——数値・論理・列挙・リスト・文字列・時点"]
+  ST -- "束縛名射影 名前(d)＝点→値（§4.9）" --> VAL
+  VAL -- "窓インスタンス参照 W(v)＝値→点列（§2.7・ADR-42）" --> ST
+  VAL -. "引数（shift の n・述語・ラベル式）" .-> CORE
+  VAL -. "時点リストは定数へ昇格（§3.8）" .-> DATA
+```
 
 ## 2.3 閉包
 

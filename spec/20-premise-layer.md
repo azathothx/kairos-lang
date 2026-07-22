@@ -296,7 +296,26 @@ premise JPGazette {
   比較の静的知識）。解決は**評価文脈の随伴**（評価内の初回参照時に一回・スナップショット固定・
   取得の手段は言語の外＝ADR-15）。解決の失敗は**供給エラー**（機械可読な部分類——「まだ無い」
   〈空データ＋covering〉とは型で区別される）。external を持つ premise は `tz:` 宣言必須。
-  詳細は `reference/external.md`。
+  詳細は `reference/external.md`。解決の流れ（一評価一解決・供給契約・「まだ無い」と失敗の型区別）:
+
+  ```mermaid
+  sequenceDiagram
+      participant E as 評価（本体層）
+      participant X as external 束縛（式は静的）
+      participant R as 解決子（取得の手段は言語の外＝ADR-15）
+      E->>X: 評価内の初回参照（要求駆動——未参照なら解決しない）
+      X->>R: 解決（一評価に一回）
+      alt 取得できた
+          R-->>X: テーブル値〔点列・covering・asof（必須）・labels?〕
+          X->>X: 供給契約の検査＝リテラルと同一の統治<br/>（kind の整列・包含・昇順・labels 値域/同長・日付の実在）
+          Note over X: 契約違反は評価エラー（boot 検査対象・リテラルと同一の文言体系）
+          X-->>E: スナップショット固定——評価内の以後の参照は同一値<br/>（決定性は「同一スナップショット相対」。§7.8）
+          Note over E,X: 「まだ無い」は正当な空＝ [] covering: …（ADR-45）——<br/>空虚適合で検査に通り、値は空・危険は註釈で観測（§4.10）
+      else 取得できない
+          R--xX: 解決失敗
+          X--xE: 供給エラー（評価エラーの機械可読な部分類——「まだ無い」と型で区別）
+      end
+  ```
 
 命名の確定状況は §5.4: `grid`・`span`・`split`・`cycle`・`anchor:`・`phase:`・`by:`・`with`・`chronos`（基底の
 字句名。ADR-29）・`axis:`（操作軸）に加え、RC2 で `covering:`・`labels:`・`label:`（テーブル・付与側）も確定。
