@@ -29,6 +29,9 @@ optional_front_matter:
   remove_originals: true
 readme_index:
   remove_originals: true
+  # en/reference・en/stdlib の README は front matter（source_sha）持ち——既定 false のままだと
+  # ディレクトリ index にならず /en/reference/ が 404 になる（2026-07-24 実測）
+  with_frontmatter: true
 relative_links:
   enabled: true
 # strip_title は false（true だと各ページの H1 が本文から剥がれ、どのページも同じ見た目になる）
