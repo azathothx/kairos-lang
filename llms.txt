@@ -16,7 +16,7 @@ Key facts:
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 439 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 441 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
 - Documentation language: Japanese documentation is canonical; the spec, the descriptor reference,
@@ -26,33 +26,37 @@ Key facts:
 - License: Apache-2.0.
 - Repository: https://github.com/azathothx/kairos-lang
 
-## Specification (Japanese)
+## Specification (English mirror)
 
-- [Introduction and comparison](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/00-intro.md):
+The links below point to the English mirror; the Japanese originals are canonical and live at the
+same paths without the `en/` segment (a hash check keeps the mirror in step).
+
+- [Introduction and comparison](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/spec/00-intro.md):
   problem statement, capability matrix vs cron/Quartz/RRULE/business-day products, design spine
-- [Types and layers](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/10-types.md):
+- [Types and layers](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/spec/10-types.md):
   time-stream type, premise type, value type, the two layers
-- [Premise layer](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/20-premise-layer.md):
+- [Premise layer](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/spec/20-premise-layer.md):
   user-defined calendars, window generators (grid/span/split/cycle), labels, timezone model, calendar entities
-- [Body layer](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/30-body-layer.md):
+- [Body layer](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/spec/30-body-layer.md):
   operators, combinators, alignment checks, projections, coverage annotations
-- [Grammar (EBNF) and lexis](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/40-grammar.md)
-- [Glossary](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/50-glossary.md)
-- [Worked examples](https://raw.githubusercontent.com/azathothx/kairos-lang/main/spec/90-examples.md):
+- [Grammar (EBNF) and lexis](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/spec/40-grammar.md)
+- [Glossary](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/spec/50-glossary.md)
+- [Worked examples](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/spec/90-examples.md):
   payday, Japanese-holiday cascade, fiscal quarters, "N business days after an injected instant"
 
 ## Reference
 
-- [Descriptor reference index](https://raw.githubusercontent.com/azathothx/kairos-lang/main/reference/README.md):
+- [Descriptor reference index](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/reference/README.md):
   one page per operator; all examples are doctested against the reference implementation
-- [Standard premises](https://raw.githubusercontent.com/azathothx/kairos-lang/main/stdlib/README.md):
-  Gregorian, Fiscal, ISOWeek, Kyureki (Japanese lunisolar calendar)
+- [Standard premises](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/stdlib/README.md):
+  Gregorian, Fiscal, ISOWeek (the Kyureki page — Japanese lunisolar calendar — is Japanese-only:
+  https://raw.githubusercontent.com/azathothx/kairos-lang/main/stdlib/kyureki.md)
 
 ## Examples
 
-- [Expressiveness studies](https://raw.githubusercontent.com/azathothx/kairos-lang/main/design/40-examples/README.md):
-  20 schedule families — Japanese holidays, sexagenary cycle, rokuyō, 24 solar terms, lunisolar
-  calendar, Easter, ISO week numbers, business hours, injected-origin schedules
+- [Expressiveness studies](https://raw.githubusercontent.com/azathothx/kairos-lang/main/design/40-examples/README.md)
+  (Japanese): 20 schedule families — Japanese holidays, sexagenary cycle, rokuyō, 24 solar terms,
+  lunisolar calendar, Easter, ISO week numbers, business hours, injected-origin schedules
 - [Runnable examples](https://github.com/azathothx/kairos-lang/tree/main/impl/examples):
   payday, Japanese-holiday derivation, rokuyō via the reference CLI
 

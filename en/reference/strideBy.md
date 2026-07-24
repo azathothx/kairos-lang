@@ -44,7 +44,7 @@ For every Martian sol, see the example in [`everyInstant`](everyInstant.md)
 - Thinning **by count**, like "every 3 business days", is [`stride`](stride.md). `strideBy` does
   not count; it measures.
 
-## See also
+## Related
 
 [`stride`](stride.md) · [`everyInstant`](everyInstant.md) · width literals (spec §5.5 ·
 ADR-11/12/28).

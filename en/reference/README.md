@@ -2,13 +2,13 @@
 source_sha: 6b5cf0637c4d
 ---
 
-# <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Description-Word Reference
+# <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Descriptor Reference
 
 > Translated from the canonical Japanese page [reference/README.md](../../reference/README.md).
 > The `source_sha` above records the source revision; a consistency check flags this page when the
 > Japanese original changes.
 
-Explains Kairos's description words (operators, window-generating words, literals), one word per
+Explains Kairos's descriptors (operators, window-generating words, literals), one word per
 file. The norm is the language specification [`../spec/`](../spec/) (this book is the explanatory
 layer — the same division of roles by which `stdlib/` carries Gregorian). The index of terms is
 [`../spec/50-glossary.md`](../spec/50-glossary.md).
@@ -17,7 +17,10 @@ layer — the same division of roles by which `stdlib/` carries Gregorian). The 
 
 Of the code examples in this book, those in **` ```kairos ` fences** are **execution-verified**
 against the reference implementation ([`../../impl/`](../../impl/)) (`impl/test/doctest.test.ts`).
-The same conventions extend to the explanatory pages of [`../stdlib/`](../stdlib/).
+The doctest runs on the Japanese source pages; a consistency check keeps this mirror's blocks
+identical to them (code lines and the `# eval:`/`#=>`/`#~>` lines — comments may be translated),
+so the guarantee carries over. The same conventions extend to the explanatory pages of
+[`../stdlib/`](../stdlib/).
 
 - The `# eval: FROM..TO` line in a block is the evaluation range (`[FROM, TO)`). The optional
   postfix `tz: Zone` (e.g. `# eval: 2026-03-06..2026-03-10 tz: America/New_York`) overrides the
@@ -60,7 +63,7 @@ The same conventions extend to the explanatory pages of [`../stdlib/`](../stdlib
 ## Index
 
 <p align="center"><img src="../../assets/figures/operator-map.svg" width="920"
-  alt="The description-word map: the seven body-layer families compose; projections bridge windows to value expressions; the premise layer supplies the vocabulary."></p>
+  alt="The descriptor map: the seven body-layer families compose; projections bridge windows to value expressions; the premise layer supplies the vocabulary."></p>
 
 | Category | Word | One line |
 |---|---|---|

@@ -19,7 +19,7 @@ const CURRENT_DOCS = [
   ...mdFiles('spec/'),
   ...mdFiles('reference/'),
   ...mdFiles('stdlib/'),
-  ...mdFiles('en/spec/'), // 英語版ミラー（日本語が正・順次拡充）
+  ...mdFiles('en/spec/'), // 英語版ミラー（日本語が正・spec/reference/stdlib 全章ミラー）
   ...mdFiles('en/reference/'),
   ...mdFiles('en/stdlib/'),
 ];
@@ -195,6 +195,53 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
       const ja = p.replace('en/', '');
       const actual = createHash('sha256').update(read(ja)).digest('hex').slice(0, 12);
       if (actual !== m[1]) stale.push(`${p}: source_sha ${m[1]} だが ${ja} は ${actual}（日本語側が更新済み——英訳を追従させ source_sha を更新する）`);
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('英語版ミラーの kairos フェンスが日本語正本とコード同一（コメント行以外・2026-07-24 第 3 回レビュー指摘 J の再発防止）', () => {
+    // doctest が実行するのは日本語側だけ（doctest.test.ts の走査対象）。英語側の「実行検証済み」主張は
+    // 「en のブロック ≡ ja のブロック」の同一性で担保する——en 側だけの編集・再同期ミスを黙らせない。
+    // コメントは翻訳可（全行コメントは除外・行末コメントは切除）。`# eval:`・`#=>`・`#~>` は規範なので一致必須。
+    const normalize = (block: string) => block.split('\n').map(line => {
+      if (/^\s*#\s*eval:|^\s*#=>|^\s*#~>/.test(line)) return line;
+      if (/^\s*#/.test(line)) return null;
+      return line.replace(/\s+#(?!=>|~>).*$/, '').trimEnd();
+    }).filter(l => l !== null).join('\n');
+    const fences = (src: string) => [...src.matchAll(/```kairos\n([\s\S]*?)```/g)].map(m => m[1]);
+    const stale: string[] = [];
+    for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/')]) {
+      const en = fences(read(p));
+      const ja = fences(read(p.replace('en/', '')));
+      if (en.length !== ja.length) { stale.push(`${p}: kairos フェンス数 ${en.length} ≠ 日本語側 ${ja.length}`); continue; }
+      en.forEach((b, i) => {
+        if (normalize(b) !== normalize(ja[i])) stale.push(`${p}: フェンス ${i + 1} が日本語側とコード不一致`);
+      });
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('英語ミラーの固定訳語が統一されている（別訳の混入を割る・2026-07-24 第 3 回レビュー指摘 K の再発防止）', () => {
+    // 日本語側の用語規律と同型。正: consumer-relative（利用側相対）・placeholder（仮称）・
+    // Exhaustiveness verification（I5 網羅性検証——coverage は覆域の固定訳）・descriptor（記述語）・
+    // first point（先頭点）・binding-name（束縛名）・interval-sequence（区間列）・## Related（関連）
+    const banned: [RegExp, string][] = [
+      [/user-side[- ]relative/i, 'consumer-relative が正'],
+      [/provisional/i, 'placeholder が正'],
+      [/coverage verification/i, 'Exhaustiveness verification が正'],
+      [/description[- ]word/i, 'descriptor が正'],
+      [/head point/i, 'first point が正'],
+      [/bound-name/i, 'binding-name が正'],
+      [/interval-list/i, 'interval-sequence が正'],
+      [/^## See also/, '## Related が正'],
+    ];
+    const stale: string[] = [];
+    for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'), 'README.md', 'llms.txt']) {
+      for (const [i, line] of read(p).split('\n').entries()) {
+        for (const [re, hint] of banned) {
+          if (re.test(line)) stale.push(`${p}:${i + 1}: ${hint}: ${line.trim().slice(0, 60)}`);
+        }
+      }
     }
     expect(stale).toEqual([]);
   });

@@ -51,7 +51,7 @@ everyDay |> within(week) |> last
   day with `roll(Preceding, on: bizDay)`, then `shift(-3, unit: bizDay)`
   ([representative example §7.1](../spec/90-examples.md)).
 
-## See also
+## Related
 
 [`first`](first.md) · [`nth`](nth.md) · [`roll`](roll.md) · [`shift`](shift.md) · public boundary
 words (spec §3.6).

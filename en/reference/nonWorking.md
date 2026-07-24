@@ -120,7 +120,7 @@ Cal.holidays |> shift(-1, unit: day)
   bands live in the same entity as **the paired reserved public words
   `sessionOpens`/`sessionCloses`**, read through the standard derivations
   [`bizOpen`/`bizClose`/`isOpen`](isOpen.md) (ADR-41 — those are **entity-relative**; the role
-  difference from user-side-relative bizDay is in isOpen.md).
+  difference from consumer-relative bizDay is in isOpen.md).
 - If the entity's `tz:` and the user side's `tz:` disagree, the standard derivation is stopped by
   the alignment check (spec §4.5) (the correct behavior of F54). The explicit form
   `everyDay \ (TSE.nonWorking |> snapTo(day))` means "read the overlap on chronos through the user

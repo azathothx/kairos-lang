@@ -65,7 +65,7 @@ everyDay |> within(quarter) |> first
   labeling question independent of where the windows are cut (the `label:` attachment expression;
   spec §4.9).
 
-## See also
+## Related
 
 [`shiftBoundary`](shiftBoundary.md) (sugar over with) · [`span`](span.md) · [`split`](split.md) ·
 Mechanism A (ADR-17) · I1.

@@ -52,7 +52,7 @@ everyDay |> within(month) |> first
   legal (read as the standard derivation; ADR-35) — what was rejected is the generator, not the
   direct naming.
 
-## See also
+## Related
 
 [`everyInstant`](everyInstant.md) (every point of the continuous base) · [`filter`](filter.md) ·
 public boundary words (`monthEnd = month |> last`, etc.; spec §3.6) · I8 / ADR-20.

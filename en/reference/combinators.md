@@ -8,7 +8,7 @@ source_sha: fc41386ebe96
 > The `source_sha` above records the source revision; a consistency check flags this page when the
 > Japanese original changes.
 
-**Category**: combinator (body-layer core) · **Signature**: `Stream × Stream -> Stream` · symbols
+**Category**: combinator (body-layer core) / **Signature**: `Stream × Stream -> Stream` / symbols
 settled (ADR-22 · spec §5.4)
 
 ## Meaning

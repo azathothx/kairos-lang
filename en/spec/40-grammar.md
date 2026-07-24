@@ -35,7 +35,7 @@ source_sha: 8ec68284f1af
 - `everyDay : () -> Stream` / `everyInstant : () -> Stream` — calendar-system-pure generators (the
   latter is every point of the continuous base).
 - `within(w) : Stream -> Stream(partitioned)` — partition-type window. `w` is a window name.
-  Coverage and non-overlap are checkable under I5.
+  Exhaustiveness and non-overlap are checkable under I5.
 - `segmentBy(m, edges:, empties:) : Stream -> Stream(interval)` — interval-sequence-type window.
   The gap policy (`edges:`/`empties:`) is mandatory (I5). An element's membership is decided by its
   representative point (for a window element, the first point) (§3.8, ADR-26).
@@ -113,7 +113,7 @@ source_sha: 8ec68284f1af
 
 ## 5.4 Naming status
 
-**Final** (2026-07-07, as of RC2, plus ADR-31/32): the window-generating words
+**Settled** (2026-07-07, as of RC2, plus ADR-31/32): the window-generating words
 `grid`/`span`/`split`/`cycle`; the arguments `anchor:`/`phase:`/`by:`/`from:` (mandatory in the
 stride family); the member `epoch:` (epoch); the string literal `"…"`; derivation's `with` (all
 RC1 — no cracks in the 40-examples expressiveness verification). The base's lexical name
@@ -126,13 +126,13 @@ F34–F42) surfaced no cracks in the names. The body layer's symbols and operato
 `within`, `segmentBy`, `roll`, `shift`, `stride`, `strideBy`, `filter`, the selectors, the
 combinators) are final as well. The lexis of date and width literals was fixed in ADR-28 (§5.5).
 
-**Final (2026-07-14, ADR-46 = designer ruling)**: the external-supply declaration **`external`**
+**Settled (2026-07-14, ADR-46 = designer ruling)**: the external-supply declaration **`external`**
 (the rival candidate `socket` was rejected because it would be the same spelling with a different
 sense as the "socket" metaphor of ADR-15 in the English-language documents) and the kind values
 **`dates`/`instants`** (consistent in feel with `everyInstant` and the date literal; a sweep
 confirmed no collisions with existing identifiers).
 
-**Final (2026-07-09, the F51 batch confirmation = designer ruling)**: `nonWorking` (the reserved
+**Settled (2026-07-09, the F51 batch confirmation = designer ruling)**: `nonWorking` (the reserved
 public word for entities; §3.9), `coincides` (the window-membership predicate; §4.9 — the rival
 candidates `hits`/`anyIn`/`sharesWindow` were rejected), `rebase` (re-anchoring; §4.4 — the rival
 candidates `relabel`/`sameDate` were rejected), and `bizOpen`/`bizClose`/`isOpen` (the standard

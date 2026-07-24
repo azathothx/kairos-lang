@@ -63,7 +63,7 @@ everyDay |> filter(d => weekday(d) == Mon)
   cycles of the ten heavenly stems and the twelve earthly branches composed in a predicate (a zip
   product of cycles is not introduced — open item F16).
 
-## See also
+## Related
 
 [`filter`](filter.md) (label predicates) · [table literal](table-literal.md) (data-derived labels) ·
 the separation from WKST (stdlib/gregorian.md §4) · ADR-03/27/30.

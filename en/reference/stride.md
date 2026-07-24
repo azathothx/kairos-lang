@@ -8,8 +8,8 @@ source_sha: d890f41a117c
 > The `source_sha` above records the source revision; a consistency check flags this page when the
 > Japanese original changes.
 
-**Category**: stride (body-layer core; a family apart from selectors) · **Signature**:
-`stride(n, from:) : Stream -> Stream` · name settled (spec §5.4)
+**Category**: stride (body-layer core; a family apart from selectors) / **Signature**:
+`stride(n, from:) : Stream -> Stream` / name settled (spec §5.4)
 
 ## Meaning
 

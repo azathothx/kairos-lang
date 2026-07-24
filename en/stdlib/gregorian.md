@@ -2,7 +2,7 @@
 source_sha: bac4c65e8ab0
 ---
 
-# Standard Premise: Gregorian
+# Standard premise: Gregorian
 
 > Translated from the canonical Japanese page [stdlib/gregorian.md](../../stdlib/gregorian.md).
 > The `source_sha` above records the source revision; a consistency check flags this page when the
@@ -16,7 +16,7 @@ explains its complete definition and each of its words. The language specificati
 cites this `Gregorian` only as "an example of a primitive definition"; the exhaustive account is
 this page's charge.
 
-## 1. The complete definition
+## 1. Complete definition
 
 ```text
 premise Gregorian {
@@ -58,7 +58,7 @@ not reference the `year` window):
 - `monthOf(m)` = `m mod 12` — the month position (0 = January … 11 = December).
 - `yearOf(m)` = `epochYear + m div 12` — the calendar year the month belongs to
   (`epochYear` = 1970).
-- `monthLengths(leap)` — the day-count list of the 12 months (leap gives only February 29).
+- `monthLengths(leap)` — the day-count list of the 12 months (in a leap year only February has 29).
 
 The **epoch** at which the window ordinals `m` and `n` originate is the language default
 1970-01-01T00:00 (in-scope tz), and ordinals are 0-based (`m = 0` is January 1970. ADR-31).

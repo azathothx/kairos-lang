@@ -8,8 +8,8 @@ source_sha: 65cce16e358c
 > The `source_sha` above records the source revision; a consistency check flags this page when the
 > Japanese original changes.
 
-**Category**: point transform (body-layer core) · **Signature**: `shift(n, unit: U) : Stream ->
-Stream` · name settled (spec §5.4)
+**Category**: point transform (body-layer core) / **Signature**: `shift(n, unit: U) : Stream ->
+Stream` / name settled (spec §5.4)
 
 ## Meaning
 

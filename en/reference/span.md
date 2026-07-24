@@ -64,7 +64,7 @@ projection time, lazily evaluated). The canonical form of the fiscal-year label,
 - What it bundles is **a sequence of unit windows** (`day`, `month`) — it does not take the
   continuous axis itself (that is `grid`).
 
-## See also
+## Related
 
 [`grid`](grid.md) · [`split`](split.md) · [`with`](with.md) (a worked example of the `phase:`
 shift) · [`shiftBoundary`](shiftBoundary.md) (sugar over a span phase shift) · the epoch (ADR-31).

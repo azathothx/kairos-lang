@@ -21,7 +21,7 @@ holds with m=0 = the epoch month).
 
 The **epoch** is the language default 1970-01-01T00:00 (in the in-scope tz). A calendar system on a
 different basis can override it via the primitive definition's member `epoch:` (it cannot be placed
-in the consumer's preamble; ADR-31).
+in the user-side preamble; ADR-31).
 
 ## Examples
 
@@ -61,7 +61,7 @@ everyDay |> filter(d => epochOrdinal(month, d) mod 12 == 0) |> within(month) |> 
   the **window-sequence ordinal** of `labels:` is always 0-based and, for historical data crossing
   the epoch, is **a different coordinate** from epochOrdinal (the two do not ride together).
 
-## See also
+## Related
 
 [`ordinalIn`](ordinalIn.md) · [`span`](span.md) (the supplier of the same ordinal coordinate) ·
 the epoch `epoch:` (ADR-31) · ADR-27/30.

@@ -8,8 +8,8 @@ source_sha: 1d2ce77e41ef
 > The `source_sha` above records the source revision; a consistency check flags this page when the
 > Japanese original changes.
 
-**Category**: filter (body-layer core) · **Signature**: `filter(on: P)` / `filter(x => condition)`
-: `Stream -> Stream` · name settled (spec §5.4)
+**Category**: filter (body-layer core) / **Signature**: `filter(on: P)` / `filter(x => condition)`
+: `Stream -> Stream` / name settled (spec §5.4)
 
 ## Meaning
 

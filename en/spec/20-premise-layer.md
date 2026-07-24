@@ -539,8 +539,8 @@ pair): `bizOpen` = the points of C.sessionOpens whose opening day (a civil day i
 business day of C; `bizClose` = each session's closing point; `isOpen(t)` = whether t lies in the
 union of the bizOpen sessions' intervals (a value predicate). **The derivations are
 entity-relative** — the decision inputs (holidays, tz) resolve in the entity's culture and do not
-depend on the reader's premise (a different role from day-granularity `bizDay` = user-side
-relative). A session's business-day-ness is read from its **opening day** (an overnight session's
+depend on the reader's premise (a different role from day-granularity `bizDay` =
+consumer-relative). A session's business-day-ness is read from its **opening day** (an overnight session's
 tail follows its opening day). Coverage follows the witness rule's three branches (true = an
 unannotated decision; out-of-coverage = the decision depends on annotated intervals of
 sessionOpens/sessionCloses/nonWorking; false = coverage complete. §4.10). No `bizHour`-style point

@@ -75,7 +75,7 @@ lunarMonth |> first |> filter(d => lunarMonth(d) == 1)
 #~> 範囲外 2026-05-01..2026-07-01（newMoons covering 2026-01-19..2026-04-30）
 ```
 
-**Preconditions and closures** (all static errors; ADR-39 decision 4): it cannot combine with
+**Preconditions and tightening rules** (all static errors; ADR-39 decision 4): it cannot combine with
 `edges: clip` (pseudo-windows shift the ordinals); it cannot combine with `empties: drop` (removing
 empty windows compacts the ordinals); it cannot coexist with a `label:` lambda (doubling the label
 source); it does not attach to rule markers (infinite sequences of the `week` class — periodic

@@ -20,8 +20,8 @@ Japanese fiscal year (the national fiscal year runs April 1 through March 31 of 
 year; Public Finance Act, Article 11); for any other starting month, each user writes a one-line
 derivation of the same shape (§6). The names of the public words (`fiscalYearNo` and the rest) are
 premise public words, so their governance is light: they follow the convention of staying
-provisional and being batch-confirmed at 1.0 (the naming status of the language's **description
-words** is spec §5.4 — premise public words sit outside that table).
+placeholders and being batch-confirmed at 1.0 (the naming status of the language's
+**descriptors** is spec §5.4 — premise public words sit outside that table).
 
 ## 1. Complete definition
 
@@ -44,17 +44,17 @@ falls on April 1 of each year. The remaining two words are **value functions** f
 words). On the right-hand sides, `yearOf` refers by bare name to a public binding of Gregorian (an
 auxiliary value function included in the complete definition of gregorian.md §1), while
 [`epochOrdinal`](../reference/epochOrdinal.md) and [`ordinalIn`](../reference/ordinalIn.md) are
-description words of the language's projection family (ADR-27).
+descriptors of the language's projection family (ADR-27).
 
 This definition is the bundled source
 [`impl/stdlib/fiscal.kairos`](../../impl/stdlib/fiscal.kairos) itself (this page translates the
 comments); writing `calendar-system: Fiscal` in a preamble makes it usable with no definition of
 your own. If only the `year` override is wanted, the sugar
-[`shiftBoundary`](../reference/shiftBoundary.md) (a **provisional name** — the only one left in
+[`shiftBoundary`](../reference/shiftBoundary.md) (a **placeholder** — the only remaining placeholder in
 the language) writes it too:
 
 ```text
-premise Fiscal = Gregorian |> shiftBoundary(+3, on: year, unit: month)   # the same expansion as the single year line (provisional name)
+premise Fiscal = Gregorian |> shiftBoundary(+3, on: year, unit: month)   # the same expansion as the single year line (placeholder)
 
 # expansion rule: shiftBoundary(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)
 #   (negative δ is also normalized by the modulus = F65. the base's label: is preserved = F96 —

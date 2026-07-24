@@ -52,7 +52,7 @@ under the current premise. Exhaustiveness and non-overlap are checkable (I5).
 everyDay |> within(month) |> last          # last day of each month
 ```
 
-**Interval-list type `segmentBy(m, edges:, empties:)`** — a window that cuts at the markers of an
+**Interval-sequence type `segmentBy(m, edges:, empties:)`** — a window that cuts at the markers of an
 arbitrary stream. `m` is a stream expression of markers (fiscal closes, lunar phases, and so on).
 Each window is the half-open interval between adjacent markers. Exhaustiveness is not guaranteed,
 so arguments that state the meaning of the gaps explicitly are mandatory (I5). Omission invites
@@ -379,8 +379,8 @@ preimage):
 W(v)  ≡  element point sequence of W |> filter(d => W(d) == v)      # year(2020) = the days of 2020
 ```
 
-**Element point sequence** = of the input point sequence W's definition bundled into windows, the
-points that belong to W's windows (in a `grid`/`span`/`split` chain, equivalent to the atomic
+**Element point sequence** = of the input point sequence that W's definition bundled into
+windows, the points that belong to W's windows (in a `grid`/`span`/`split` chain, equivalent to the atomic
 grid's ticks; under `segmentBy`, the input stream's points. An internal concept — no new word for
 users to write). The resolved value's alignment inherits the input's alignment, so
 `marineDay & year(2020)` (narrowing to a specific year — the canonical form of F9) coexists with

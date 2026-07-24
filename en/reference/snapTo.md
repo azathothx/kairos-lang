@@ -8,7 +8,7 @@ source_sha: da899f1dbe12
 > The `source_sha` above records the source revision; a consistency check flags this page when the
 > Japanese original changes.
 
-**Category**: point transform (body-layer core) · **Signature**: `snapTo(w) : Stream -> Stream` ·
+**Category**: point transform (body-layer core) / **Signature**: `snapTo(w) : Stream -> Stream` /
 name settled (RC2 · spec §5.4)
 
 ## Meaning

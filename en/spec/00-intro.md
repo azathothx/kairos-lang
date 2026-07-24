@@ -109,9 +109,9 @@ definitions; expressing business days, calendars, windows, and roll conventions.
 3. The premise layer — preamble, calendar-system definitions (primitive/derived), value expressions
 4. The body layer — generators, windows, selectors, point transforms, combinators, filters, strides, sugar
 5. Grammar and symbols — symbol table, operator signatures, naming status, lexis, EBNF
-6. Glossary — an index for lookup (concept terms, description words, symbols, invariants; placeholder-marked)
+6. Glossary — an index for lookup (concept terms, descriptors, symbols, invariants; placeholder-marked)
 7. Representative examples
 
-**Conventions**: provisional names are marked "（仮称）" (placeholder) — the only remaining one is `shiftBoundary` (batch naming confirmation F51; §5.4).
+**Conventions**: placeholder names are marked "（仮称）" — the only remaining placeholder is `shiftBoundary` (batch naming confirmation F51; §5.4).
 The rationale for each design decision lives in the design records `20-adr/` (ADR-01 through 46) and
 `10-domain-model.md`; this specification presents only the folded conclusions.

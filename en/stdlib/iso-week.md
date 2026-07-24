@@ -20,8 +20,8 @@ account of the ISO week calendar is this page's job. The design focus of this pr
 ISO week number — which the design records had classified as the first example of a `label:`
 attachment expression (F40) — is written out, via an equivalent transformation, in **settled
 vocabulary alone** (§4). The word names (`isoWeek` and the rest) are premise public words and
-**provisional** (the convention of batch confirmation at 1.0; the naming status of the language's
-**description words** is spec §5.4 — premise public words sit outside that table).
+**placeholders** (the convention of batch confirmation at 1.0; the naming status of the language's
+**descriptors** is spec §5.4 — premise public words sit outside that table).
 
 ## 1. Complete definition
 
@@ -41,10 +41,10 @@ premise ISOWeek = Gregorian with {
 
 The bundled source `../../impl/stdlib/isoweek.kairos` is character-for-character identical to this
 section (in the Japanese original — this page translates the comments). Of the vocabulary used,
-the language's **description words** (`filter`, `segmentBy`, the two-window `ordinalIn`, the
+the language's **descriptors** (`filter`, `segmentBy`, the two-window `ordinalIn`, the
 ternary conditional) have settled names (spec §5.4); the rest are premise public words of
 `Gregorian` (the weekday label's `weekday`/`Mon`, the atom `day`, the calendar-coordinate sugar
-`yearNo`/`monthNo`/`dayNo`; spec §4.9), provisional in name but all implemented in the reference
+`yearNo`/`monthNo`/`dayNo`; spec §4.9), placeholders in name but all implemented in the reference
 implementation — and no `label:` attachment expression is used (settled by ADR-34 and implemented,
 but made unnecessary by the equivalent transformation; §4).
 

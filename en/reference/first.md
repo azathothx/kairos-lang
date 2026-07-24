@@ -49,7 +49,7 @@ everyDay |> within(quarter) |> within(month) |> first(of: quarter)
 - The public boundary words of primitive definitions are written as reuses of this selector
   (`monthStart = month |> first`; zero new mechanism; spec §3.6).
 
-## See also
+## Related
 
 [`nth`](nth.md) · [`last`](last.md) · [`within`](within.md) · [`ordinalIn`](ordinalIn.md) (the
 reverse direction — reading an ordinal from a point) · I4 · ADR-15/24.

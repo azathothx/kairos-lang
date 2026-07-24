@@ -51,7 +51,7 @@ everyDay |> filter(d => (ordinalIn(day, month, d) - 1) mod 7 == 0)
 - A point's calendar coordinates (`yearNo`/`monthNo`/`dayNo`) are derivable as **sugar** over
   `epochOrdinal` + `ordinalIn` + existing value functions — no new words (ADR-30).
 
-## See also
+## Related
 
 [`epochOrdinal`](epochOrdinal.md) · [`nth`](nth.md) (the dual) · [`filter`](filter.md) ·
 [`stride`](stride.md) (the non-resetting variant) · ADR-27/30.

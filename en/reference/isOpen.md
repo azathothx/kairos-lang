@@ -29,7 +29,7 @@ optional), the language prescribes uniformly:
 
 **The derivations are entity-relative** — the decision inputs (which days are off; which tz the
 times are read in) resolve in the **entity's culture** and do not depend on the reader's premise
-([`bizDay`](nonWorking.md) = the **user-side relative** day axis plays a different role. Whether
+([`bizDay`](nonWorking.md) = the **consumer-relative** day axis plays a different role. Whether
 the TSE is open is a fact decided by the TSE's culture alone — readable even by a cross-tz reader
 without tripping the tz check). A session's business-day-ness is read from its **opening day** —
 an overnight session's (open 22:00, close 03:00 the next day) tail follows its opening day (a
@@ -40,7 +40,7 @@ entirety).
 
 A single session 9:00–15:00, a half-day holiday (1/6 closes at 11:30), a holiday on 1/1. "Every
 full hour within business hours" is the single word `isOpen` (the hand-built band-plus-witness
-pattern of [`../../design/40-examples/06-business-hours.md`](../../design/40-examples/06-business-hours.md)
+pattern of [`../../design/40-examples/06-business-hours.md`](../../design/40-examples/06-business-hours.md) (Japanese)
 §6.3 collapses into this one word):
 
 ```kairos
@@ -125,7 +125,7 @@ bizOpen
 
 ## Related
 
-[`nonWorking`](nonWorking.md) (the entity; `bizDay` = the user-side relative day axis) ·
+[`nonWorking`](nonWorking.md) (the entity; `bizDay` = the consumer-relative day axis) ·
 [`coincides`](coincides.md) (the window-membership predicate — isOpen is a derived form of the
 same family) · [`grid`](grid.md) (a time-of-day anchor = wall-clock ticks; ADR-31 revision 2) ·
 [`strideBy`](strideBy.md) · [`shift`](shift.md) (elapsed-time preserving — the wall clock belongs

@@ -59,7 +59,7 @@ everyDay |> within(quarter) |> within(month) |> nth(2, of: month)
   [`segmentBy`](segmentBy.md). The argument kinds differ fundamentally, so the two are not unified
   (ADR-08).
 
-## See also
+## Related
 
 [`segmentBy`](segmentBy.md) · selectors ([`first`](first.md)/[`nth`](nth.md)/[`last`](last.md)) ·
 [`ordinalIn`](ordinalIn.md) (the window-to-value dual) · ADR-06/07/08/24 · I4/I5.

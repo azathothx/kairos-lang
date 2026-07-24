@@ -8,8 +8,8 @@ source_sha: 30d67d05e95a
 > The `source_sha` above records the source revision; a consistency check flags this page when the
 > Japanese original changes.
 
-**Category**: derivation sugar (premise layer) · **Signature**:
-`|> shiftBoundary(δ, on: W, unit: U) : premise -> premise` · **placeholder name** (the only one in
+**Category**: derivation sugar (premise layer) / **Signature**:
+`|> shiftBoundary(δ, on: W, unit: U) : premise -> premise` / **placeholder name** (the one placeholder in
 the language; deferred to 1.0; spec §5.4)
 
 ## Meaning
@@ -49,7 +49,7 @@ everyDay |> within(year) |> first
 - Only the **cuts** are shifted. "Whether the fiscal-year label reads 2025 or 2026" is a separate
   knob (the `label:` attachment expression; spec §4.9).
 
-## See also
+## Related
 
 [`with`](with.md) (the expansion target) · [`span`](span.md) (the meaning of `phase:`) · spec §3.7
 · the sugar expansion rules (§4.8).

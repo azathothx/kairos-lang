@@ -43,7 +43,7 @@ elapsed time cannot be mixed (`1d12h` is a static error; ADR-28 · §5.5).
 - Precision and rounding of firing instants are the implementation's responsibility (the language
   goes only as far as defining the set of points; spec §1.4).
 
-## See also
+## Related
 
 [`strideBy`](strideBy.md) · [`everyDay`](everyDay.md) · the width-literal conventions (ADR-11/12 ·
 spec §5.5).

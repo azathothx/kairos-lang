@@ -9,9 +9,9 @@ source_sha: e46fef197c0c
 > Japanese original changes.
 
 An index for lookup while reading the specification. Each entry is 〈term｜one-line
-definition｜references〉. Entries whose structure is settled but whose name is provisional are
-marked **（仮称）** (placeholder) — the naming status is §5.4; the only placeholder left is
-`shiftBoundary` (the batch confirmation F51 〈2026-07-09〉 settled everything else as official
+definition｜references〉. Entries whose structure is settled but whose name awaits confirmation
+are marked **（仮称）** (placeholder) — the naming status is §5.4; the one remaining placeholder is `shiftBoundary`
+(the batch confirmation F51 〈2026-07-09〉 settled everything else as official
 names, and the supply pair was renamed to `sessionOpens`/`sessionCloses`). In the references, "§"
 points to chapters of this specification and `stdlib/…` to the standard premise commentary.
 
@@ -99,12 +99,12 @@ points to chapters of this specification and `stdlib/…` to the standard premis
 | selectors `first`/`nth(n)`/`last`（選択子） | Pick the Nth / the last within a window. Default is the innermost window; make it explicit with `of:`. Window-relative | §4.3 · I4 |
 | point transform `roll(conv, on:)`（点変換） | Moves invalid points to valid ones by conv. `on:` is an axis name or a derived stream | §4.4 |
 | point transform `shift(n, unit:)`（点変換） | Moves by n (signed) in units of U. Direction is expressed by the sign | §4.4 |
-| point transform `snapTo(w)`（点変換） | Maps each point to the head point of the `w` window containing it (floor; aligns granularity seams) = reconciliation by **chronos membership** | §4.4 · ADR-27/30 |
+| point transform `snapTo(w)`（点変換） | Maps each point to the first point of the `w` window containing it (floor; aligns granularity seams) = reconciliation by **chronos membership** | §4.4 · ADR-27/30 |
 | point transform `rebase(to:)`（点変換） | Preserves the date label and maps to the head of the same date's civil day in the `to` tz = reconciliation by **label correspondence** (cross-tz "same date" composition = F69). Input restricted to the default-aligned day grid; nonexistent dates are explicit errors | §4.4 · ADR-40 |
 | projection `ordinalIn(u, w, d)`（射影） | Within the `w` window containing point `d`, the ordinal of the `u` window containing `d` (1-based; granularity-independent). The reverse of `nth` | §4.9 · ADR-27/30 |
 | projection `epochOrdinal(u, d)`（射影） | The running ordinal of `u` windows from the epoch (0-based; the epoch is the language default 1970-01-01, overridable with `epoch:`) | §4.9 · ADR-27/30/31 |
 | label projection (binding name)（ラベル射影（束縛名）） | The binding name of a labeled window/cycle/table doubles as the projection name (`weekday(d)`, `sekki(d)`). Points store no labels; labels are read via projections (the generic word `labelOf` was retired; ADR-30) | §4.9 · §3.6 |
-| window instance reference `W(v)`（窓インスタンス参照） | **Value** application to a label-sourced **window** binding = the preimage (`year(2020)` = the days of that year; returned as a time stream). Union of all matches; empty is legitimate; outside a statically enumerable label range is a static error. The dual of bound-name projection; point vs. value branches on the argument expression's type (decided after expansion = §2.7) | §4.9 · §2.7 · ADR-42 |
+| window instance reference `W(v)`（窓インスタンス参照） | **Value** application to a label-sourced **window** binding = the preimage (`year(2020)` = the days of that year; returned as a time stream). Union of all matches; empty is legitimate; outside a statically enumerable label range is a static error. The dual of binding-name projection; point vs. value branches on the argument expression's type (decided after expansion = §2.7) | §4.9 · §2.7 · ADR-42 |
 | element point sequence（要素点列） | Of the **input point sequence** that window binding W's definition bundled into windows, the points belonging to W's windows (grid/span/split chains = equivalent to the atomic grid ticks; segmentBy = the input points). The carrier of window instance references. An internal concept (not a word users write) | §4.9 · ADR-42 |
 | combinator（結合子） | Stream × stream → stream. Union `\|`, intersection `&`, difference `\`. Intersection and difference require matching alignment on both sides | §4.5 |
 | cascade（カスケード） | Prioritized overriding. Has no dedicated symbol; expressed by left-associative ordered application of union and difference (last wins) | §4.5 |
@@ -142,7 +142,7 @@ points to chapters of this specification and `stdlib/…` to the standard premis
 | `edges:` / `empties:` | `segmentBy`'s gap policy | §4.2 |
 | `roll:` | The roll-convention default in the preamble (folding; being explicit is recommended) | §3.3 |
 | `covering:` | The validity range = the two-sided claim "complete inside, unknown outside". Does not touch the values (inclusion of every element is statically checked). Open-ended `2021..`/`..` (completeness claim, with governance), interval lists, and binding-postfix (coverage claim) are allowed. **Omission = the sequence's ends (narrowest) and `..` = complete everywhere (widest) are polar opposites** (an empty table has no ends, so omission is impossible = explicit covering required. ADR-45) | §3.8 · §4.10 · ADR-26/37/45 |
-| `label:` | The label-assignment expression at window-generation time. The lambda receives the window's **head point**, and `name(d)` ≡ assignment-expression(head point) (at projection time, lazily evaluated). Window and projection references on the representative point are allowed; adjacent windows and self-reference are not | §4.9 · ADR-30/34 |
+| `label:` | The label-assignment expression at window-generation time. The lambda receives the window's **first point**, and `name(d)` ≡ assignment-expression(first point) (at projection time, lazily evaluated). Window and projection references on the representative point are allowed; adjacent windows and self-reference are not | §4.9 · ADR-30/34 |
 | `labels:` | The parallel label sequence (the projection's defining data). For tables = point labels (same length as the instant list; ADR-30) / for segmentBy window sequences = window labels (same length as the coverage-based window count, aligned by window-sequence ordinal; ADR-39 = the vessel for F62) | §3.8 · §4.2 · ADR-30/39 |
 
 ## 6.6 Roll conventions and enumeration values

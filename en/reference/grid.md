@@ -64,7 +64,7 @@ same section of [`span`](span.md) and ADR-34).
 - Never build the calendar "month" as `grid(30d)` — months are non-uniform, so bundle them with
   `span daysInMonth` (variable aggregation by a value expression).
 
-## See also
+## Related
 
 [`span`](span.md) · [`split`](split.md) · [`cycle`](cycle.md) · `chronos` (ADR-29) · phase and the
 epoch (ADR-31) · ADR-11/12.

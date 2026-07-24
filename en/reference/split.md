@@ -8,8 +8,8 @@ source_sha: 6e6ef38010f2
 > The `source_sha` above records the source revision; a consistency check flags this page when the
 > Japanese original changes.
 
-**Category**: window-generating word (premise layer) · **Signature**: `split(g) by: u :
-Stream(windowed) -> Stream(partitioned)` · name settled (spec §5.4)
+**Category**: window-generating word (premise layer) / **Signature**: `split(g) by: u :
+Stream(windowed) -> Stream(partitioned)` / name settled (spec §5.4)
 
 ## Meaning
 

@@ -123,7 +123,7 @@ Properties the language upholds structurally (details in `10-domain-model.md` an
   impossible).
 - **I4 Window-relative** — selectors are always relative to a containing window. A selector without
   a window is a type error. "The Nth" also depends on the window's origin (a two-step dependency).
-- **I5 Coverage verification** — partition-type windows are checkable for coverage of the axis and
+- **I5 Exhaustiveness verification** — partition-type windows are checkable for exhaustiveness over the axis and
   non-overlap. Interval-sequence types state the meaning of gaps explicitly.
 - **I6 Context flow** — TZ, WKST, asof, and out-of-coverage origin (interval annotations) flow as
   evaluation context and evaluation annotations, not as element data ("origin of emptiness"
