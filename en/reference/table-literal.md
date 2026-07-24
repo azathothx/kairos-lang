@@ -1,5 +1,5 @@
 ---
-source_sha: 71ff6cafe682
+source_sha: 3973e85090f2
 ---
 
 # Table literal — a stream constant of an instant sequence
@@ -82,6 +82,11 @@ sekki
 
 ## Pitfalls
 
+- **The postfixes come in either order** — `covering:` and `labels:` mean the same whichever comes
+  first (once each; a duplicate is a static error. RC5 addendum 9. The old implementation silently
+  discarded a `covering:` written after `labels:` — unchecked acceptance that let the coverage fall
+  back to the default 〈the sequence ends〉 = F104; detected and sealed via the alerting-layer
+  feedback, 5th delivery).
 - A calendar system that carves windows with data (a lunisolar calendar cut at new moons) is the
   same premise type — what calendar-system purity (I8) forbids is a generator's dependence on a
   **calendar** (business-day policy), not a calendar system's dependence on **data**. The purity

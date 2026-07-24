@@ -1,5 +1,5 @@
 ---
-source_sha: 19019f76ed1c
+source_sha: 26335777ab18
 ---
 
 # `segmentBy` — interval-sequence windows (cut at markers)
@@ -30,7 +30,7 @@ closes off, by syntax, the accident in which firings silently vanish on missing 
 | `m` | stream expression | the markers (the intervals' boundary points) |
 | `edges:` | `drop` / `clip` / `error` | treatment of points before the first marker / after the last marker (discard / make a partial window / error) |
 | `empties:` | `keep` / `drop` / `error` | treatment of zero-element windows between markers (keep as a legitimate empty / discard / error) |
-| `labels:` | list (literal / list binding name) | a **parallel label list** for the window sequence (ADR-39); reading is binding-name projection `name(d)` |
+| `labels:` | list (literal / list binding name) | a **parallel label list** for the window sequence (ADR-39); reading is binding-name projection `name(d)`. For the combination constraints see "Preconditions and tightening rules" below — it cannot combine with `edges: clip`, `empties: drop`, or `label:` |
 | `label:` | lambda `(p => expr)` | a **computed label** per window (ADR-34; for index expressions and conditional computations that do not fit `labels:`) |
 
 ## Examples
@@ -106,6 +106,14 @@ is for computations involving index expressions and conditions
   can be shown is certified partition-type by the I5 check and can be used with `within` — the
   standard `week` is the example (`day |> segmentBy(weekStart, edges: clip, empties: error)`;
   stdlib/gregorian.md §4.5).
+- **The head side (coverage start through the first marker) is out-of-coverage for the window
+  sequence** (ADR-37 revision 3) — in an `edges: drop`/`error` window sequence whose first marker
+  sits after the coverage start (the typical shape of **filter-derived markers**: filtering a
+  12-point table down to 4 points keeps the coverage while the first marker moves back), labels
+  projections and `coincides` on head-side points answer with an out-of-coverage annotation (the
+  filter canonical form drops those points and annotates). To exclude the head side from the
+  coverage itself, put a narrowing covering claim on the derived binding
+  (`starts = setsu |> filter(…) covering: 2026-02-04..`).
 - A window binding with `labels:` supports **window-instance reference** (value-argument
   application, ADR-42) — `sekkiW("立春")` is **all days of the interval** of the 立春 (Risshun)
   term (the 2/4–2/18 class), a different thing from the table projection

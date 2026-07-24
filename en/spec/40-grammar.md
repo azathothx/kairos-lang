@@ -1,5 +1,5 @@
 ---
-source_sha: 8ec68284f1af
+source_sha: 70dc528255e4
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -261,11 +261,14 @@ lambda         = ( name | "_" | "(" , params , ")" ) , "=>" , ( value-expr | str
 list-literal   = "[" , [ list-elem , { "," , list-elem } ] , "]" ;
 list-elem      = value-expr | date-range ;
 date-range     = date-literal , ".." , date-literal ;    (* sugar expanded into consecutive days *)
-table-literal  = list-literal , [ "covering" , ":" , covering-list ] ,
-                 [ "labels" , ":" , list-literal ] ;     (* a stream constant when the elements are
-                                                            instants (§3.8). Zero elements are a stream
-                                                            constant only with a covering: postfix (the
-                                                            empty table. ADR-45). labels: is a parallel
+table-literal  = list-literal , { "covering" , ":" , covering-list
+                                | "labels" , ":" , list-literal } ; (* postfixes in either order, once
+                                                            each (a duplicate is a static error;
+                                                            RC5 addendum 9). A stream constant when the
+                                                            elements are instants (§3.8). Zero elements
+                                                            are a stream constant only with a covering:
+                                                            postfix (the empty table. ADR-45). labels:
+                                                            is a parallel
                                                             label sequence (ADR-30) *)
 covering-list  = covering-range , { "," , covering-range } ;
                  (* interval list = declaring interior gaps (ADR-37) *)

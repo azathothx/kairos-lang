@@ -441,7 +441,7 @@ class Parser {
   }
 
   /** リスト／テーブルリテラル（covering: / labels: 後置つき。§3.8・ADR-26/30） */
-  private listLiteral(): Expr {
+  private listLiteral(allowPostfix = true): Expr {
     this.eat('punct', '[');
     const elems: ListElem[] = [];
     if (!this.atPunct(']')) {
@@ -458,16 +458,21 @@ class Parser {
       }
     }
     this.eat('punct', ']');
+    if (!allowPostfix) return { t: 'list', elems };
+    // 後置は順序自由（F104——labels: の値リストが後続の covering: を吸って黙殺する穴の封じ。
+    // labels: の値は後置なしでパースし、covering:/labels: は外側でどの順でも受ける。二重指定はエラー）
     let covering: CoveringRange[] | undefined;
     let labels: Expr | undefined;
     for (;;) {
       this.skipToPostfixKeyword();
       if (this.atName('covering') && this.peek(1).text === ':') {
+        if (covering) throw new ParseError('covering: の二重指定', this.peek());
         this.next(); this.next();
         covering = this.coveringList();
       } else if (this.atName('labels') && this.peek(1).text === ':') {
+        if (labels) throw new ParseError('labels: の二重指定', this.peek());
         this.next(); this.next();
-        labels = this.listLiteral();
+        labels = this.listLiteral(false);
       } else break;
     }
     return { t: 'list', elems, covering, labels };

@@ -192,3 +192,59 @@ everyDay |> f(on: everyDay, off: everyDay)
 `, Y2026)).toThrow(/未知の名前付き引数 off:/);
   });
 });
+
+// ---- 窓列の実効被覆域の精密化（F105・ADR-37 改訂 3・2026-07-25 第 5 便）----
+// マーカー覆域内でも窓の張られていない区間（edges: drop/error の頭側）は窓列としては語れない
+// ——窓列由来の註釈にする。filter は実体化範囲全域の点を述語評価するため、従来の硬エラーでは
+// 「覆域始端 < 最初のマーカー」の構成（filter 派生マーカーの典型）で labels 射影の filter
+// 正準形が構造的に評価不能だった
+
+const SEASON = (startsClaim: string) => `
+premise T = Gregorian with {
+  tz: "Asia/Tokyo"
+  setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-04, 2026-05-05, 2026-06-05,
+           2026-07-07, 2026-08-07, 2026-09-07, 2026-10-08, 2026-11-07, 2026-12-07]
+    labels: [小寒, 立春, 啓蟄, 清明, 立夏, 芒種, 小暑, 立秋, 白露, 寒露, 立冬, 大雪]
+    covering: 2026-01-05..2026-12-07
+  starts = setsu |> filter(s => setsu(s) == 立春 or setsu(s) == 立夏 or setsu(s) == 立秋 or setsu(s) == 立冬)${startsClaim}
+  season = everyDay |> segmentBy(starts, edges: drop, empties: error, labels: [春, 夏, 秋, 冬])
+}
+@T
+`;
+
+describe('窓列の実効被覆域の精密化（F105・頭側は窓列の範囲外）', () => {
+  it('filter 派生マーカー（覆域始端 < 最初のマーカー）でも labels 射影の filter 正準形が評価できる', () => {
+    const dates = evalDates(SEASON('') + `everyDay |> filter(d => season(d) == 春)`,
+      { from: '2026-02-05', to: '2026-08-01' });
+    expect(dates.length).toBe(89);                 // 春窓 [2/4..5/5) ∩ 評価範囲 = 2/5〜5/4
+    expect(dates[0]).toBe('2026-02-05');
+    expect(dates[dates.length - 1]).toBe('2026-05-04');
+  });
+
+  it('頭側（覆域始端〜最初のマーカー）の点は落として註釈——硬エラーにしない', () => {
+    const r = run(SEASON('') + `everyDay |> filter(d => season(d) == 春)`,
+      { from: '2026-01-10', to: '2026-01-20' });
+    expect(r.results[0].dates).toEqual([]);
+    expect(r.results[0].annotations.length).toBeGreaterThan(0);   // 頭側註釈が filter で輸送される
+  });
+
+  it('回避形: filter 派生束縛への縮小 covering 主張も通る（頭側を明示的に覆域外へ）', () => {
+    const dates = evalDates(SEASON(' covering: 2026-02-04..2026-12-07') + `everyDay |> filter(d => season(d) == 春)`,
+      { from: '2026-02-05', to: '2026-08-01' });
+    expect(dates.length).toBe(89);
+  });
+
+  it('従来形（覆域始端 = 最初のマーカー）は挙動不変——頭側が空なら註釈も増えない', () => {
+    const r = run(JP2 + `
+premise S = Gregorian with {
+  tz: "Asia/Tokyo"
+  qs = [2026-01-05, 2026-04-04, 2026-07-07, 2026-10-08] covering: 2026-01-05..2026-12-07
+  quarterL = everyDay |> segmentBy(qs, edges: drop, empties: error, labels: [一, 二, 三, 四])
+}
+@S
+everyDay |> filter(d => quarterL(d) == 一)
+`, { from: '2026-01-05', to: '2026-04-04' });
+    expect(r.results[0].dates.length).toBe(89);   // 1/5〜4/3
+    expect(r.results[0].annotations).toEqual([]);
+  });
+});

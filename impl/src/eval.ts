@@ -2309,9 +2309,25 @@ export class Evaluator {
           ? stream.pts.filter(p => p >= markers[0] && p < defEnd)
           : stream.pts;
         // 窓の切れ目＝マーカー点なので、この窓列の grain はマーカーの整列（snapTo の主張に使う）。
-        // 窓列の註釈＝マーカー覆域の補集合（判断 4）——分類器（判断 6）の基準になる実効被覆域
+        // 窓列の註釈＝マーカー覆域の補集合（判断 4）——分類器（判断 6）の基準になる実効被覆域。
+        // 精密化（ADR-37 改訂 3・F105）: マーカー覆域内でも窓の張られていない区間（edges: drop/error の
+        // 頭側・empties: drop の中抜け）は窓列としては語れない——窓列由来の註釈にする（射影・coincides の
+        // 分類器が「落として註釈」を選べる。末尾の覆域端確定＝F72 の頭側対称）。覆域註釈のない
+        // 規則マーカーは従来どおり対象外
+        let winAnn = markerS.ann;
+        if (markerS.ann.length > 0 && windows.length > 0) {
+          const like = markerS.ann.find(a => a.to <= windows[0].start) ?? markerS.ann[0];
+          const lo = Math.max(covOf(markers[0])?.start ?? markers[0], this.rt.epoch);
+          const gaps: Ann[] = [];
+          let prev = lo;
+          for (const w of windows) {
+            if (prev < w.start) gaps.push({ ...like, from: prev, to: w.start });
+            prev = Math.max(prev, w.end);
+          }
+          if (gaps.length > 0) winAnn = annUnion(markerS.ann, gaps);
+        }
         return { k: 'stream', pts,
-                 wins: [...stream.wins, { iv: windows, labelFn, grain: markerS.align, ann: markerS.ann, labels }],
+                 wins: [...stream.wins, { iv: windows, labelFn, grain: markerS.align, ann: winAnn, labels }],
                  align: stream.align, ann: annUnion(stream.ann, markerS.ann), endless: stream.endless };
       }
       case 'first': case 'last': case 'nth': {

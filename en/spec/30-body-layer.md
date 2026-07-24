@@ -1,5 +1,5 @@
 ---
-source_sha: 7e112b5490bf
+source_sha: 178ae64b1964
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -60,6 +60,9 @@ silently wrong results, hence the mandatory declarations.
 
 - `edges:` — the treatment of points before the first marker / after the last marker, which belong
   to no window. `drop` / `clip` / `error`.
+  Under `drop`/`error` the head side (coverage start through the first marker) is something the
+  window sequence **cannot speak for** — projections and `coincides` answer with an out-of-coverage
+  annotation there (ADR-37 revision 3).
 - `empties:` — the treatment of zero-element windows between markers. `keep` (a legitimate empty)
   / `drop` / `error`.
 - `labels:` — a **parallel label list for the window sequence** (the vessel for ADR-39 / F62).
@@ -481,7 +484,7 @@ the governance table of ADR-36):
 | roll | the image of the input annotations ∪ the **dependency image** of the axis's annotated intervals (extended against the convention's direction to the nearest known axis point before/after). Axis exhaustion is empty + annotation; but under a completed coverage (open end), an unannotated empty |
 | selectors | if the target window intersects an annotation, widened to the **whole window** |
 | stride/strideBy | if the walk intersects, **everything from the first intersection onward** (phase contamination) |
-| segmentBy | the complement of the marker coverage. `edges:`/`empties:` fire at the **coverage edges** (not the sequence edges) — within the coverage, even the window starting at the final marker is determined up to the coverage edge (= the window sequence's **effective coverage**) |
+| segmentBy | the complement of the marker coverage. `edges:`/`empties:` fire at the **coverage edges** (not the sequence edges) — within the coverage, even the window starting at the final marker is determined up to the coverage edge (= the window sequence's **effective coverage**). Stretches where no window is laid (the head side under `edges: drop`/`error`; gaps under `empties: drop`) are out-of-coverage for the window sequence = annotated (ADR-37 revision 3) |
 | filter | points that demanded an out-of-coverage reference are **dropped**, and the annotation widens to the **preimage of the region (window) the predicate read** (ADR-37 revision 2 = F75; for predicates reading only d's neighborhood, as before: the dependency's annotated intervals ∩ the evaluation region) |
 | generators, within, snapTo | pass the input's annotations through (point transforms, via the image). A calendar-system-pure generator itself produces no annotations |
 | rebase | inflate the endpoints to the source's day windows by floor/ceil, then map by label correspondence (over-approximation allowed; ADR-40) |

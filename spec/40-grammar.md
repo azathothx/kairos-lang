@@ -201,10 +201,12 @@ lambda         = ( name | "_" | "(" , params , ")" ) , "=>" , ( value-expr | str
 list-literal   = "[" , [ list-elem , { "," , list-elem } ] , "]" ;
 list-elem      = value-expr | date-range ;
 date-range     = date-literal , ".." , date-literal ;    (* 連続日へ展開される糖衣 *)
-table-literal  = list-literal , [ "covering" , ":" , covering-list ] ,
-                 [ "labels" , ":" , list-literal ] ;     (* 要素が時点ならストリーム定数（§3.8）。要素ゼロは
-                                                            covering: 後置に限りストリーム定数（空テーブル・
-                                                            ADR-45）。labels: は並行ラベル列（ADR-30） *)
+table-literal  = list-literal , { "covering" , ":" , covering-list
+                                | "labels" , ":" , list-literal } ; (* 後置は順序自由・各一回（二重指定は
+                                                            静的エラー。RC5 追補 9）。要素が時点なら
+                                                            ストリーム定数（§3.8）。要素ゼロは covering:
+                                                            後置に限りストリーム定数（空テーブル・ADR-45）。
+                                                            labels: は並行ラベル列（ADR-30） *)
 covering-list  = covering-range , { "," , covering-range } ;   (* 区間リスト＝中抜けの申告（ADR-37） *)
 covering-range = [ covering-edge ] , ".." , [ covering-edge ] ; (* 端の省略＝開端（完結主張）。
                                                                    ".." 単独＝全域完結。ADR-37 判断 9 *)
