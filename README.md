@@ -2,10 +2,10 @@
 
 **English** | [日本語版 README](README.ja.md)（ドキュメントは日本語が正）
 
-> The deep documentation (spec / reference / stdlib) is currently **Japanese-first**. This README and
-> [`llms.txt`](llms.txt) carry the English overview; code examples, the EBNF grammar, and the reference
-> implementation are language-neutral. English requests are welcome —
-> [open an issue](https://github.com/azathothx/kairos-lang/issues).
+> The **Japanese documentation is canonical**; the spec, the descriptor reference, and the stdlib
+> guides are **fully mirrored in English** under [`en/`](en/spec/README.md) (every page links its
+> counterpart). [`llms.txt`](llms.txt) carries the machine-readable overview. Requests and issues
+> in English are welcome — [open an issue](https://github.com/azathothx/kairos-lang/issues).
 
 **Kairos** is a **schedule definition language** — a small, composable DSL that defines *when things
 should happen*. It goes beyond cron-style patterns: schedules like "3 business days before month-end",
@@ -34,7 +34,7 @@ the Japanese lunisolar calendar, and the 24 solar terms are all written with the
 - **Business-day arithmetic in the language** — `roll(Preceding, on: bizDay)`, `shift(-3, unit: bizDay)`;
   not a "skip / shift" flag bolted onto an external calendar object.
 - **Calendars are user-definable** — the Gregorian calendar itself is a transparent standard library
-  written in Kairos ([`stdlib/`](stdlib/)); fiscal years, ISO weeks, and the Japanese lunisolar calendar
+  written in Kairos ([`stdlib/`](en/stdlib/)); fiscal years, ISO weeks, and the Japanese lunisolar calendar
   (kyūreki) are ordinary definitions, not built-ins.
 - **Deriving, not enumerating** — Japan's substitute holidays and "citizens' holidays" are *derived* by
   rule from the statutory holiday table alone; the rokuyō (六曜) cycle is derived from lunar months.
@@ -49,7 +49,7 @@ the Japanese lunisolar calendar, and the 24 solar terms are all written with the
 
 ✓ = expressible in the language/definition · △ = partial (hacks, add-ons, implementation-specific) ·
 ✗ = not expressible. "BDC products" = business schedulers with a business-day-calendar object plus
-shift flags. Full version with section pointers: [spec §1.2](spec/00-intro.md).
+shift flags. Full version with section pointers: [spec §1.2](en/spec/00-intro.md).
 
 <p align="center"><img src="assets/figures/compare-composability.svg" width="880"
   alt="Why composition matters: cron stops at fixed patterns, RRULE at recurrence rules; Kairos expressions compose — every result is a stream that pipes into the next definition (closure)."></p>
@@ -66,14 +66,14 @@ shift flags. Full version with section pointers: [spec §1.2](spec/00-intro.md).
 | Composition / closure (derived dates feed the next rule) | ✗ | ✗ | △ (RDATE/EXDATE only) | ✗ | ✓ (stream → stream) |
 | Cross-timezone composition (Tokyo × NY joint business days) | ✗ | ✗ | ✗ | ✗ | ✓ (`rebase` + alignment checks) |
 | DST semantics | △ (implementation-defined) | △ | ✓ (wall clock) | △ | ✓ (declared; gaps/overlaps are explicit errors) |
-| **Detecting** stale calendar data | ✗ | ✗ | ✗ | ✗ | ✓ (`covering` + out-of-range annotations) |
+| **Detecting** stale calendar data | ✗ | ✗ | ✗ | ✗ | ✓ (`covering` + out-of-coverage annotations) |
 | Determinism / audit (definition = set of instants) | ✗ (depends on current time) | ✗ | ✓ | △ | ✓ (missed fires enumerable) |
 | Static checks against silent mistakes | ✗ | ✗ | ✗ | ✗ | ✓ (alignment, granularity, tz, mandatory declarations) |
 
 What Kairos deliberately does **not** do: firing, retries, and execution management (the host runtime's
 job — the language stops at defining the set of instants); feedback on execution state ("every 5 hours
 since the last completion" as one infinite stream — instead, computing the next fire *from an injected
-instant* is in scope and pure, see [spec §7.7](spec/90-examples.md)); count-based termination (RRULE
+instant* is in scope and pure, see [spec §7.7](en/spec/90-examples.md)); count-based termination (RRULE
 `COUNT`); guaranteeing the authenticity of calendar data (provenance `source:` / `asof:` carries the
 evidence; the judgment is external); branching on runtime conditions.
 
@@ -113,8 +113,9 @@ lastCompleted |> snapTo(day) |> roll(Following, on: bizDay) |> shift(+3, unit: b
 #=> 2026-07-14   ("3 business days after the last completion")
 ```
 
-Full explanation with sequence diagrams and runnable doctests (Japanese):
-[spec §7.7–7.8](spec/90-examples.md) and [design/40-examples/07](design/40-examples/07-injected-origin.md).
+Full explanation with sequence diagrams and runnable doctests:
+[spec §7.7–7.8](en/spec/90-examples.md); the full worked study is
+[design/40-examples/07](design/40-examples/07-injected-origin.md) (Japanese).
 
 ## Quick start (reference implementation)
 
@@ -143,11 +144,11 @@ including cross-checks against the official ephemeris of the National Astronomic
 
 | Directory | Contents |
 |---|---|
-| [`spec/`](spec/) | **Language specification** (reviewable snapshot; start here) |
-| [`reference/`](reference/) | **Descriptor reference** — one page per operator; examples are doctested |
-| [`stdlib/`](stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek`, `Kyureki` |
-| [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype) |
-| [`design/`](design/) | Design records: 46 ADRs, domain model, expressiveness studies |
+| [`spec/`](en/spec/) | **Language specification** (reviewable snapshot; start here — [日本語](spec/)) |
+| [`reference/`](en/reference/) | **Descriptor reference** — one page per operator; examples are doctested ([日本語](reference/)) |
+| [`stdlib/`](en/stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek` ([日本語](stdlib/) — includes the Japanese-only `Kyureki`) |
+| [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype — Japanese) |
+| [`design/`](design/) | Design records: 46 ADRs, domain model, expressiveness studies (Japanese) |
 
 ## License
 

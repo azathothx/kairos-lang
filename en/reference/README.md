@@ -1,8 +1,8 @@
 ---
-source_sha: 377eab2489c3
+source_sha: 6b5cf0637c4d
 ---
 
-# Description-Word Reference
+# <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Description-Word Reference
 
 > Translated from the canonical Japanese page [reference/README.md](../../reference/README.md).
 > The `source_sha` above records the source revision; a consistency check flags this page when the
@@ -58,6 +58,9 @@ The same conventions extend to the explanatory pages of [`../stdlib/`](../stdlib
 - ` ```text ` fences are explanatory (not executed).
 
 ## Index
+
+<p align="center"><img src="../../assets/figures/operator-map.svg" width="920"
+  alt="The description-word map: the seven body-layer families compose; projections bridge windows to value expressions; the premise layer supplies the vocabulary."></p>
 
 | Category | Word | One line |
 |---|---|---|

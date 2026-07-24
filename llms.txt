@@ -19,9 +19,10 @@ Key facts:
 - Reference implementation: TypeScript with zero runtime dependencies; 439 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
-- Documentation language: Japanese documentation is canonical; the README is English with a Japanese
-  counterpart (README.ja.md), and English pages are added progressively under en/. Code examples and
-  the EBNF grammar are language-neutral.
+- Documentation language: Japanese documentation is canonical; the spec, the descriptor reference,
+  and the stdlib guides are fully mirrored in English under en/ (en/spec/, en/reference/,
+  en/stdlib/ — Kyureki is Japanese-only). The README is English with a Japanese counterpart
+  (README.ja.md). Code examples and the EBNF grammar are language-neutral.
 - License: Apache-2.0.
 - Repository: https://github.com/azathothx/kairos-lang
 

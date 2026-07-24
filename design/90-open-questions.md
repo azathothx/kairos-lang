@@ -79,7 +79,9 @@
   **F51 の一括確定（2026-07-09・設計者裁定）**: `nonWorking`・`coincides`・`rebase`・
   `bizOpen`/`bizClose`/`isOpen` はそのまま正式名に、供給の対は `sessionOpens`/`sessionCloses` に
   改名して確定（ADR-41 改訂・正本は spec §5.4）。残る仮称は (b) `shiftBoundary` 一語のみ
-  （`k` 可変組の射程外問題と連動するため 1.0 送り継続）。
+  （`k` 可変組の射程外問題と連動するため 1.0 送り継続。**裁定材料の比較表は整理済み**＝
+  [30-syntax/01-shiftboundary-naming.md](30-syntax/01-shiftboundary-naming.md)〈2026-07-24・候補 5 語・
+  確認事項 3 点〉——裁定は 1.0 宣言時）。
   （日付・幅リテラルの**字句**は ADR-28 で確定済み）。
 - ~~並列 week 窓の生成語~~ → **§1.16 補で解消**: 専用生成語は不要。`week = day |> segmentBy(weekStart)`（weekStart
   ＝wkst ラベル日、前文メンバーの遅延解決）で立ち、パーティション性は I5 検査で証明。`nextWeekday` は

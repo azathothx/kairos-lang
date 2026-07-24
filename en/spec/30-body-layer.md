@@ -1,5 +1,5 @@
 ---
-source_sha: d802cc33c1cb
+source_sha: 7e112b5490bf
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -539,3 +539,17 @@ the evaluation range (from/to, the clipping frame of annotations). A narrow eval
 inside the coverage runs with zero annotations ("do not kill narrow evaluation ranges"). An
 implementation's materialization range is a third, approximate horizon absent from the language
 (crossing it is clipping plus an implementation warning — neither an annotation nor a hard error).
+The three overlap but are distinct — different owners, different consequences of crossing:
+
+```mermaid
+gantt
+    dateFormat YYYY-MM-DD
+    axisFormat %Y-%m
+    title The three horizons — overlapping but distinct
+    section Data horizon (the supplier)
+    covering — depending outside it yields out-of-coverage annotations :done, 2026-01-01, 2026-12-31
+    section Evaluation horizon (the caller)
+    from..to — outside is merely unobserved :active, 2026-07-01, 2027-06-30
+    section Implementation horizon (outside the language)
+    materialization range — crossing clips with an implementation warning : 2025-09-01, 2027-12-31
+```
