@@ -86,7 +86,7 @@ day in the in-scope `tz:` (midnight on ordinary days. ADR-31 revised), elapsed-t
 "calendar days cut at midnight" is due to this default. Only when a different phase is needed is
 it overridden with `anchor:` (ADR-31).
 
-## 2. The words
+## 2. Each word
 
 | Word | Kind | Description |
 |---|---|---|

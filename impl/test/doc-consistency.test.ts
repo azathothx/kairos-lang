@@ -202,9 +202,10 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
   it('英語版ミラーの kairos フェンスが日本語正本とコード同一（コメント行以外・2026-07-24 第 3 回レビュー指摘 J の再発防止）', () => {
     // doctest が実行するのは日本語側だけ（doctest.test.ts の走査対象）。英語側の「実行検証済み」主張は
     // 「en のブロック ≡ ja のブロック」の同一性で担保する——en 側だけの編集・再同期ミスを黙らせない。
-    // コメントは翻訳可（全行コメントは除外・行末コメントは切除）。`# eval:`・`#=>`・`#~>` は規範なので一致必須。
+    // コメントは翻訳可（全行コメントは除外・行末コメントは切除）。`# eval:`・`# resolve:`（external の
+    // 解決子固定材＝doctest がパースする）・`#=>`・`#~>` は規範なので一致必須。
     const normalize = (block: string) => block.split('\n').map(line => {
-      if (/^\s*#\s*eval:|^\s*#=>|^\s*#~>/.test(line)) return line;
+      if (/^\s*#\s*(?:eval|resolve):|^\s*#=>|^\s*#~>/.test(line)) return line;
       if (/^\s*#/.test(line)) return null;
       return line.replace(/\s+#(?!=>|~>).*$/, '').trimEnd();
     }).filter(l => l !== null).join('\n');
