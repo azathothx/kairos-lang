@@ -1,5 +1,5 @@
 ---
-source_sha: 15ff54a0dd90
+source_sha: 4a788bf6aca6
 ---
 
 # `cycle` — parallel repeating labels (labels, not windows)
@@ -57,8 +57,11 @@ everyDay |> filter(d => weekday(d) == Mon)
   like the names of the 24 solar terms, is not a cycle but a table's `labels:`
   ([table literal](table-literal.md); the source differs, but the reading side is the same
   binding-name projection).
-- Rewriting the list as `[Sun, Mon, …]` with the same anchor gives **the same calendar** (a cyclic
-  sequence has no notion of start).
+- Rotating the list (rewriting `[Mon, …, Sun]` as `[Sun, Mon, …]`, etc.) gives **the same calendar
+  only if the anchor is also re-taken to a corresponding real day** — with the anchor fixed, every
+  label rotates at once (the phase is decided by "the window containing the anchor = the first
+  label". The old wording "the same anchor gives the same calendar" was wrong — corrected
+  2026-07-25). That the list order has nothing to do with the week's **start** (WKST) still holds.
 - A composite period like the 60-term sexagenary cycle may be a single 60-element cycle, or the two
   cycles of the ten heavenly stems and the twelve earthly branches composed in a predicate (a zip
   product of cycles is not introduced — open item F16).
