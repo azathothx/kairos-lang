@@ -2,7 +2,8 @@
 
 このドキュメント群は、スケジュール定義言語 **Kairos**（汎用スケジューラ向け）の設計記録である。
 全体を把握するときは、この索引を最初に読むこと。リリース状況（RC）は [`../spec/README.md`](../spec/README.md)、
-宿題・保留事項の正本は [`90-open-questions.md`](90-open-questions.md)。
+宿題・保留事項の正本は [`90-open-questions.md`](90-open-questions.md)、**1.0 宣言の条件（DoD）と
+宣言時作業の正本は [`70-release-1.0.md`](70-release-1.0.md)**（2026-07-24 裁定）。
 
 ## 読む順序
 
