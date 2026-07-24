@@ -52,7 +52,7 @@ pair a business-day-calendar object with before/after shift flags ("BDC products
 | Composition / closure (derived dates feed the next rule) | ✗ | ✗ | △ (RDATE/EXDATE union/difference only) | ✗ | ✓ (every expression is stream → stream, §2.3) |
 | Cross-timezone composition (Tokyo × NY joint business days) | ✗ | ✗ | ✗ | ✗ | ✓ (`rebase` + alignment checks, §4.4) |
 | DST semantics | △ (implementation-defined — skips, double fires) | △ | ✓ (wall clock) | △ | ✓ (wall-clock declarations; gaps/overlaps are explicit errors, §3.6) |
-| **Detecting** stale calendar data (freshness observability) | ✗ | ✗ | ✗ | ✗ | ✓ (`covering`, out-of-range annotations, runway, §4.10) |
+| **Detecting** stale calendar data (freshness observability) | ✗ | ✗ | ✗ | ✗ | ✓ (`covering`, out-of-coverage annotations, runway, §4.10) |
 | Determinism / audit (definition = set of instants) | ✗ (depends on current time) | ✗ | ✓ | △ | ✓ (extensional; missed fires enumerable) |
 | Static checks against silent mistakes | ✗ | ✗ | ✗ | ✗ | ✓ (alignment, granularity, tz, mandatory declarations, §4.5) |
 

@@ -1,10 +1,10 @@
 # Kairos Language Specification (English orientation)
 
-> The **Japanese specification is canonical**; English pages are added progressively under `en/`.
-> Chapter links below point to the Japanese documents unless marked **English**
-> ([日本語版はこちら](../../spec/README.md)).
+> The **Japanese specification is canonical**; the English chapters under `en/` are translations
+> that follow it (each page records its source revision as `source_sha`, and a consistency check
+> flags stale translations) ([日本語版はこちら](../../spec/README.md)).
 
-**Status: Release candidate (RC5, declared 2026-07-08; addenda through no. 6, 2026-07-09).**
+**Status: Release candidate (RC5, declared 2026-07-08; addenda through no. 8, 2026-07-14).**
 Semantics, the operator family, the grammar (EBNF, §5.6), and the lexis are frozen. Naming is final
 except one placeholder — `shiftBoundary` (tied to an out-of-scope variable-`k` family; deferred to 1.0;
 see §5.4). Expressiveness is validated against 20 well-known schedule families
@@ -15,13 +15,13 @@ For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese
 
 ## Chapters
 
-1. [Introduction](00-intro.md) (**English**, [日本語](../../spec/00-intro.md)) — what Kairos is, comparison with cron/Quartz/RRULE, design spine
-2. [Types and layers](../../spec/10-types.md) (Japanese) — the three types, the two layers, closure, core vs sugar, invariants
-3. [Premise layer](../../spec/20-premise-layer.md) — preambles, name resolution, value expressions, defining calendars
-4. [Body layer](../../spec/30-body-layer.md) — generators, windows, selectors, point transforms, combinators, filters, strides
-5. [Grammar and symbols](../../spec/40-grammar.md) — symbols, operator signatures, naming status, lexis, EBNF
-6. [Glossary](../../spec/50-glossary.md) — index of concepts, descriptors, symbols, and invariants
-7. [Worked examples](../../spec/90-examples.md) — "3 business days before month-end", payday, holiday
+1. [Introduction](00-intro.md) ([日本語](../../spec/00-intro.md)) — what Kairos is, comparison with cron/Quartz/RRULE, design spine
+2. [Types and layers](10-types.md) ([日本語](../../spec/10-types.md)) — the three types, the two layers, closure, core vs sugar, invariants
+3. [Premise layer](20-premise-layer.md) ([日本語](../../spec/20-premise-layer.md)) — preambles, name resolution, value expressions, defining calendars
+4. [Body layer](30-body-layer.md) ([日本語](../../spec/30-body-layer.md)) — generators, windows, selectors, point transforms, combinators, filters, strides
+5. [Grammar and symbols](40-grammar.md) ([日本語](../../spec/40-grammar.md)) — symbols, operator signatures, naming status, lexis, EBNF
+6. [Glossary](50-glossary.md) ([日本語](../../spec/50-glossary.md)) — index of concepts, descriptors, symbols, and invariants
+7. [Worked examples](90-examples.md) ([日本語](../../spec/90-examples.md)) — "3 business days before month-end", payday, holiday
    cascade, fiscal calendar, runtime integration (§7.7–7.8)
 
 ## Where things live

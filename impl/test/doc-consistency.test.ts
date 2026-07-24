@@ -40,7 +40,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     const stale: string[] = [];
     for (const p of CURRENT_DOCS) {
       for (const [i, line] of read(p).split('\n').entries()) {
-        if (/\bopens\b|\bcloses\b/.test(line) && !/旧仮称|改名/.test(line)) stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 60)}`);
+        // 識別子の残存が趣旨——コードスパン内のみ検査（英語ミラーの自然動詞 opens/closes を誤検知しない）
+        if (/`[^`]*\b(?:opens|closes)\b[^`]*`/.test(line) && !/旧仮称|改名|formerly|renamed/.test(line)) stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 60)}`);
       }
     }
     expect(stale).toEqual([]);
@@ -48,7 +49,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
 
   it('仮称印は shiftBoundary（唯一の残存仮称）の行にしか付かない', () => {
     // 「（仮称）」を記法として説明する行（凡例・運用説明）は対象外
-    const legend = /「（仮称）」|仮称印|と記す/;
+    const legend = /「（仮称）」|仮称印|と記す|\(placeholder\)/;   // 末尾は英語ミラーの凡例形
     // spec/CHANGELOG は RC 変更履歴（当時の記録）なので対象外
     const docs = CURRENT_DOCS.filter(p => p !== 'spec/CHANGELOG.md');
     const stale: string[] = [];

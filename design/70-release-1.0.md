@@ -47,8 +47,8 @@ external の実運用を見て宣言する**（比較 3 案〈全信号の自然
 1. `shiftBoundary` の正式名への一括置換（裁定次第。全コーパス＝spec・reference・stdlib・impl・
    40-examples——F51 一括確定と同じ手順）
 2. spec/README の RC5→1.0 表記更新・spec/CHANGELOG に「RC5→1.0」節
-3. 英語版の残り章の一括翻訳（方針済み＝1.0 凍結時に一括。en/ の `source_sha` 同期・
-   doc-consistency 検査 12 で翻訳ドリフト検出）
+3. 英語版の追従（**全章訳済み 2026-07-24＝前倒し完了**——1.0 時に残るのは shiftBoundary 置換と
+   最終改稿の追従・`source_sha` 更新のみ。ドリフトは doc-consistency 検査が自動検出）
 4. git タグ付け・公開同期（publish.sh＝設計者の手動実行）・GitHub Release
 5. 設計ジャーナル（非公開）に宣言記録・90-open-questions の最終スナップショット確認
 
