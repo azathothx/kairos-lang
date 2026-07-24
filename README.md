@@ -26,6 +26,9 @@ feed them into the next rule. Kairos is built around this **closure** property (
 transformation from a time stream to a time stream), so substitute-holiday derivation, fiscal calendars,
 the Japanese lunisolar calendar, and the 24 solar terms are all written with the same small operator family.
 
+<p align="center"><img src="assets/figures/hero-two-layers.svg" width="880"
+  alt="The two-layer architecture: the premise layer defines calendars once (intension); evaluation is one-way into the body layer, which weaves them into a time stream whose points can be piped onward (closure)."></p>
+
 ## Highlights
 
 - **Business-day arithmetic in the language** — `roll(Preceding, on: bizDay)`, `shift(-3, unit: bizDay)`;
