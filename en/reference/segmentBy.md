@@ -1,5 +1,5 @@
 ---
-source_sha: 26335777ab18
+source_sha: 6cb4936ffe36
 ---
 
 # `segmentBy` — interval-sequence windows (cut at markers)
@@ -30,7 +30,7 @@ closes off, by syntax, the accident in which firings silently vanish on missing 
 | `m` | stream expression | the markers (the intervals' boundary points) |
 | `edges:` | `drop` / `clip` / `error` | treatment of points before the first marker / after the last marker (discard / make a partial window / error) |
 | `empties:` | `keep` / `drop` / `error` | treatment of zero-element windows between markers (keep as a legitimate empty / discard / error) |
-| `labels:` | list (literal / list binding name) | a **parallel label list** for the window sequence (ADR-39); reading is binding-name projection `name(d)`. For the combination constraints see "Preconditions and tightening rules" below — it cannot combine with `edges: clip`, `empties: drop`, or `label:` |
+| `labels:` | list (literal / list binding name) or the **cyclic form** `cycle list anchor: real-day` (ADR-47, below) | a **parallel label list** for the window sequence (ADR-39); reading is binding-name projection `name(d)`. For the combination constraints see "Preconditions and tightening rules" below — it cannot combine with `edges: clip`, `empties: drop`, or `label:` |
 | `label:` | lambda `(p => expr)` | a **computed label** per window (ADR-34; for index expressions and conditional computations that do not fit `labels:`) |
 
 ## Examples
@@ -88,6 +88,44 @@ several parallel sequences (numbers and names) the canonical form is **separate 
 over the same markers (the check bites twice;
 [`../../stdlib/kyureki.md`](../../stdlib/kyureki.md) (Japanese) §1).
 
+## labels: cycle — a periodic label for the window sequence (ADR-47)
+
+The shape "window sequence = the calendar's unit, label = a fixed period" (the twelve branches of
+sekki-cut months, the monthly nine stars, the moon's twelve signs) is written with the **cyclic
+form** `labels: cycle list anchor: real-day`. The semantics are identical to [`cycle`](cycle.md)
+on a window binding — "**the window containing the anchor carries the first label**"
+(`list[(window-sequence ordinal − anchor window's ordinal) mod N]`; negatives normalized by the
+modulus). **No same-length check is imposed** — as the covering grows over multiple years and
+markers increase, the anchor stays and the expression does not change by a single character
+(compatibility with external supply 〈ADR-46〉 is the aim of this form).
+
+```kairos
+# eval: 2026-02-03..2026-02-06
+@JP
+setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-04] covering: 2026-01-05..2026-04-04
+sekkiMonth = everyDay |> segmentBy(setsu, edges: drop, empties: error,
+                                   labels: cycle [寅, 卯, 辰, 巳, 午, 未, 申, 酉, 戌, 亥, 子, 丑]
+                                   anchor: 2026-02-04)
+everyDay |> filter(d => sekkiMonth(d) == 寅)
+#=> 2026-02-04 2026-02-05
+```
+
+- The window of the anchor (Risshun 2/4) is 寅 (Tiger) — the window **before** it (Shōkan 1/5–)
+  becomes 丑 (Ox) by negative-modulus normalization.
+- `anchor:` is **part of the form** (mandatory; do not cut it off with a comma). Coinciding with a
+  marker point is not required — the containing window decides. An anchor falling on the head side
+  or out of coverage is an explicit error (if a yearly coverage update removes the anchor's window,
+  advance the anchor by one list period 〈N windows〉 to the corresponding real day — all labels
+  stay unchanged).
+- Reversing the list writes a **retrograde** period (the monthly nine stars). A list binding name
+  is also allowed (symmetric with the static form).
+- **Only the phase declaration is guarded** — mid-sequence marker insertions/omissions, or misuse
+  on a **non-periodic sequence** (lunisolar month numbers — a leap month repeats the preceding
+  month's number), silently rotate the labels with no error and no annotation (there is no
+  reference list to check against, so machine detection is impossible in principle). For
+  non-periodic data labels use the static `labels:` (its same-length check guards paired updates).
+  Checking the contents is the job of doctests and [`coincides`](coincides.md).
+
 ## label: (ADR-34)
 
 The parenthesized named-arg `segmentBy(m, edges:, empties:, label: (p => expr))` attaches a
@@ -106,6 +144,11 @@ is for computations involving index expressions and conditions
   can be shown is certified partition-type by the I5 check and can be used with `within` — the
   standard `week` is the example (`day |> segmentBy(weekStart, edges: clip, empties: error)`;
   stdlib/gregorian.md §4.5).
+- **An anchor coarser than the markers can land in the unintended previous window** — with
+  instant-class markers (new-moon/solar-term instants not passed through `snapTo(day)`), a
+  date-literal anchor starts at 00:00, which precedes the marker's time = interval-belongs to the
+  **previous** window (no error; the phase shifts by one window). The practical form is an anchor
+  that went through the same snap as the markers, or a literal with a time of day (ADR-47).
 - **The head side (coverage start through the first marker) is out-of-coverage for the window
   sequence** (ADR-37 revision 3) — in an `edges: drop`/`error` window sequence whose first marker
   sits after the coverage start (the typical shape of **filter-derived markers**: filtering a

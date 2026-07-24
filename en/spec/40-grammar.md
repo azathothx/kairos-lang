@@ -1,5 +1,5 @@
 ---
-source_sha: 70dc528255e4
+source_sha: e75268d79e4a
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -38,7 +38,8 @@ source_sha: 70dc528255e4
   Exhaustiveness and non-overlap are checkable under I5.
 - `segmentBy(m, edges:, empties:) : Stream -> Stream(interval)` — interval-sequence-type window.
   The gap policy (`edges:`/`empties:`) is mandatory (I5). An element's membership is decided by its
-  representative point (for a window element, the first point) (§3.8, ADR-26).
+  representative point (for a window element, the first point) (§3.8, ADR-26). `labels:` takes a
+  parallel label list (ADR-39) or the cyclic form `cycle list anchor: real-day` (ADR-47).
 - `first / nth(n) / last : Stream(windowed) -> Stream` — in-window selection. The default is the
   innermost window; `of: w` names the target window explicitly. Window-relative (I4).
 - `filter(on: P) : Stream -> Stream` / `filter(x => condition) : Stream -> Stream` — thins by a
@@ -79,7 +80,8 @@ source_sha: 70dc528255e4
 - `cycle(labels) anchor: r : Stream -> Stream(labeled)` — parallel repeating labels; produces
   labels, not windows. Cycle length and application target are free; `anchor:` makes the target
   window containing it carry the first label. The binding name reads as a point → label value
-  function (ADR-27).
+  function (ADR-27). It also appears in the value position of `segmentBy`'s `labels:` (the cyclic
+  form; position-dependent keyword interpretation = the unifying principle of ADR-42. ADR-47).
 - Public words are the top-level bindings of a premise block (`Gregorian.month`). Boundaries are
   selector reuse (`monthStart = month |> first`).
 - **Table literals** (§3.8, ADR-26): a list of instants is a time-stream constant. `covering:`
@@ -230,7 +232,10 @@ stage          = ( name | qualified ) , [ "(" , args , ")" ] ;
 qualified      = name , "." , name ;
 args           = arg , { "," , arg } ;
 arg            = named-arg | lambda | stream-expr | value-expr ;
-named-arg      = param-key , ":" , ( lambda | stream-expr | value-expr ) ;
+named-arg      = param-key , ":" , ( lambda | stream-expr | value-expr | cycle-labels ) ;
+                                       (* cycle-labels only in the value position of segmentBy's
+                                          labels: (ADR-47) *)
+cycle-labels   = "cycle" , ( list-literal | name ) , "anchor" , ":" , date-literal ;
 param-key      = "on" | "unit" | "of" | "from" | "edges" | "empties"
                | "by" | "anchor" | "phase" | "covering" | "label" | "labels"
                | "kind" | "source" ;                     (* kind:/source: are external's (ADR-46) *)

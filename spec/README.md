@@ -29,7 +29,7 @@ RC 宣言ごとの差分と追補の経緯は **[RC 履歴（CHANGELOG）](CHANG
 - RC の宣言・追補の履歴は [CHANGELOG.md](CHANGELOG.md)（当時の記録・追記型）。
 - 記述語ごとの網羅解説と実行例は `../reference/`（例はリファレンス実装の doctest で検証済み）。本仕様は規範を
   簡潔に示し、丁寧な説明はそちらが担う（stdlib と同じ役割分担）。
-- 「なぜそう決めたか」は `../design/20-adr/`（ADR-01〜46）に対応。本仕様は結論を通読可能に示す。
+- 「なぜそう決めたか」は `../design/20-adr/`（ADR-01〜47）に対応。本仕様は結論を通読可能に示す。
 - ドメインモデル・不変条件の現在形は `../design/10-domain-model.md`、宿題は `../design/90-open-questions.md`。
 - 設計は `../design/30-syntax/00-syntax-draft.md` で進め、区切りで本仕様へ反映する（draft が素材、spec がレビュー成果物）。
 - 表現力の検証サンプル集（判定マトリクス・綻びログ）は `../design/40-examples/`。

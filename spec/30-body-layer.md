@@ -53,7 +53,12 @@ everyDay |> within(month) |> last          # 各月の最終日
   主張で確定してから）。`edges: clip`・`empties: drop`・`label:` ラムダとの併用は静的エラー
   （整列を崩す形はすべて締める）。空窓（`empties: keep`）にもラベルは付き、読み口は区間所属＝
   窓区間内の任意の点（実用上はマーカー点）。守るのは**長さ**のみ——中身の照合は doctest・
-  `coincides` の分担。
+  `coincides` の分担。**周期形 `labels: cycle リスト anchor: 実日`**（ADR-47）——窓束縛 cycle と
+  同じ「anchor の属する窓が先頭ラベル」＝ `list[(窓列序数 − anchor 窓の序数) mod N]`（負も法で
+  正規化）。同長性検査は課さない（covering が伸びても式不変＝静的ソース原則との整合）——守るのは
+  **位相の宣言**のみで、マーカーの中途増減・非周期列への誤用は機械検出されない（照合は doctest・
+  `coincides` の分担）。anchor は窓列のいずれかの窓に区間所属する実日（頭側・範囲外は明示エラー・
+  マーカー点との一致は不要）。締め（clip・drop・label: 同居・規則マーカー）は静的形と同一を継承。
 
 ```text
 everyDay |> segmentBy(fiscalCloses, edges: clip, empties: keep) |> first

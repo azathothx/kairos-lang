@@ -41,6 +41,9 @@ export interface WinLevel {
   /** 窓列への並行ラベル列（ADR-39）: 添字＝窓列序数（実効被覆域内の先頭マーカー起点の窓が 0）。
    *  窓はラベルを格納しない——束縛に付く射影の定義データ（ADR-30 の原理の窓版） */
   labels?: (number | string | boolean)[];
+  /** 窓列への周期ラベル（ADR-47）: ラベル(窓 i) = list[(i − i0) mod N]。i0＝anchor の属する窓の
+   *  窓列序数（マーカー列基準＝実体化・評価範囲に依存しない） */
+  labelsCycle?: { list: (number | string | boolean)[]; i0: number };
 }
 
 /** 評価註釈（ADR-37・I6）: 「範囲外」（out-of-coverage）の区間の出自。値に随伴し、
@@ -715,6 +718,13 @@ export class Evaluator {
       // segmentBy の labels: 引数（ADR-39）の列挙名も語彙に収集（named-arg の形で現れる）
       if (!('t' in x) && (x as any).name === 'labels' && (x as any).value?.t === 'list') {
         for (const el of (x as any).value.elems) {
+          if ('t' in el && el.t === 'name') this.rt.vocab.add(el.name);
+        }
+      }
+      // labels: cycle 形（ADR-47）の列挙名も同様に収集
+      if (!('t' in x) && (x as any).name === 'labels' && (x as any).value?.t === 'cycleLabels'
+        && (x as any).value.list?.t === 'list') {
+        for (const el of (x as any).value.list.elems) {
           if ('t' in el && el.t === 'name') this.rt.vocab.add(el.name);
         }
       }
@@ -1841,28 +1851,33 @@ export class Evaluator {
         const top = callee.wins[callee.wins.length - 1];
         const who = `窓束縛 ${calleeName ?? top.name ?? '(無名)'}`;
         if (isValueV(args[0])) {   // 値引数＝窓インスタンス参照（ADR-42 判断 4。segmentBy 由来の表現）
-          if (!top.labelFn && !top.labels) {
+          if (!top.labelFn && !top.labels && !top.labelsCycle) {
             this.err(`${who} にラベル源（label:/labels:）がない——インスタンス参照には label: を`
               + '付けるか、値関数の filter（everyDay |> filter(d => isoYearNo(d) == 2026) 級）で'
               + '書く（ADR-42 判断 7 (a)）');
           }
-          return this.windowInstance(who, { fn: top.labelFn, labels: top.labels }, top.iv,
+          return this.windowInstance(who, { fn: top.labelFn, labels: top.labels, labelsCycle: top.labelsCycle }, top.iv,
             callee.pts, callee.align, top.ann, callee.ann, callee.endless, args[0], env);
         }
-        if (top.labelFn || top.labels) {
+        if (top.labelFn || top.labels || top.labelsCycle) {
           this.checkArgIsPoint(args[0], who);   // ADR-42 判断 7 (e)
           this.checkTzMembership(this.predicateAlign, top.grain, 'ラベル射影');    // ADR-40
         }
         if (top.labelFn) return this.projectLabel(top.labelFn, top.iv, top.ann, args[0], env);
         // 窓列への並行ラベル列の束縛名射影（ADR-39）: 名前(d) ≡ labels[窓列序数(d の属する窓)]。
         // 読みは区間所属——空窓のラベルもマーカー点等の窓区間内の任意の点から読める
-        if (top.labels) {
+        if (top.labels || top.labelsCycle) {
           const ms = this.point(args[0]);
           const idx = ivIndexOf(top.iv, ms);
           if (idx < 0) this.outOrErr(ms, top.ann, 'ラベル射影: 点が窓の外');
           this.winCovOrOut(top.iv[idx], top.ann, 'ラベル射影');
-          if (idx >= top.labels.length) this.err('ラベル射影: 窓列序数がラベル列を越えた（内部整合）');
-          return top.labels[idx];
+          if (top.labelsCycle) {   // 周期ラベル（ADR-47）: list[(i − i0) mod N]・負も法で正規化（F65 規約）
+            const { list, i0 } = top.labelsCycle;
+            const N = list.length;
+            return list[(((idx - i0) % N) + N) % N];
+          }
+          if (idx >= top.labels!.length) this.err('ラベル射影: 窓列序数がラベル列を越えた（内部整合）');
+          return top.labels![idx];
         }
       }
       if (callee.k === 'stream' && isValueV(args[0])) {   // ADR-42 判断 7 (b): 点列束縛
@@ -1889,7 +1904,7 @@ export class Evaluator {
    *  （外延等価の最適化——ADR-42 帰結）。ラベル一意でなければ全マッチの和・ゼロマッチは空（ADR-15） */
   private windowInstance(
     who: string,
-    src: { fn?: LambdaV; labels?: (number | string | boolean)[] },
+    src: { fn?: LambdaV; labels?: (number | string | boolean)[]; labelsCycle?: { list: (number | string | boolean)[]; i0: number } },
     iv: Iv[], inputPts: number[], align: GridTag | null,
     winAnn: Ann[], baseAnn: Ann[], endless: boolean,
     v: number | string | boolean, env: Env,
@@ -1900,13 +1915,15 @@ export class Evaluator {
       this.err('label: 付与式は定義中の束縛名（自己または相互）への値引数適用（インスタンス参照）を'
         + '呼べない——逆像は射影を内包する（ADR-34 改訂・ADR-42 判断 7 (f)）');
     }
-    // labels: リテラル＝値域が静的に列挙できる束縛: 型域 (c) と域外 (g) を先に検査（ADR-42 判断 7）
-    if (src.labels) {
-      if (typeof src.labels[0] !== typeof v) {
-        this.err(`${who}: 値引数の型（${typeof v}）がラベル値の型域（${typeof src.labels[0]}）と`
+    // labels: リテラル＝値域が静的に列挙できる束縛: 型域 (c) と域外 (g) を先に検査（ADR-42 判断 7。
+    // cycle 形〈ADR-47〉のリストも静的な全値域として同じ検査に乗る）
+    const domain = src.labels ?? src.labelsCycle?.list;
+    if (domain) {
+      if (typeof domain[0] !== typeof v) {
+        this.err(`${who}: 値引数の型（${typeof v}）がラベル値の型域（${typeof domain[0]}）と`
           + '不一致（ADR-42 判断 7 (c)）');
       }
-      if (!src.labels.includes(v)) {
+      if (!domain.includes(v)) {
         this.err(`${who}(${typeof v === 'string' ? `"${v}"` : v}): ラベル値域（labels: リテラル）の外`
           + '——域外の値引数は静的エラー（タイポが「註釈なしの空」で流れるのを封じる。'
           + 'ADR-42 判断 7 (g)。計算ラベル〈label: 式〉は列挙不能なので該当なし＝空）');
@@ -1935,6 +1952,11 @@ export class Evaluator {
         let label: V;
         if (src.fn) {
           label = this.projectLabel(src.fn, iv, winAnn, { k: 'point', ms: iv[i].start }, env);
+        } else if (src.labelsCycle) {   // 周期ラベル（ADR-47）
+          this.winCovOrOut(iv[i], winAnn, 'インスタンス参照');
+          const { list, i0 } = src.labelsCycle;
+          const N = list.length;
+          label = list[(((i - i0) % N) + N) % N];
         } else {
           this.winCovOrOut(iv[i], winAnn, 'インスタンス参照');
           if (i >= src.labels!.length) this.err('インスタンス参照: 窓列序数がラベル列を越えた（内部整合）');
@@ -1947,7 +1969,7 @@ export class Evaluator {
         throw e;
       }
     };
-    let typeChecked = !!src.labels;
+    let typeChecked = !!domain;
     return this.filterByPredicate(elem, ms => {
       const i = ivIndexOf(iv, ms);
       if (i < 0) return false;   // 要素点列は窓所属で作るので来ない（防御）
@@ -2029,7 +2051,7 @@ export class Evaluator {
     for (const key of Object.keys(e.named)) {
       if (!Evaluator.GEN_NAMED[e.word].has(key)) {
         this.err(`${e.word}: 未知の名前付き引数 ${key}:（黙って捨てない——ADR-39。`
-          + `窓のデータラベルは segmentBy の labels:・周期ラベルは cycle）`);
+          + `窓のデータラベルは segmentBy の labels:・周期ラベルは窓束縛 cycle か labels: cycle〈ADR-47〉）`);
       }
     }
     const labelFn = this.genLabelFn(e, env);   // label: 付与式（§4.9・ADR-34）。cycle は対象外
@@ -2240,36 +2262,56 @@ export class Evaluator {
         // 検査は窓束縛の評価と同時＝射影の有無に依らず走る（長さ検査はラベル射影を遅延させない）
         const labelsE = named('labels');
         let labels: (number | string | boolean)[] | undefined;
+        let labelsCycle: { list: (number | string | boolean)[]; i0: number } | undefined;
         if (labelsE) {
+          const form = labelsE.t === 'cycleLabels' ? 'labels: cycle' : 'labels:';
           if (labelFn) {
             this.err('segmentBy: labels: と label: は同居できない——ラベル源の二重化'
               + '（束縛名射影の一意性。ADR-39 判断 4）');
           }
           if (edgesV === 'clip') {
-            this.err('segmentBy(labels:): edges: clip とは組めない——擬似窓（マーカー起点でない窓）が'
+            this.err(`segmentBy(${form}): edges: clip とは組めない——擬似窓（マーカー起点でない窓）が`
               + '窓列序数とリスト添字の対応を黙ってずらす（edges: drop へ。ADR-39 判断 4）');
           }
           if (emptiesV === 'drop') {
-            this.err('segmentBy(labels:): empties: drop とは組めない——空窓の除去が序数を詰め、'
+            this.err(`segmentBy(${form}): empties: drop とは組めない——空窓の除去が序数を詰め、`
               + 'どのラベルが落ちたかリストから判別できない（empties: keep/error へ。ADR-39 判断 4）');
           }
           if (markerS.endless) {
-            this.err('segmentBy(labels:): 規則マーカー（無限の点列）の窓列は有限リストで覆えない——'
-              + '周期ラベルは cycle・計算番号は ordinalIn か label: ラムダで（ADR-39 判断 4）');
+            this.err(`segmentBy(${form}): 規則マーカー（無限の点列）の窓列はデータラベルの対象外——`
+              + '周期ラベルは窓束縛 cycle・計算番号は ordinalIn か label: ラムダで（ADR-39 判断 4・ADR-47）');
           }
-          // マーカー流の実効被覆域は全マーカー点を包む単一の無註釈区間であること（合成マーカーの締め）
+          // マーカー流の実効被覆域は全マーカー点を包む単一の無註釈区間であること（合成マーカーの締め。
+          // 静的形は窓数確定・cycle 形は位相確定の根拠——註釈域内の未知マーカーは位相を黙ってずらす）
           const home = cov.find(x => x.start <= markers[0] && markers[markers.length - 1] < x.end);
           if (!home) {
-            this.err('segmentBy(labels:): マーカーの実効被覆域が全マーカーを包む単一の無註釈区間でない'
-              + '——窓数が確定しない（合成マーカーは束縛後置の covering: で覆域を確定してから。'
+            this.err(`segmentBy(${form}): マーカーの実効被覆域が全マーカーを包む単一の無註釈区間でない`
+              + '——窓数・位相が確定しない（合成マーカーは束縛後置の covering: で覆域を確定してから。'
               + 'ADR-39 判断 4 / ADR-37 判断 5）');
           }
-          labels = this.windowLabelList(labelsE, env);
-          // 同長性検査（覆域基準）: 期待窓数＝マーカー数（ADR-37 の覆域端確定の最終窓を含む。
-          // 評価範囲・実体化範囲に依存しない正確な数え方）
-          if (labels.length !== markers.length) {
-            this.err(`segmentBy(labels:): ラベル列の長さ ${labels.length} ≠ 窓数 ${markers.length}`
-              + '（窓数は覆域基準＝マーカー数。マーカーとラベルは対で更新する——ADR-39/F62）');
+          if (labelsE.t === 'cycleLabels') {
+            // 周期ラベル（ADR-47）: 同長性検査は課さない（周期は任意の窓数を覆う）。
+            // i0 はマーカー列基準で計算＝実体化・評価範囲に依存しない（ADR-39 判断 2 の原則）
+            const list = this.windowLabelList(labelsE.list, env);
+            const anchorMs = this.point(this.evalExpr(labelsE.anchor, env));
+            if (anchorMs < markers[0] || anchorMs >= home.end) {
+              this.err('segmentBy(labels: cycle): anchor が窓列のいずれの窓にも属さない（頭側・範囲外'
+                + '——位相が定まらない）。覆域の更新で anchor の窓が消えた場合は、anchor をリスト周期'
+                + '（N 窓）分先の対応する実日へ進めれば全ラベル不変（ADR-47）');
+            }
+            let i0 = markers.length - 1;
+            for (let j = 0; j < markers.length - 1; j++) {
+              if (anchorMs < markers[j + 1]) { i0 = j; break; }
+            }
+            labelsCycle = { list, i0 };
+          } else {
+            labels = this.windowLabelList(labelsE, env);
+            // 同長性検査（覆域基準）: 期待窓数＝マーカー数（ADR-37 の覆域端確定の最終窓を含む。
+            // 評価範囲・実体化範囲に依存しない正確な数え方）
+            if (labels.length !== markers.length) {
+              this.err(`segmentBy(labels:): ラベル列の長さ ${labels.length} ≠ 窓数 ${markers.length}`
+                + '（窓数は覆域基準＝マーカー数。マーカーとラベルは対で更新する——ADR-39/F62）');
+            }
           }
         }
         const iv: Iv[] = [];
@@ -2327,7 +2369,7 @@ export class Evaluator {
           if (gaps.length > 0) winAnn = annUnion(markerS.ann, gaps);
         }
         return { k: 'stream', pts,
-                 wins: [...stream.wins, { iv: windows, labelFn, grain: markerS.align, ann: winAnn, labels }],
+                 wins: [...stream.wins, { iv: windows, labelFn, grain: markerS.align, ann: winAnn, labels, labelsCycle }],
                  align: stream.align, ann: annUnion(stream.ann, markerS.ann), endless: stream.endless };
       }
       case 'first': case 'last': case 'nth': {

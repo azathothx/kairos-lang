@@ -1,5 +1,5 @@
 ---
-source_sha: 3a9cb9e81365
+source_sha: 3006ab2c4930
 ---
 
 # Kairos Language Specification — 1. Introduction
@@ -113,5 +113,5 @@ definitions; expressing business days, calendars, windows, and roll conventions.
 7. Representative examples
 
 **Conventions**: placeholder names are marked "（仮称）" — the only remaining placeholder is `shiftBoundary` (batch naming confirmation F51; §5.4).
-The rationale for each design decision lives in the design records `20-adr/` (ADR-01 through 46) and
+The rationale for each design decision lives in the design records `20-adr/` (ADR-01 through 47) and
 `10-domain-model.md`; this specification presents only the folded conclusions.

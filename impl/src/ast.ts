@@ -9,6 +9,7 @@ export type Expr =
   | { t: 'width'; v: WidthVal }
   | { t: 'str'; v: string }                               // 文字列リテラル（ADR-32）
   | { t: 'list'; elems: ListElem[]; covering?: CoveringRange[]; labels?: Expr } // table-literal を含む
+  | { t: 'cycleLabels'; list: Expr; anchor: Expr } // segmentBy labels: の cycle 形（窓列への周期ラベル・ADR-47）
   | { t: 'lambda'; params: string[]; body: Expr }
   | { t: 'call'; callee: Expr; args: Arg[] }
   | { t: 'index'; target: Expr; index: Expr }

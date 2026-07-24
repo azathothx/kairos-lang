@@ -254,12 +254,21 @@ class Parser {
   private args(): Arg[] {
     this.eat('punct', '(');
     const args: Arg[] = [];
+    const seen = new Set<string>();   // named-arg の二重指定は黙殺せず静的エラー（ADR-47 で顕在化した穴）
     if (!this.atPunct(')')) {
       for (;;) {
         if (this.at('name') && this.peek(1).text === ':') {
           const name = this.next().text;
+          if (seen.has(name)) throw new ParseError(`名前付き引数 ${name}: の二重指定`, this.peek());
+          seen.add(name);
           this.next(); // ':'
-          args.push({ name, value: this.expression() });
+          // labels: cycle […] anchor: 実日（窓列への周期ラベル・ADR-47）——cycle は core 語で
+          // 再束縛できないため、labels: 直後の cycle は常に cycle 形
+          if (name === 'labels' && this.atName('cycle')) {
+            args.push({ name, value: this.cycleLabels() });
+          } else {
+            args.push({ name, value: this.expression() });
+          }
         } else {
           args.push({ value: this.expression() });
         }
@@ -269,6 +278,25 @@ class Parser {
     }
     this.eat('punct', ')');
     return args;
+  }
+
+  /** labels: の cycle 形（ADR-47）: cycle (リスト|リスト束縛名) anchor: 実日。anchor は形の一部
+   *  （カンマで切ると segmentBy の未知引数に化ける——専用文言で導く） */
+  private cycleLabels(): Expr {
+    this.eat('name', 'cycle');
+    let list: Expr;
+    if (this.atPunct('[')) list = this.listLiteral(false);
+    else if (this.at('name')) list = { t: 'name', name: this.next().text };
+    else throw new ParseError('labels: cycle はリスト（リテラルまたはリスト束縛名）を取る', this.peek());
+    if (this.atPunct(',') && this.peek(1).kind === 'name' && this.peek(1).text === 'anchor') {
+      throw new ParseError('labels: cycle の anchor: はカンマなしで続ける'
+        + '（cycle 形の一部——labels: cycle […] anchor: 実日）', this.peek());
+    }
+    if (!(this.atName('anchor') && this.peek(1).text === ':')) {
+      throw new ParseError('labels: cycle は anchor: が必須（位相を留める実日）', this.peek());
+    }
+    this.next(); this.next();
+    return { t: 'cycleLabels', list, anchor: this.ternary() };
   }
 
   /** gen-expr（`day span f phase: 0`）と値式を判別。並置は窓生成語 4 語のみ（EBNF・F46） */

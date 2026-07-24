@@ -27,7 +27,8 @@
 - `everyDay : () -> Stream` ／ `everyInstant : () -> Stream` — 暦法純粋の生成子（後者は連続基底の全点）。
 - `within(w) : Stream -> Stream(partitioned)` — パーティション型窓。`w` は窓名。網羅・無重複は I5 で検査可能。
 - `segmentBy(m, edges:, empties:) : Stream -> Stream(interval)` — 区間列型窓。隙間ポリシー（`edges:`/`empties:`）は
-  必須（I5）。要素の所属は代表点（窓要素なら先頭点）で決まる（§3.8・ADR-26）。
+  必須（I5）。要素の所属は代表点（窓要素なら先頭点）で決まる（§3.8・ADR-26）。`labels:` は並行ラベル列
+  （ADR-39）または周期形 `cycle リスト anchor: 実日`（ADR-47）。
 - `first / nth(n) / last : Stream(windowed) -> Stream` — 窓内選択。既定は最内窓、`of: w` で対象窓を明示。窓相対（I4）。
 - `filter(on: P) : Stream -> Stream` ／ `filter(x => 条件) : Stream -> Stream` — premise 述語または値式述語で間引く。
 - `roll(conv, on: P) : Stream -> Stream` — 無効点を conv（Following/Preceding/Modified…）で有効点へ寄せる。`on:` は
@@ -55,6 +56,7 @@
   ダウン）。幅総和＝親（I5）。
 - `cycle(labels) anchor: r : Stream -> Stream(labeled)` — 並列反復ラベル。窓でなくラベルを生む。周期長・適用先は
   任意、`anchor:` は属する対象窓が先頭ラベル。束縛名は点→ラベルの値関数として読める（ADR-27）。
+  `segmentBy` の `labels:` 値位置にも現れる（周期形・位置依存のキーワード解釈＝ADR-42 の統一原理。ADR-47）。
 - 公開語は premise ブロック top-level の束縛（`Gregorian.month`）。境界は選択子の再利用（`monthStart = month |> first`）。
 - **テーブルリテラル**（§3.8・ADR-26）: 時点リストは時間ストリーム定数。`covering:` で有効範囲、`labels:` で
   並行ラベル列（点→ラベル射影の定義。ADR-30）。空リスト `[]` は `covering:` 後置に限り昇格（ADR-45）。
@@ -170,7 +172,9 @@ stage          = ( name | qualified ) , [ "(" , args , ")" ] ;
 qualified      = name , "." , name ;
 args           = arg , { "," , arg } ;
 arg            = named-arg | lambda | stream-expr | value-expr ;
-named-arg      = param-key , ":" , ( lambda | stream-expr | value-expr ) ;
+named-arg      = param-key , ":" , ( lambda | stream-expr | value-expr | cycle-labels ) ;
+                                       (* cycle-labels は segmentBy の labels: の値位置のみ（ADR-47） *)
+cycle-labels   = "cycle" , ( list-literal | name ) , "anchor" , ":" , date-literal ;
 param-key      = "on" | "unit" | "of" | "from" | "edges" | "empties"
                | "by" | "anchor" | "phase" | "covering" | "label" | "labels"
                | "kind" | "source" ;                     (* kind:/source: は external（ADR-46） *)

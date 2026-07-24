@@ -1,5 +1,5 @@
 ---
-source_sha: 178ae64b1964
+source_sha: a4afa59abcaf
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -80,7 +80,16 @@ silently wrong results, hence the mandatory declarations.
   break the label-window alignment is closed off). Empty windows (`empties: keep`) get labels too;
   the reading port is interval membership = any point within the window interval (in practice, the
   marker point). Only the **length** is guarded — checking the contents is the job of doctests and
-  `coincides`.
+  `coincides`. **The cyclic form `labels: cycle list anchor: real-day`** (ADR-47) — same as the
+  window-binding cycle: "the window containing the anchor carries the first label" =
+  `list[(window-sequence ordinal − anchor window's ordinal) mod N]` (negatives normalized by the
+  modulus). No same-length check is imposed (the expression stays unchanged as the covering grows =
+  consistency with the static-source principle) — what is guarded is only the **phase declaration**;
+  mid-sequence marker insertions/omissions and misuse on non-periodic sequences are not machine-
+  detected (verification is the job of doctests and `coincides`). The anchor is a real day
+  interval-belonging to some window of the sequence (head side and out-of-coverage are explicit
+  errors; coinciding with a marker point is not required). The tightening rules (clip, drop,
+  `label:` cohabitation, rule markers) are inherited from the static form.
 
 ```text
 everyDay |> segmentBy(fiscalCloses, edges: clip, empties: keep) |> first

@@ -1,5 +1,5 @@
 ---
-source_sha: 4a788bf6aca6
+source_sha: 9bb309467de8
 ---
 
 # `cycle` — parallel repeating labels (labels, not windows)
@@ -56,7 +56,9 @@ everyDay |> filter(d => weekday(d) == Mon)
 - `cycle` is a **rhythm** (calendar-system-pure, infinite) — a **1-to-1 label over finite data**,
   like the names of the 24 solar terms, is not a cycle but a table's `labels:`
   ([table literal](table-literal.md); the source differs, but the reading side is the same
-  binding-name projection).
+  binding-name projection). Attaching a **fixed period to a data-derived window sequence** is
+  [`segmentBy`](segmentBy.md)'s `labels: cycle` form (ADR-47 — the same "the window containing the
+  anchor carries the first label" as this page).
 - Rotating the list (rewriting `[Mon, …, Sun]` as `[Sun, Mon, …]`, etc.) gives **the same calendar
   only if the anchor is also re-taken to a corresponding real day** — with the anchor fixed, every
   label rotates at once (the phase is decided by "the window containing the anchor = the first
