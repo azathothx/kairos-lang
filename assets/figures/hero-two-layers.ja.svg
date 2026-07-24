@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="hero-title-ja">
+  <title id="hero-title-ja">Kairos の二層構造: premise 層がカレンダーを定義し、本体層がそれを時間ストリームに紡ぐ。閉包により結果は次の定義の入力になる。</title>
+  <!-- ヒーロー図（二層構造と閉包）。ロゴファミリー（assets/logo/）と同じ配色: 好機の金
+       light #A9701F / dark #D9A44B・墨 #24272B・Ubuntu / Ubuntu Mono。dark 対応は media query 内蔵。 -->
+  <style>
+    text { font-family: Ubuntu, 'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI', Meiryo, sans-serif; }
+    .mono { font-family: 'Ubuntu Mono', 'Noto Sans Mono CJK JP', 'Cascadia Mono', Consolas, monospace; }
+    .ink { fill: #24272B; }
+    .sub { fill: #63686E; }
+    .gold { fill: #A9701F; }
+    .goldline { stroke: #A9701F; }
+    .panel { fill: #F6F3EE; stroke: #E2DCD2; }
+    .axis { stroke: #63686E; }
+    @media (prefers-color-scheme: dark) {
+      .ink { fill: #E8E6E3; }
+      .sub { fill: #9BA1A8; }
+      .gold { fill: #D9A44B; }
+      .goldline { stroke: #D9A44B; }
+      .panel { fill: #23262B; stroke: #3A3F46; }
+      .axis { stroke: #9BA1A8; }
+    }
+  </style>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" class="sub"/>
+    </marker>
+    <marker id="arr-gold" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" class="gold"/>
+    </marker>
+  </defs>
+
+  <!-- premise layer panel -->
+  <rect x="40" y="120" width="410" height="330" rx="16" class="panel" stroke-width="1.5"/>
+  <text x="70" y="170" font-size="26" font-weight="600" class="ink">premise 層</text>
+  <text x="70" y="200" font-size="17" class="sub">カレンダーを定義する——内包</text>
+  <text x="70" y="252" font-size="17" class="mono ink">premise TSE {</text>
+  <text x="91" y="282" font-size="17" class="mono ink">calendar-system: Gregorian</text>
+  <text x="91" y="312" font-size="17" class="mono ink">holidays = external(kind: dates)</text>
+  <text x="91" y="342" font-size="17" class="mono ink">nonWorking = satSun | holidays</text>
+  <text x="70" y="372" font-size="17" class="mono ink">}</text>
+  <text x="70" y="418" font-size="15" class="sub">一度だけ宣言——データ・会計暦・市場カレンダー</text>
+
+  <!-- evaluate arrow -->
+  <line x1="458" y1="285" x2="528" y2="285" class="axis" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="494" y="262" font-size="17" font-weight="600" class="ink" text-anchor="middle">評価</text>
+  <text x="494" y="312" font-size="14" class="sub" text-anchor="middle">一方向</text>
+
+  <!-- body layer panel -->
+  <rect x="540" y="60" width="620" height="390" rx="16" class="panel" stroke-width="1.5"/>
+  <text x="575" y="110" font-size="26" font-weight="600" class="ink">本体層</text>
+  <text x="575" y="140" font-size="17" class="sub">スケジュールを紡ぐ——外延</text>
+  <text x="575" y="207" font-size="19" class="mono ink">bizDay <tspan class="gold">|&gt;</tspan> within(month) <tspan class="gold">|&gt;</tspan> nth(3)</text>
+  <text x="575" y="237" font-size="15" class="mono sub"># 毎月の第 3 営業日</text>
+
+  <!-- closure return loop（左側の小さな戻り＝出力ストリームが次のパイプ先頭へ） -->
+  <path d="M 578 318 C 550 288, 550 242, 571 217" fill="none" class="goldline"
+        stroke-width="1.8" stroke-dasharray="6 5" opacity="0.85" marker-end="url(#arr-gold)"/>
+
+  <!-- timeline -->
+  <line x1="575" y1="330" x2="1105" y2="330" class="axis" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="575" y1="322" x2="575" y2="338" class="axis" stroke-width="1.5"/>
+  <line x1="755" y1="322" x2="755" y2="338" class="axis" stroke-width="1.5"/>
+  <line x1="935" y1="322" x2="935" y2="338" class="axis" stroke-width="1.5"/>
+  <circle cx="625" cy="330" r="7" class="gold"/>
+  <circle cx="805" cy="330" r="7" class="gold"/>
+  <circle cx="985" cy="330" r="7" class="gold"/>
+  <text x="665" y="356" font-size="13" class="sub" text-anchor="middle">1月</text>
+  <text x="845" y="356" font-size="13" class="sub" text-anchor="middle">2月</text>
+  <text x="1025" y="356" font-size="13" class="sub" text-anchor="middle">3月</text>
+  <text x="1148" y="356" font-size="14" class="sub" text-anchor="end">Chronos</text>
+  <text x="575" y="400" font-size="15" class="sub">スケジュール＝時間ストリーム——さらに次の定義へ流せる点列</text>
+
+  <!-- closure caption -->
+  <text x="600" y="522" font-size="16" text-anchor="middle" class="sub"><tspan class="ink" font-weight="600">閉包</tspan>——全演算子は (ストリーム…, premise) → ストリーム: 結果が次の定義の入力になる</text>
+</svg>

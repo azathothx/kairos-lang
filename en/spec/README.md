@@ -26,7 +26,11 @@ For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese
 
 ## Where things live
 
-- Per-operator reference with doctested examples: [`reference/`](../../reference/README.md) (Japanese)
-- Standard premises — Gregorian, Fiscal, ISOWeek, Kyureki: [`stdlib/`](../../stdlib/README.md) (Japanese)
+- Per-operator reference with doctested examples: [`reference/`](../reference/README.md)
+  ([日本語](../../reference/README.md)). Annotation expectation lines (`#~>`) reproduce the
+  reference implementation's canonical output, which is currently Japanese.
+- Standard premises — Gregorian, Fiscal, ISOWeek: [`stdlib/`](../stdlib/README.md)
+  ([日本語](../../stdlib/README.md)). Kyureki (the Japanese lunisolar calendar) is
+  [Japanese-only](../../stdlib/kyureki.md) — data-heavy, not mirrored.
 - Design records — 46 ADRs, domain model, expressiveness studies: [`design/INDEX.md`](../../design/INDEX.md) (Japanese)
 - The English overview with the capability comparison table is in the repository [README](../../README.md).

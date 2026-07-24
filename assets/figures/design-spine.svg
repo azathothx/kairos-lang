@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" role="img" aria-labelledby="spine-title">
+  <title id="spine-title">Kairos 設計の背骨: 基底は一本の時間軸・暦法＝窓分割・閉包の演算子族・premise の統治・観測できる退化——の五節。</title>
+  <!-- 設計の背骨図（design/00-overview.md §4）。配色・書体はロゴファミリー（assets/logo/）と共通。 -->
+  <style>
+    text { font-family: Ubuntu, 'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI', Meiryo, sans-serif; }
+    .mono { font-family: 'Ubuntu Mono', 'Noto Sans Mono CJK JP', Consolas, monospace; }
+    .ink { fill: #24272B; }
+    .sub { fill: #63686E; }
+    .gold { fill: #A9701F; }
+    .goldline { stroke: #A9701F; }
+    .panel { fill: #F6F3EE; stroke: #E2DCD2; }
+    .numtext { fill: #FBFAF8; }
+    @media (prefers-color-scheme: dark) {
+      .ink { fill: #E8E6E3; }
+      .sub { fill: #9BA1A8; }
+      .gold { fill: #D9A44B; }
+      .goldline { stroke: #D9A44B; }
+      .panel { fill: #23262B; stroke: #3A3F46; }
+      .numtext { fill: #1B1E22; }
+    }
+  </style>
+
+  <!-- spine -->
+  <line x1="60" y1="80" x2="1140" y2="80" class="goldline" stroke-width="2.5" opacity="0.75"/>
+  <circle cx="144" cy="80" r="15" class="gold"/><text x="144" y="86" font-size="16" font-weight="600" class="numtext" text-anchor="middle">1</text>
+  <circle cx="372" cy="80" r="15" class="gold"/><text x="372" y="86" font-size="16" font-weight="600" class="numtext" text-anchor="middle">2</text>
+  <circle cx="600" cy="80" r="15" class="gold"/><text x="600" y="86" font-size="16" font-weight="600" class="numtext" text-anchor="middle">3</text>
+  <circle cx="828" cy="80" r="15" class="gold"/><text x="828" y="86" font-size="16" font-weight="600" class="numtext" text-anchor="middle">4</text>
+  <circle cx="1056" cy="80" r="15" class="gold"/><text x="1056" y="86" font-size="16" font-weight="600" class="numtext" text-anchor="middle">5</text>
+
+  <!-- card 1 -->
+  <rect x="40" y="120" width="208" height="220" rx="14" class="panel" stroke-width="1.5"/>
+  <text x="62" y="158" font-size="18" font-weight="600" class="ink">基底は一本の時間軸</text>
+  <text x="62" y="196" font-size="14" class="sub">Chronos＝TZ 非依存の</text>
+  <text x="62" y="216" font-size="14" class="sub">単一絶対軸（固定）</text>
+  <text x="62" y="248" font-size="14" class="sub">TZ は市民座標への射影</text>
+  <text x="62" y="280" font-size="14" class="sub">うるう秒なしの一様軸</text>
+
+  <!-- card 2 -->
+  <rect x="268" y="120" width="208" height="220" rx="14" class="panel" stroke-width="1.5"/>
+  <text x="290" y="158" font-size="18" font-weight="600" class="ink">暦法＝窓分割</text>
+  <text x="290" y="196" font-size="14" class="sub">グレゴリオも一候補——</text>
+  <text x="290" y="216" font-size="14" class="sub">自由に差し替え可能</text>
+  <text x="290" y="248" font-size="14" class="sub">窓は二種＝網羅／区間列</text>
+  <text x="290" y="280" font-size="14" class="sub">粒度は表示の射影</text>
+
+  <!-- card 3 -->
+  <rect x="496" y="120" width="208" height="220" rx="14" class="panel" stroke-width="1.5"/>
+  <text x="518" y="158" font-size="18" font-weight="600" class="ink">閉包の演算子族</text>
+  <text x="518" y="196" font-size="14" class="sub">全式＝ストリーム →</text>
+  <text x="518" y="216" font-size="14" class="sub">ストリーム（閉包）</text>
+  <text x="518" y="248" font-size="14" class="sub">小さな core 七族＋糖衣</text>
+  <text x="518" y="280" font-size="14" class="sub">生成子は暦法純粋</text>
+
+  <!-- card 4 -->
+  <rect x="724" y="120" width="208" height="220" rx="14" class="panel" stroke-width="1.5"/>
+  <text x="746" y="158" font-size="18" font-weight="600" class="ink">premise の統治</text>
+  <text x="746" y="196" font-size="14" class="sub">意味は premise に相対</text>
+  <text x="746" y="228" font-size="14" class="sub">最内優先の入れ子解決</text>
+  <text x="746" y="260" font-size="14" class="sub">危険な省略は静的エラー</text>
+  <text x="746" y="292" font-size="14" class="sub">錨とロール規約は明示</text>
+
+  <!-- card 5 -->
+  <rect x="952" y="120" width="208" height="220" rx="14" class="panel" stroke-width="1.5"/>
+  <text x="974" y="158" font-size="18" font-weight="600" class="ink">観測できる退化</text>
+  <text x="974" y="196" font-size="14" class="sub">空は正当な値</text>
+  <text x="974" y="228" font-size="14" class="sub">出自は評価註釈で並走</text>
+  <text x="974" y="260" font-size="14" class="sub">判定は外部（発報層）</text>
+  <text x="974" y="292" font-size="14" class="sub">データ切れも黙らない</text>
+
+  <!-- scope-out caption -->
+  <text x="600" y="408" font-size="15" text-anchor="middle" class="sub">スコープ外——発報の実行管理・カレンダーデータの真正性判定・実行起点に相対な窓・相対論的調停</text>
+</svg>

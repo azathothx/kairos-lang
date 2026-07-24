@@ -33,7 +33,7 @@ expression stays on one line wherever possible; the preamble need not.
 - `everyInstant` — streams every point of the continuous base (used with `strideBy`; e.g. every
   1 sol = `everyInstant |> strideBy(24h39m35.244s, from: 2026-01-01)`. It has no upstream window,
   so the origin `from:` is mandatory — the origin rule of §4.7).
-- Published boundary words of primitive definitions (`monthEnd = month |> last`, etc.) — this is
+- Public boundary words of primitive definitions (`monthEnd = month |> last`, etc.) — this is
   what generators really are, not a separate mechanism (§3.6).
 - Table literals (§3.8) — data-derived stream constants also stand at the head of an expression,
   on equal footing with generators.
@@ -187,7 +187,7 @@ flowchart TD
 
 | Form of expression | Alignment |
 |---|---|
-| `everyDay`, published-window-word derived (`month \|> first`, etc.) | element grid (for `Gregorian`, the `day` grid) |
+| `everyDay`, public-window-word derived (`month \|> first`, etc.) | element grid (for `Gregorian`, the `day` grid) |
 | table (all elements lexically date-only) | civil-day grid (tz = the tz used to anchor the literal; entity and data premises converge to inner fixing) |
 | table (containing timed or non-lexical elements) | none |
 | **empty table** (`[] covering:`, ADR-45) | **vacuous conformance** (conforms vacuously to every alignment, passes the check; preserving stages preserve vacuous conformance) |
@@ -274,7 +274,7 @@ Sugar (`monthEnd`, `businessDays`, `nextWeekday`, etc.) is shorthand that names 
 the core family, erasable by expansion into core (one-way dependency). Its **definition** needs no
 dedicated new syntax: write a core pipe sequence on the right-hand side of the existing binding
 `=` (§3.5), nothing more. It is the same `=` binding mechanism as the §3.5 value function
-`isLeap = y => …` and the §3.6 published word `monthStart = month |> first`, appearing with a
+`isLeap = y => …` and the §3.6 public word `monthStart = month |> first`, appearing with a
 different type on the right-hand side.
 
 **Base form B (explicit lambda)** — bind the upstream stream with `s =>` and flow it into the core
@@ -309,7 +309,7 @@ Sugar that uses the upstream by name (branching and rejoining) cannot fold into 
 automatically by dependency analysis, from the right-hand side depending only on core words (plus
 default sugar). No `sugar` keyword or the like is introduced. Core words (generators, point
 transforms, combinators, filters, windows, selectors, strides) are built-in reserved words of the
-language; every other named binding is sugar or a published word. A binding that redefines a core
+language; every other named binding is sugar or a public word. A binding that redefines a core
 word (breaking the one-way dependency) is a static error.
 
 **Premises are not baked in — resolution is deferred** — sugar does not fix its premises at

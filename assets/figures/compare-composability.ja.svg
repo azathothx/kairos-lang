@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="cmp-title-ja">
+  <title id="cmp-title-ja">合成が要である理由: cron は固定パターンまで・RRULE は繰り返し規則まで。Kairos は式が合成できる——結果は常にストリームで、次の定義へ流せる。</title>
+  <!-- 比較ビジュアル（README.ja 用・日本語版）。配色・書体はロゴファミリー（assets/logo/）と共通。 -->
+  <style>
+    text { font-family: Ubuntu, 'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI', Meiryo, sans-serif; }
+    .mono { font-family: 'Ubuntu Mono', 'Noto Sans Mono CJK JP', Consolas, monospace; }
+    .ink { fill: #24272B; }
+    .sub { fill: #63686E; }
+    .gold { fill: #A9701F; }
+    .panel { fill: #F6F3EE; stroke: #E2DCD2; }
+    .goldstroke { stroke: #A9701F; }
+    @media (prefers-color-scheme: dark) {
+      .ink { fill: #E8E6E3; }
+      .sub { fill: #9BA1A8; }
+      .gold { fill: #D9A44B; }
+      .panel { fill: #23262B; stroke: #3A3F46; }
+      .goldstroke { stroke: #D9A44B; }
+    }
+  </style>
+
+  <!-- cron -->
+  <rect x="40" y="30" width="1120" height="100" rx="14" class="panel" stroke-width="1.5"/>
+  <text x="70" y="72" font-size="20" font-weight="600" class="ink">cron</text>
+  <text x="70" y="105" font-size="17" class="mono ink">0 9 * * 1-5 <tspan class="sub" font-size="14">（平日 9:00）</tspan></text>
+  <text x="1130" y="72" font-size="15" class="sub" text-anchor="end">✗ パターン固定——営業日には届かない</text>
+
+  <!-- RRULE -->
+  <rect x="40" y="150" width="1120" height="100" rx="14" class="panel" stroke-width="1.5"/>
+  <text x="70" y="192" font-size="20" font-weight="600" class="ink">iCalendar RRULE</text>
+  <text x="70" y="225" font-size="17" class="mono ink">FREQ=MONTHLY;BYSETPOS=-1;BYDAY=MO,TU,WE,TH,FR <tspan class="sub" font-size="14">（月の最終平日）</tspan></text>
+  <text x="1130" y="192" font-size="15" class="sub" text-anchor="end">✗ 繰り返し規則まで——導いた日を次の規則へ流せない</text>
+
+  <!-- Kairos -->
+  <rect x="40" y="270" width="1120" height="110" rx="14" class="panel goldstroke" stroke-width="2"/>
+  <text x="70" y="314" font-size="20" font-weight="600" class="ink">Kairos</text>
+  <text x="70" y="350" font-size="17" class="mono ink">monthEnd <tspan class="gold">|&gt;</tspan> roll(Preceding, on: bizDay) <tspan class="gold">|&gt;</tspan> shift(-3, unit: bizDay)</text>
+  <text x="1130" y="314" font-size="15" text-anchor="end"><tspan class="gold" font-weight="700">✓</tspan> <tspan class="ink">閉包——結果は常に次の定義へ流せる</tspan></text>
+  <text x="70" y="374" font-size="14" class="mono sub"># 月末の 3 営業日前——祝日考慮</text>
+</svg>

@@ -20,6 +20,8 @@ const CURRENT_DOCS = [
   ...mdFiles('reference/'),
   ...mdFiles('stdlib/'),
   ...mdFiles('en/spec/'), // 英語版ミラー（日本語が正・順次拡充）
+  ...mdFiles('en/reference/'),
+  ...mdFiles('en/stdlib/'),
 ];
 
 describe('文書の整合性（現在形の文書 vs 実態）', () => {
@@ -187,10 +189,10 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     // en/spec/X.md の front matter `source_sha:` ＝対訳元 spec/X.md の sha256 先頭 12 桁。
     // 日本語側が更新されたらここが割れる——英訳の追従漏れを黙らせない。
     const stale: string[] = [];
-    for (const p of mdFiles('en/spec/')) {
+    for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/')]) {
       const m = /^---\n[\s\S]*?source_sha: ([0-9a-f]{12})[\s\S]*?\n---\n/.exec(read(p));
       if (!m) continue;   // ハッシュ宣言のないページ（README 等）は対象外
-      const ja = p.replace('en/spec/', 'spec/');
+      const ja = p.replace('en/', '');
       const actual = createHash('sha256').update(read(ja)).digest('hex').slice(0, 12);
       if (actual !== m[1]) stale.push(`${p}: source_sha ${m[1]} だが ${ja} は ${actual}（日本語側が更新済み——英訳を追従させ source_sha を更新する）`);
     }

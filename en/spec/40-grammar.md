@@ -12,7 +12,7 @@ source_sha: 8ec68284f1af
 
 | Symbol | Layer / role | Meaning |
 |---|---|---|
-| `\|>` | Both layers | Stage piping (body layer: stream → stream / premise layer: premise → premise) |
+| `\|>` | Both layers | Stage connection (body layer: stream → stream / premise layer: premise → premise) |
 | `.` | Both layers | Premise qualification (`Gregorian.month`) |
 | `\|` | Both layers | Combinator: union |
 | `&` | Both layers | Combinator: intersection |
@@ -78,7 +78,7 @@ source_sha: 8ec68284f1af
   window at variable widths in unit `u` (top-down). The widths sum to the parent (I5).
 - `cycle(labels) anchor: r : Stream -> Stream(labeled)` — parallel repeating labels; produces
   labels, not windows. Cycle length and application target are free; `anchor:` makes the target
-  window containing it carry the first label. The bound name reads as a point → label value
+  window containing it carry the first label. The binding name reads as a point → label value
   function (ADR-27).
 - Public words are the top-level bindings of a premise block (`Gregorian.month`). Boundaries are
   selector reuse (`monthStart = month |> first`).

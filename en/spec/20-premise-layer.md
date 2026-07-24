@@ -144,7 +144,7 @@ passed directly to a higher-order function in place (`filter(x => …)`).
 
 **Predicates and variables** — a predicate (a lambda returning a boolean) binds each element of its
 subject. `where` is merged into `filter`: `filter` takes both premise predicates (`on:`) and
-value-expression predicates (lambdas). References go through the bound name, so nesting is never
+value-expression predicates (lambdas). References go through the binding name, so nesting is never
 ambiguous.
 
 ```text
@@ -160,7 +160,7 @@ which produces **labels**, not windows). All three window-making words produce p
 windows (§4.2), so exhaustiveness and non-overlap are structurally guaranteed (I5). This section
 explains **how to write** a primitive definition, with `Gregorian` as the example. For the
 exhaustive account of `Gregorian` itself (each word, the separation of `weekday` and WKST, scope),
-see [`stdlib/gregorian.md`](../../stdlib/gregorian.md).
+see [`stdlib/gregorian.md`](../stdlib/gregorian.md).
 
 **Dependencies are primarily bottom-up aggregation**: the atom `day` is bundled into `month`, and
 that `month` into `year` (`month` is the basic grouping). Only `year`'s dependent window
@@ -171,7 +171,7 @@ that `month` into `year` (`month` is the basic grouping). Only `year`'s dependen
 | `grid(w)` | Uniform partition | Tiles the continuous axis into equal widths `w`. Makes the calendar's atoms. `w` follows the **civil-time width convention** (`1d` = 1 civil day, not a fixed `86400s`; a civil day is 23–25 hours on DST transition days. Leap seconds are out of scope = chronos is a uniform idealized axis without leap seconds (each UTC day = 86,400 seconds). ADR-11/12/33). Phase defaults: civil-time widths align to the start instant of each civil day in the in-scope `tz:` (midnight on ordinary days. ADR-31 revised); elapsed-time widths align to the epoch; overridable with `anchor:` (ADR-31) |
 | `span(f)` | Variable aggregation (bottom-up) | Bundles a sequence of finer units into contiguous windows. `f = n => count` binds the ordinal `n` (epoch-origin) of the window being generated and returns the number of units to bundle. The count may be variable (`month`'s day counts) or constant (`year`'s 12) |
 | `split(g) by: u` | Variable division (top-down) | Divides a parent window into contiguous subwindows. `g = y => [widths…]` binds the parent's ordinal `y` and returns the list of subwindow widths. `by: u` makes the width unit explicit. That the widths sum to the parent is checkable under I5. Used for dependent windows |
-| `cycle(labels) anchor:` | Parallel labels | Attaches repeating labels to the target partition windows. Produces labels, not windows. The period length is arbitrary (7, 10, 12, 60, …) and so is the target window (not just `day`'s weekdays — `month` and `year` work too; the sexagenary cycle is `year cycle […]`). `anchor:` is an instant meaning "the target window it belongs to takes the first label". The bound name reads, in value expressions, as a point → label value function (`filter(d => weekday(d) == Mon)`; resolution is two steps: point → containing window → label. ADR-27) |
+| `cycle(labels) anchor:` | Parallel labels | Attaches repeating labels to the target partition windows. Produces labels, not windows. The period length is arbitrary (7, 10, 12, 60, …) and so is the target window (not just `day`'s weekdays — `month` and `year` work too; the sexagenary cycle is `year cycle […]`). `anchor:` is an instant meaning "the target window it belongs to takes the first label". The binding name reads, in value expressions, as a point → label value function (`filter(d => weekday(d) == Mon)`; resolution is two steps: point → containing window → label. ADR-27) |
 
 ### Leap is a value, not a window (the pivot that fixes the dependency direction)
 
@@ -230,7 +230,7 @@ the user side's in-scope premise** (the same rule as sugar definitions, §4.8; `
 no `wkst:` declared is a static error). Generation uses `segmentBy` (interval-sequence type), but
 because the weekday cycle lets exhaustiveness and non-overlap be proven by the I5 check, it can be
 used with `within(week)` — partition-hood is established by the check, not by the generating word
-([`stdlib/gregorian.md`](../../stdlib/gregorian.md) §4.5).
+([`stdlib/gregorian.md`](../stdlib/gregorian.md) §4.5).
 
 The right-hand side of a premise binding may contain, besides value expressions and
 window-generating words, **body-layer stream expressions** (pipe sequences like `weekStart` above,
@@ -379,7 +379,7 @@ premise JPGazette {
   first reference; snapshot-pinned; the means of acquisition is outside the language = ADR-15). A
   resolution failure is a **supply error** (a machine-readable subclass — distinguished by type
   from "nothing yet" (empty data + covering)). A premise with external must declare `tz:`. Details
-  in [`reference/external.md`](../../reference/external.md). The resolution flow (one resolution
+  in [`reference/external.md`](../reference/external.md). The resolution flow (one resolution
   per evaluation, the supply contract, the type distinction between "nothing yet" and failure):
 
   ```mermaid
