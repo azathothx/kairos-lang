@@ -1,5 +1,5 @@
 ---
-source_sha: f70a69297aef
+source_sha: d4bc804f482e
 ---
 
 # `with` — derived definition (overriding public words)
@@ -67,5 +67,5 @@ everyDay |> within(quarter) |> first
 
 ## Related
 
-[`shiftBoundary`](shiftBoundary.md) (sugar over with) · [`span`](span.md) · [`split`](split.md) ·
+[`rephase`](rephase.md) (sugar over with) · [`span`](span.md) · [`split`](split.md) ·
 Mechanism A (ADR-17) · I1.

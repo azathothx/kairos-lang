@@ -9,7 +9,7 @@
 Key facts:
 
 - Status: release candidate RC5 (July 2026). Semantics, operators, grammar (EBNF), and lexis are
-  frozen; one placeholder name (`shiftBoundary`) remains for 1.0.
+  frozen; naming is final for every word (the last placeholder was settled as `rephase`).
 - Architecture: two layers — a premise layer that defines calendars (the Gregorian calendar itself is
   a transparent standard library written in Kairos) and a body layer that composes schedules from
   stream-to-stream operators (`roll`, `shift`, `filter`, `nth`, `stride`, `segmentBy`, combinators).

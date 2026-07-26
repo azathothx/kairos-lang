@@ -615,8 +615,8 @@ export class Evaluator {
       base = this.rt.premises.get(st.expr.base) ?? this.err(`未定義の premise: ${st.expr.base}`);
       if (st.expr.withBlock) absorb(st.expr.withBlock);
       for (const stage of st.expr.stages) {
-        if (stage.name !== 'shiftBoundary') this.err(`premise 段 ${stage.name} は未対応（プロトタイプ）`);
-        const { d, W, U } = this.shiftBoundaryArgs(stage);
+        if (stage.name !== 'rephase') this.err(`premise 段 ${stage.name} は未対応（プロトタイプ）`);
+        const { d, W, U } = this.rephaseArgs(stage);
         defs.set(W, this.expandShiftBoundary(base, d, W, U));
       }
     }
@@ -645,23 +645,23 @@ export class Evaluator {
     this.rt.premises.set(st.name, new PremiseInstance(st.name, members, defs, base));
   }
 
-  /** shiftBoundary(δ, on: W, unit: U) → W = U span (_ => k) phase: φ₀+δ（§3.7） */
-  private shiftBoundaryArgs(stage: Stage): { d: number; W: string; U: string } {
+  /** rephase(δ, on: W, unit: U) → W = U span (_ => k) phase: φ₀+δ（§3.7） */
+  private rephaseArgs(stage: Stage): { d: number; W: string; U: string } {
     let d: number | undefined, W: string | undefined, U: string | undefined;
     for (const a of stage.args) {
       if (!a.name) d = this.constNum(a.value);
       else if (a.name === 'on') W = a.value.t === 'name' ? a.value.name : undefined;
       else if (a.name === 'unit') U = a.value.t === 'name' ? a.value.name : undefined;
     }
-    if (d === undefined || !W || !U) this.err('shiftBoundary(δ, on: W, unit: U) の引数が不足');
+    if (d === undefined || !W || !U) this.err('rephase(δ, on: W, unit: U) の引数が不足');
     return { d: d!, W: W!, U: U! };
   }
 
   private expandShiftBoundary(base: PremiseInstance, d: number, W: string, U: string): BindingDecl {
-    const def = base.findDef(W) ?? this.err(`shiftBoundary: base に窓 ${W} がない`);
+    const def = base.findDef(W) ?? this.err(`rephase: base に窓 ${W} がない`);
     const rhs = def.rhs;
     if (rhs.t !== 'gen' || rhs.word !== 'span' || rhs.operand.t !== 'name' || rhs.operand.name !== U) {
-      this.err(`shiftBoundary の射程外: base の ${W} は「${U} span (定数)」の形でない（§3.7）`);
+      this.err(`rephase の射程外: base の ${W} は「${U} span (定数)」の形でない（§3.7）`);
     }
     const g = rhs as Extract<Expr, { t: 'gen' }>;
     const k = this.constLambdaValue(g.arg);
@@ -686,7 +686,7 @@ export class Evaluator {
   }
   private constLambdaValue(e: Expr): number {
     if (e.t === 'lambda' && e.body.t === 'num') return e.body.v;
-    this.err('shiftBoundary の射程は k 定数の span のみ（§3.7）');
+    this.err('rephase の射程は k 定数の span のみ（§3.7）');
   }
 
   /** rhs が covering: つき、または日付要素を含むテーブルリテラルを含むか（tz: 必須の執行の判定）。

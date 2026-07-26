@@ -1,5 +1,5 @@
 ---
-source_sha: bac4c65e8ab0
+source_sha: 78cb1318cf11
 ---
 
 # Standard premise: Gregorian
@@ -259,7 +259,7 @@ Because §3 placed `month` as the parent (leap is a value), no holding pin such 
 `month = Gregorian.month` and no cycle avoidance is needed — the single `year` line suffices.
 `label:` is **not inherited on override** (it is part of the definition; ADR-42/F96), so if
 window-instance reference for fiscal years is wanted (`year(2026)` = the days of fiscal 2026),
-reattach it explicitly — the `shiftBoundary` expansion preserves the base's `label:` (F65), so
+reattach it explicitly — the `rephase` expansion preserves the base's `label:` (F65), so
 without the reattachment the equivalence of the two forms breaks.
 
 Fiscal has been promoted to a standalone commentary as a standard premise — the exhaustive

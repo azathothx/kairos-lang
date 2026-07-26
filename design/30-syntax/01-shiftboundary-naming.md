@@ -8,7 +8,7 @@
 
 - シグネチャ: `|> shiftBoundary(δ, on: W, unit: U) : premise -> premise`——窓 `W` の切れ目を
   単位 `U` で `δ` ずらした派生 premise を作る糖衣（正本は
-  [reference/shiftBoundary.md](../../reference/shiftBoundary.md)）。
+  `reference/shiftBoundary.md`（現 [reference/rephase.md](../../reference/rephase.md)））。
 - 展開: `W = U span (_ => k) phase: ((φ₀ + δ) mod k)`（負の δ も法で正規化＝F65・base の
   `label:` は保存＝F96）。**実体は「span の位相差し替え」**であり、日付は動かない（I1）。
 - 連動する射程外問題: `k`（`W ⊃ U` の個数）が**可変**な組（`month ⊃ day` 等）は本語の射程外
@@ -39,3 +39,13 @@
 **整理者の見立て**（参考・裁定は設計者）: 第一候補 `rephase`——定義的等式と名の一致・re- 族の
 対称・簡潔の三点。次点は現状維持 `shiftBoundary`（自明さと慣れ。「仮称のまま正式名に昇格」も
 F51 で前例あり）。
+
+## 裁定結果（2026-07-26・設計者）
+
+**`rephase` に確定**（1.0 宣言時予定を前倒し——条件 1 充足と同日）。裁定時の再点検で見立てを補強:
+①ADR-47 が「位相」を利用者向け語彙に昇格させ（`anchor:`＝位相を留める実日・「守るのは位相の
+宣言のみ」・エラー文言「位相が定まらない」）、難点「`phase:` を知らない読者には不透明」が軽く
+なった。②確認事項 1（k 可変需要）は第 5〜7 便を通じて新規需要ゼロのまま。③re- 族の対称は
+`rebase`↔`rephase`↔`anchor:` の錨・位相語彙系に拡大。処置＝全コーパス一括置換（F51 と同手順・
+ページ改名 reference/shiftBoundary.md→rephase.md 英日）・spec §5.4 確定記載・CHANGELOG 追補 11・
+doc-consistency の仮称検査 2 種を「仮称ゼロ」不変量へ状態遷移。**言語の仮称はゼロになった。**

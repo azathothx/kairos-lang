@@ -258,7 +258,7 @@ nextWeekday(d)      = roll(Following, on: (everyDay |> filter(x => weekday(x) ==
 
 **展開＝右辺の機械的差し込み** — `x |> nextWeekday(Fri)` は定義右辺を差し込んで
 `x |> roll(Following, on: (everyDay |> filter(x => weekday(x) == Fri)))` に開く。全糖衣を展開すれば core だけが
-残る。premise 層のパイプ糖衣（`shiftBoundary`。§3.7）も同じ片方向展開で、そちらは `premise → premise` の
+残る。premise 層のパイプ糖衣（`rephase`。§3.7）も同じ片方向展開で、そちらは `premise → premise` の
 `with` に開く。
 
 ## 4.9 窓→値の射影（値式との接続）

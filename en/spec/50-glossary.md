@@ -1,5 +1,5 @@
 ---
-source_sha: e46fef197c0c
+source_sha: 180fce107c75
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -10,7 +10,7 @@ source_sha: e46fef197c0c
 
 An index for lookup while reading the specification. Each entry is 〈term｜one-line
 definition｜references〉. Entries whose structure is settled but whose name awaits confirmation
-are marked **（仮称）** (placeholder) — the naming status is §5.4; the one remaining placeholder is `shiftBoundary`
+the naming status is §5.4 — **every word is final; no placeholders remain** (batch confirmation F51 of 2026-07-09 and the final `rephase` ruling of 2026-07-26, formerly `shiftBoundary`)
 (the batch confirmation F51 〈2026-07-09〉 settled everything else as official
 names, and the supply pair was renamed to `sessionOpens`/`sessionCloses`). In the references, "§"
 points to chapters of this specification and `stdlib/…` to the standard premise commentary.
@@ -86,7 +86,7 @@ points to chapters of this specification and `stdlib/…` to the standard premis
 | public word（公開語） | A top-level binding in a premise block. Referenced with `.` (`Gregorian.month`) | §3.6 |
 | public boundary word（公開境界語） | A public word that derives boundaries by reusing selectors (`monthEnd = month \|> last`). What generators really are | §3.6 |
 | `with` | The core of derivation. Overrides/adds the base's public words (`Fiscal = Gregorian with {…}`) | §3.7 |
-| `shiftBoundary` **（仮称）** (placeholder) | Derivation sugar that shifts window `W`'s cuts by δ in unit `U`. Expands into a `span` phase shift | §3.7 |
+| `rephase` | Derivation sugar that shifts window `W`'s cuts by δ in unit `U` (re-phase). Expands into a `span` phase shift | §3.7 |
 | phase（位相） | The phase origin of `span`/`split` (a fiscal calendar's April start, etc.) | §3.7 |
 
 ## 6.4 The body layer's operator families

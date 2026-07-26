@@ -169,3 +169,16 @@ ADR-41 改訂。残る仮称は `shiftBoundary` 一語＝1.0 送り継続）。*
 誤用は機械検出されない（照合は doctest・`coincides` の分担）。anchor は窓列のいずれかの窓に区間
 所属（頭側・範囲外は明示エラー）。締めは静的 labels: と同一を継承。あわせて named-arg の重複指定を
 静的エラーに一般化。既存の式の意味は不変（追加拡張）。EBNF は segment-labels/cycle-labels を追加。
+
+## RC5 追補 11（2026-07-26）——最後の仮称を `rephase` に裁定・命名完全確定
+
+窓境界の位相ずらし糖衣の正式名を **`rephase`** に裁定（旧仮称 `shiftBoundary`・設計者裁定＝
+当初「1.0 宣言時」予定の条件 3 を前倒し）。根拠は三点: (1) 展開の実体（`span` の `phase:`
+差し替え）と名が一致——`rephase(δ, on: W, unit: U) ≡ W = U span (_ => k) phase: ((φ₀+δ) mod k)`、
+(2) `rebase`（点の再錨）・`anchor:`（位相を留める実日）との re-/錨・位相語彙系の対称——ADR-47 で
+「位相」が利用者向け語彙に昇格したことが後押し、(3) 簡潔（13 字→7 字）と点変換 `shift` との
+同語幹回避。比較候補 `shiftBoundary` 昇格・`shiftPhase`・`offsetBoundary`/`moveBoundary` は
+不採用（経緯は design/30-syntax/01）。`boundary` の語は `k` 可変組を扱う将来の別演算子
+（スコープ外）に温存。**これで全語彙が正式名——仮称ゼロ**。意味論・展開・シグネチャは不変
+（純命名）。全コーパス一括置換（spec・reference〈ページ改名 shiftBoundary.md→rephase.md〉・
+stdlib・impl・図版・英語ミラー）。

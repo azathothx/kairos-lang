@@ -137,8 +137,8 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 ## Status and documentation
 
-**Release candidate (RC5, declared 2026-07-08; addenda through no. 8, 2026-07-14).** Semantics, the operator family, grammar (EBNF), and lexis are
-frozen; naming is final except one placeholder (`shiftBoundary`, to be settled for 1.0). Expressiveness
+**Release candidate (RC5, declared 2026-07-08; addenda through no. 11, 2026-07-26).** Semantics, the operator family, grammar (EBNF), and lexis are
+frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
 is validated against 20 well-known schedule families and by a reference implementation (466 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 

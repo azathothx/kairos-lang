@@ -2,7 +2,7 @@
 // - dispatch: 引数式の型で分岐（点→束縛名射影・値→逆像。判定は糖衣展開後・実引数束縛後＝ADR-42 判断 4）
 // - 意味論: W(v) ≡ W の要素点列 |> filter(d => W(d) == v)（判断 2。全マッチの和・ゼロマッチは空）
 // - 輸送行（判断 3・F94）: 「窓列→要素点列」の出力註釈＝窓列の実効被覆域の補集合（第 5 の窓リーダーサイト）
-// - 静的検査群 (a)〜(g)（判断 7）・修飾適用形 C.W(args)（EBNF 唯一の追補）・F96（shiftBoundary のラベル保存）
+// - 静的検査群 (a)〜(g)（判断 7）・修飾適用形 C.W(args)（EBNF 唯一の追補）・F96（rephase のラベル保存）
 import { describe, it, expect } from 'vitest';
 import { run, evalDates } from '../src/index.ts';
 import { iso, addDays } from './helpers.ts';
@@ -230,10 +230,10 @@ fy(1)
   });
 });
 
-describe('F96 回帰（shiftBoundary は base の label: を保存——Fiscal.year の同時付与と等価）', () => {
-  it('shiftBoundary(+3) の year(2026) ＝ Fiscal の year(2026)（ラベルも切断も一致）', () => {
+describe('F96 回帰（rephase は base の label: を保存——Fiscal.year の同時付与と等価）', () => {
+  it('rephase(+3) の year(2026) ＝ Fiscal の year(2026)（ラベルも切断も一致）', () => {
     const opts = { from: '2026-01-01', to: '2027-06-01' };
-    const viaSB = evalDates('premise Fiscal2 = Gregorian |> shiftBoundary(+3, on: year, unit: month)\n'
+    const viaSB = evalDates('premise Fiscal2 = Gregorian |> rephase(+3, on: year, unit: month)\n'
       + 'premise F2 { calendar-system: Fiscal2; tz: "Asia/Tokyo"; wkst: Mon }\n@F2\nyear(2026)', opts);
     expect(viaSB).toEqual(days('2026-04-01', '2027-04-01'));
     expect(viaSB).toEqual(evalDates(F + 'year(2026)', opts));

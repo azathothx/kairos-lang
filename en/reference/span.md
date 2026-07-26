@@ -1,5 +1,5 @@
 ---
-source_sha: 17e4f2e9f2d6
+source_sha: 4dd208bf85eb
 ---
 
 # `span` — variable aggregation of a unit sequence (bottom-up)
@@ -67,4 +67,4 @@ projection time, lazily evaluated). The canonical form of the fiscal-year label,
 ## Related
 
 [`grid`](grid.md) · [`split`](split.md) · [`with`](with.md) (a worked example of the `phase:`
-shift) · [`shiftBoundary`](shiftBoundary.md) (sugar over a span phase shift) · the epoch (ADR-31).
+shift) · [`rephase`](rephase.md) (sugar over a span phase shift) · the epoch (ADR-31).

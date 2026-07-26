@@ -1,6 +1,6 @@
-# `shiftBoundary` — 窓の切れ目を単位でずらす糖衣（仮称）
+# `rephase` — 窓の切れ目を単位でずらす糖衣（再位相）
 
-**分類**: 派生の糖衣（premise 層） ／ **シグネチャ**: `|> shiftBoundary(δ, on: W, unit: U) : premise -> premise` ／ **仮称**（言語で唯一。1.0 で確定・spec §5.4）
+**分類**: 派生の糖衣（premise 層） ／ **シグネチャ**: `|> rephase(δ, on: W, unit: U) : premise -> premise` ／ 正式名（2026-07-26 裁定・旧仮称 `shiftBoundary`・spec §5.4）
 
 ## 意味
 
@@ -8,7 +8,7 @@
 機械的展開で消せる:
 
 ```text
-shiftBoundary(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)   # 負の δ も法で正規化（F65）・base の label: は保存（F96）
+rephase(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)   # 負の δ も法で正規化（F65）・base の label: は保存（F96）
 #   k  = W が含む U の個数（year ⊃ month なら 12）
 #   φ₀ = base での W の位相（Gregorian の year は 0）
 ```
@@ -21,7 +21,7 @@ shiftBoundary(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ)
 
 ```kairos
 # eval: 2025-01-01..2028-01-01
-premise Fiscal2 = Gregorian |> shiftBoundary(+3, on: year, unit: month)
+premise Fiscal2 = Gregorian |> rephase(+3, on: year, unit: month)
 premise FY2 { calendar-system: Fiscal2; tz: "Asia/Tokyo"; wkst: Mon }
 @FY2
 everyDay |> within(year) |> first
@@ -31,8 +31,7 @@ everyDay |> within(year) |> first
 ## 落とし穴
 
 - **射程は `k` 定数の組**（`year ⊃ month`）のみ。`k` が可変な組（`month ⊃ day` を `day` 単位でずらす等）
-  は会計暦型の操作ではなく射程外——必要になれば別演算子（宿題）。この射程問題と連動するため、
-  名は仮称のまま 1.0 送り。
+  は会計暦型の操作ではなく射程外——必要になれば別演算子（宿題。`boundary` の語はそちらに温存）。
 - ずらすのは**切れ目**だけ。「年度ラベルを 2025 にするか 2026 にするか」は別ノブ（`label:` 付与式。
   spec §4.9）。
 

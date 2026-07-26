@@ -39,7 +39,7 @@ r.results[0].dates;   // ['2026-01-23', …]
 評価する（言語組み込みの魔法にしない＝「透明な標準ライブラリ」ADR-25 の検証）。
 
 検証済みの言語機構: 二層構造・前文（三形＋後置畳み込み `axis:`）・機構 A（`Fiscal` の `quarter` 自動追従）・
-`with` 上書きと `shiftBoundary` 展開の一致・糖衣の遅延解決（`nextWeekday` の前方 roll・WKST 非依存）・
+`with` 上書きと `rephase` 展開の一致・糖衣の遅延解決（`nextWeekday` の前方 roll・WKST 非依存）・
 week 窓の `wkst:` 遅延解決・cycle（曜日・年干支）・テーブルリテラル（`covering:`/`labels:`・昇順検査）・
 束縛名射影（`sekki(s) == 立春`）・射影 `ordinalIn`/`epochOrdinal`・`snapTo`・結合子カスケード・
 選択子の窓相対（I4 エラー含む）・`segmentBy`（隙間ポリシー必須）・ストライド（`from:` 必須＝ADR-31）・
@@ -195,7 +195,7 @@ instants ms・doctest `# resolve:` ディレクティブ——external.test.ts 3
   定義的等式との外延一致・点引数射影の不変・修飾適用形 `Gregorian.year(2020)`（Fiscal 下で暦年・
   結合子被演算子・射影面）・全マッチの和（`lunarMonth25(6)` が閏六月を含む）・空窓/ゼロマッチ＝空・
   輸送行の回帰（マーカー覆域の先で「落ちて註釈」＝F94）・静的検査群 (a)〜(g) 全種・値式位置の
-  型エラー・F96 回帰（shiftBoundary のラベル保存＝Fiscal.year 同時付与と等価）。
+  型エラー・F96 回帰（rephase のラベル保存＝Fiscal.year 同時付与と等価）。
 - `test/lexical-limits.test.ts` — リテラルの締め（ADR-43）。非実在日付の字句エラー（閏年規則込み）・
   固定オフセット tz の厳格一意形・時点の裸の値束縛（F97）の挙動固定。
 - `test/continuation.test.ts` — 文の区切りと複数行継続（ADR-44）。行頭/行末の結合子継続・premise

@@ -1,5 +1,5 @@
 ---
-source_sha: 5f81801d46f6
+source_sha: c2367a8c048e
 ---
 
 # Standard premise: Fiscal
@@ -50,13 +50,12 @@ This definition is the bundled source
 [`impl/stdlib/fiscal.kairos`](../../impl/stdlib/fiscal.kairos) itself (this page translates the
 comments); writing `calendar-system: Fiscal` in a preamble makes it usable with no definition of
 your own. If only the `year` override is wanted, the sugar
-[`shiftBoundary`](../reference/shiftBoundary.md) (a **placeholder** — the only remaining placeholder in
-the language) writes it too:
+[`rephase`](../reference/rephase.md) (official name, ruled 2026-07-26; formerly the placeholder shiftBoundary) writes it too:
 
 ```text
-premise Fiscal = Gregorian |> shiftBoundary(+3, on: year, unit: month)   # the same expansion as the single year line (placeholder)
+premise Fiscal = Gregorian |> rephase(+3, on: year, unit: month)   # the same expansion as the single year line
 
-# expansion rule: shiftBoundary(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)
+# expansion rule: rephase(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)
 #   (negative δ is also normalized by the modulus = F65. the base's label: is preserved = F96 —
 #    the ground on which the equivalence with §1's attach-alongside label: stands)
 #   here k = 12 (the number of month in year ⊃ month), φ₀ = 0 (the phase of Gregorian's year), δ = +3
@@ -299,7 +298,7 @@ everyDay |> within(half) |> first
 
 **Some "fiscal years" lie out of reach.** The UK personal tax year (April 6 start) is a day-unit
 shift — a `month ⊃ day` pair whose `k` (the number of units a window contains) is variable —
-outside `shiftBoundary`'s reach (constant-`k` pairs), and not writable as a single phase shift of
+outside `rephase`'s reach (constant-`k` pairs), and not writable as a single phase shift of
 `span` (spec §3.7; a separate operator if it ever becomes needed = homework). 4-4-5 week
 accounting (the 52/53-week system) is likewise a separate, `week`-based lineage — a problem to be
 designed as a distinct premise, not a variant of `Fiscal`.

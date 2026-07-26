@@ -81,9 +81,9 @@ everyDay |> within(year) |> first
     expect(dates).toEqual(['2025-04-01', '2026-04-01', '2027-04-01']);
   });
 
-  it('shiftBoundary 糖衣は with 展開と一致（§3.7）', () => {
+  it('rephase 糖衣は with 展開と一致（§3.7）', () => {
     const dates = evalDates(`
-premise Fiscal2 = Gregorian |> shiftBoundary(+3, on: year, unit: month)
+premise Fiscal2 = Gregorian |> rephase(+3, on: year, unit: month)
 premise FY2 { calendar-system: Fiscal2; tz: "Asia/Tokyo"; wkst: Mon }
 @FY2
 everyDay |> within(year) |> first

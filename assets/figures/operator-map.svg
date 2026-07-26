@@ -90,7 +90,7 @@
   <rect x="335" y="486" width="255" height="108" rx="10" class="card" stroke-width="1.2"/>
   <text x="351" y="514" font-size="15" font-weight="600" class="ink">Derivation</text>
   <text x="351" y="538" font-size="13" class="mono sub">with (override)</text>
-  <text x="351" y="558" font-size="13" class="mono sub">shiftBoundary (placeholder)</text>
+  <text x="351" y="558" font-size="13" class="mono sub">rephase (placeholder)</text>
   <rect x="610" y="486" width="255" height="108" rx="10" class="card" stroke-width="1.2"/>
   <text x="626" y="514" font-size="15" font-weight="600" class="ink">Data</text>
   <text x="626" y="538" font-size="13" class="mono sub">table literal</text>

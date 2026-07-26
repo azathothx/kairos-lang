@@ -1,5 +1,5 @@
 ---
-source_sha: 3006ab2c4930
+source_sha: 1c8d034a6b61
 ---
 
 # Kairos Language Specification — 1. Introduction
@@ -109,9 +109,9 @@ definitions; expressing business days, calendars, windows, and roll conventions.
 3. The premise layer — preamble, calendar-system definitions (primitive/derived), value expressions
 4. The body layer — generators, windows, selectors, point transforms, combinators, filters, strides, sugar
 5. Grammar and symbols — symbol table, operator signatures, naming status, lexis, EBNF
-6. Glossary — an index for lookup (concept terms, descriptors, symbols, invariants; placeholder-marked)
+6. Glossary — an index for lookup (concept terms, descriptors, symbols, invariants)
 7. Representative examples
 
-**Conventions**: placeholder names are marked "（仮称）" — the only remaining placeholder is `shiftBoundary` (batch naming confirmation F51; §5.4).
+**Conventions**: naming is final for every word — no placeholders remain (batch naming confirmation F51 and the `rephase` ruling of 2026-07-26; §5.4).
 The rationale for each design decision lives in the design records `20-adr/` (ADR-01 through 47) and
 `10-domain-model.md`; this specification presents only the folded conclusions.

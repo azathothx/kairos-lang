@@ -51,4 +51,4 @@ everyDay |> within(quarter) |> first
 
 ## 関連
 
-[`shiftBoundary`](shiftBoundary.md)（with への糖衣）・[`span`](span.md)・[`split`](split.md)・機構 A（ADR-17）・I1。
+[`rephase`](rephase.md)（with への糖衣）・[`span`](span.md)・[`split`](split.md)・機構 A（ADR-17）・I1。

@@ -1956,7 +1956,7 @@ premise 層・派生的定義（§1.12。`with` は確定・`shiftBoundary` は�
 - 命名はほぼ確定（spec §5.4）: `grid`/`span`/`split`/`cycle`・`anchor:`/`phase:`/`by:`・`with` は RC1 で確定。
   ~~基底の名 `axis` の二義~~ → ADR-29 で解消（基底＝`chronos`・操作軸＝`axis:` 双方確定）。
   ~~射影一族の名~~ → RC2 で確定（`ordinalIn`/`epochOrdinal`/`snapTo`・`label:`/`labels:`・`covering:`。
-  `labelOf` は ADR-30 で廃語）。残る仮称は `shiftBoundary` の一語（`nonWorking` は 2026-07-09 の F51
+  `labelOf` は ADR-30 で廃語）。最後の仮称 `shiftBoundary` も `rephase` に裁定済み〈2026-07-26〉（`nonWorking` は 2026-07-09 の F51
   一括確定で正式名。正本は spec §5.4）。
 - ~~並列 week 窓の生成語~~ → §1.16 補で解消（segmentBy＋wkst 遅延解決・専用生成語なし）。
 - `of:` が匿名窓（`segmentBy` で作った名前の無い窓）を指すときのラベル付け（窓の参照方法）。裸ストリームへの

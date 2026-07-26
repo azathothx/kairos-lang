@@ -1,5 +1,5 @@
 ---
-source_sha: 22a79fed34b9
+source_sha: 6e807d458e7e
 ---
 
 # Kairos Language Specification — 7. Worked Examples
@@ -56,7 +56,7 @@ core form; calendar-dependent generators are also a rejected alternative of ADR-
 
 ```text
 # sugar (everyday form)
-premise Fiscal = Gregorian |> shiftBoundary(+3, on: year, unit: month)
+premise Fiscal = Gregorian |> rephase(+3, on: year, unit: month)
 
 # core expansion (with-override)
 premise Fiscal = Gregorian with {
@@ -67,7 +67,7 @@ premise Fiscal = Gregorian with {
 All this does is recompose `Gregorian`'s `year` into "bundle calendar months by 12, starting in
 April". `month` is untouched, so calendar days and month-ends stay fixed (§3.7). `quarter`'s
 inherited definition (`year split by month`) automatically follows the new `year`, yielding fiscal
-quarters (Apr–Jun/…). `shiftBoundary` expands into a single phase shift of the `span` (`k=12`,
+quarters (Apr–Jun/…). `rephase` expands into a single phase shift of the `span` (`k=12`,
 `φ₀=0`, `δ=+3`).
 
 The fiscal calendar can be used with the same standing as the original. Lay

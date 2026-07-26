@@ -1,5 +1,5 @@
 ---
-source_sha: e75268d79e4a
+source_sha: 7eef30eec4d3
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -99,7 +99,7 @@ source_sha: e75268d79e4a
 - `Base with { w = … } : premise -> premise` — overrides/extends the base's public words. Bare
   names re-resolve in the derived scope; `Base.w` pins to the base value (mechanism A). Inherited
   words automatically track the overridden words they depend on.
-- `\|> shiftBoundary(δ, on: W, unit: U) : premise -> premise` (placeholder name) — sugar that
+- `\|> rephase(δ, on: W, unit: U) : premise -> premise` — sugar that
   shifts the boundaries of window `W` by δ in unit `U`. The expansion is
   `W = U span (_ => k) phase: (φ₀+δ) mod k` (`k` = the count of `W ⊃ U`; `φ₀` = the base's phase;
   negative δ is also normalized by the modulus = F65). The base's `label:` is preserved.
@@ -144,11 +144,14 @@ derivations; §3.9.1) are **confirmed as final names unchanged**. The business-h
 same-name bindings; ADR-41 revised). All have seen live use (16–35 files) with no cracks in the
 names.
 
-**Still placeholder** (words with remaining crack or ambiguity concerns):
-
-- `shiftBoundary` — coupled to the out-of-scope problem of variable-`k` pairs (§3.7). Deferred to
-  1.0 to keep room to rethink naming symmetry should a separate operator be introduced (left as is
-  even in the 2026-07-09 batch confirmation — `shiftBoundary` is the sole remaining placeholder).
+**Final (2026-07-26, designer ruling — the last placeholder resolved)**: the window-boundary
+phase-shift sugar is **`rephase`** (formerly the placeholder `shiftBoundary`). The name matches the
+expansion's substance (replacing `span`'s `phase:`) and is symmetric with `rebase` (re-anchor) and
+`anchor:` (the real day that pins a phase) in the vocabulary family. Rejected candidates: promoting
+`rephase` (same stem as the point transform `shift` despite being a different thing; 13
+characters), `shiftPhase` (the stem confusion remains), `offsetBoundary`/`moveBoundary` (new stems).
+The word `boundary` is reserved for a possible future operator handling variable-`k` pairs (§3.7,
+out of scope). **With this, every word bears its official name — no placeholders remain.**
 
 ## 5.5 Lexis (ADR-28)
 
@@ -185,9 +188,8 @@ names.
 
 ## 5.6 Grammar (EBNF)
 
-The structure is final; some words are placeholder names (§5.4). The EBNF, too, writes placeholder
-words under those names. Sugar (the `a..b` range, the point-free shorthand) disappears into core
-on expansion.
+The structure and the vocabulary are both final (§5.4 — no placeholders remain). Sugar (the `a..b`
+range, the point-free shorthand) disappears into core on expansion.
 
 ```ebnf
 (* ---- Program ---- *)
@@ -312,8 +314,9 @@ check, not grammar).
 
 The **canonical record of open questions and homework is `../../design/90-open-questions.md`**
 (syntax-level details in `../../design/30-syntax/00-syntax-draft.md` §4). Within the scope of this
-specification, `shiftBoundary` (the name, plus a separate operator for the out-of-scope
-variable-`k` pairs) and anonymous-window labeling for `of:` remain open (the external-supply
-declaration is **final as `external`** = ADR-46, §3.8). Neither changes the semantics (pure naming
-or additive extension; the DoD classification is at the head of
+specification, a separate operator for the out-of-scope variable-`k` pairs (introduced only if
+needed; the word `boundary` is reserved for it) and anonymous-window labeling for `of:` remain open
+(naming is **final for every word** = the `rephase` ruling of 2026-07-26, §5.4; the external-supply
+declaration is **final as `external`** = ADR-46, §3.8). Neither changes the semantics (additive
+extension; the DoD classification is at the head of
 `../../design/90-open-questions.md`).

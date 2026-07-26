@@ -212,7 +212,7 @@ premise Fiscal = Gregorian with {
 会計四半期（Apr-Jun/…）になる。§3 で `month` を親に置いた（閏は値）おかげで、`month = Gregorian.month` のような
 据え置きピンも循環回避も要らず、`year` 一行で済む。`label:` は**上書きに継承されない**（定義の一部・
 ADR-42/F96）ので、年度の窓インスタンス参照（`year(2026)`＝2026 年度の日々）が要るなら明示に付け直す
-——`shiftBoundary` 展開形は base の `label:` を保存する（F65）ため、付け直しがないと二形の等価が破れる。
+——`rephase` 展開形は base の `label:` を保存する（F65）ため、付け直しがないと二形の等価が破れる。
 
 Fiscal は標準 premise として独立の解説に昇格した——年度番号・会計月番号・変種（US 型・半期）・射程外まで
 含む網羅は [fiscal.md](fiscal.md)。同じく `Gregorian` からの派生では [iso-week.md](iso-week.md)（ISO 週暦）、

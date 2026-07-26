@@ -223,22 +223,22 @@ premise Fiscal = Gregorian with {
 不動。2026-03-01 は「3 月 1 日」のまま、所属する**年窓**だけが変わる（2025 年度＝Apr2025–Mar2026）。
 
 **パイプは糖衣、展開は span の位相ずらし一発** — 日常形は
-`premise Fiscal = Gregorian |> shiftBoundary(+3, on: year, unit: month)`。`shiftBoundary` は上の `with` へ展開する
+`premise Fiscal = Gregorian |> rephase(+3, on: year, unit: month)`。`rephase` は上の `with` へ展開する
 糖衣で、展開規則は：
 
 ```text
-shiftBoundary(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)   # 負の δ も法で正規化（F65）
+rephase(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)   # 負の δ も法で正規化（F65）
 #   k  = W が含む U の個数（year ⊃ month なら 12）
 #   φ₀ = base での W の位相（Gregorian の year は 0）
 ```
 
 `W` を「`U` を `k` 個ずつ束ねる `span`」と見て、その位相を δ 進めるだけ。`k` が定数でない組（`month ⊃ day` を
-`day` 単位でずらす等）は会計暦型の操作ではなく、`shiftBoundary` の射程外（必要なら別演算子）。
+`day` 単位でずらす等）は会計暦型の操作ではなく、`rephase` の射程外（必要なら別演算子）。
 
 **直交する別ノブ** — 年度の番号付け（`2025 年度`＝開始暦年／US FY＝終了暦年）は窓の切断とは独立した序数・ラベルの
-射影で、規約が国ごとに違う。`shiftBoundary` に埋め込まず、窓→値の射影一族（§4.9・ADR-27）のラベル付与側
+射影で、規約が国ごとに違う。`rephase` に埋め込まず、窓→値の射影一族（§4.9・ADR-27）のラベル付与側
 （`label:` 付与式）に吸収する。付与式の束縛規則は ADR-34 で確定——ラムダは窓の**先頭点**を受け
-（`label: (p => yearNo(p))` が開始暦年ラベル）、隣接窓参照は射程外（§4.9）。`shiftBoundary` は base の
+（`label: (p => yearNo(p))` が開始暦年ラベル）、隣接窓参照は射程外（§4.9）。`rephase` は base の
 `label:` を**保存して**展開し（切断ノブとラベルノブは直交）、合成位相は `k` を法として正規化する（F65）。
 
 ## 3.8 データの持ち込み口（テーブルリテラル）
@@ -319,7 +319,7 @@ premise JPGazette {
 
 命名の確定状況は §5.4: `grid`・`span`・`split`・`cycle`・`anchor:`・`phase:`・`by:`・`with`・`chronos`（基底の
 字句名。ADR-29）・`axis:`（操作軸）に加え、RC2 で `covering:`・`labels:`・`label:`（テーブル・付与側）も確定。
-仮称は `shiftBoundary` 一語（1.0 送り——F51 の一括確定〈2026-07-09〉で他はすべて正式名。§5.4）。日付・幅リテラルの字句は確定済み（ADR-28/43・§5.5）。
+命名は全語確定——最後の仮称も `rephase` に裁定済み〈2026-07-26・旧 `shiftBoundary`。F51 の一括確定〈2026-07-09〉と合わせ仮称ゼロ。§5.4〉。日付・幅リテラルの字句は確定済み（ADR-28/43・§5.5）。
 
 ## 3.9 カレンダー実体（ADR-35）
 

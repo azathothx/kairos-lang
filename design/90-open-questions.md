@@ -72,8 +72,9 @@
   独立機構でなく窓ラベル付与（`label:` 引数）のラベル式の与え方の問題に変わり（ADR-27）、付与式の設計
   （別点の窓参照は可・隣接窓は射程外）も ADR-30 で確定した（のち ADR-34 で「別点」は先頭点＝代表点への
   参照に精密化）。
-- `shiftBoundary` の射程外＝`k`（`W ⊃ U` の個数）可変な組（`month ⊃ day` を `day` 単位でずらす等）の別演算子
-  （必要になれば。§1.12）。**［追加拡張］**（既存 `shiftBoundary` の意味は不変）
+- `rephase`（旧仮称 `shiftBoundary`）の射程外＝`k`（`W ⊃ U` の個数）可変な組（`month ⊃ day` を `day` 単位で
+  ずらす等）の別演算子（必要になれば。§1.12。`boundary` の語はそちらに温存＝rephase 裁定 2026-07-26）。
+  **［追加拡張］**（既存 `rephase` の意味は不変）
 - 命名: **ほぼ確定**（2026-07-07・spec §5.4）**［純命名］**——`grid`/`span`/`split`/`cycle`・
   `anchor:`/`phase:`/`by:`・`with` は RC1 で確定（40-examples の検証で綻びなし）。
   ~~(a) `axis` の二義~~ → **ADR-29 で解消**: 基底の字句名は `chronos`（型名 `Chronos`）、操作軸 `axis:` は
@@ -83,10 +84,12 @@
   ADR-30 で廃語）。
   **F51 の一括確定（2026-07-09・設計者裁定）**: `nonWorking`・`coincides`・`rebase`・
   `bizOpen`/`bizClose`/`isOpen` はそのまま正式名に、供給の対は `sessionOpens`/`sessionCloses` に
-  改名して確定（ADR-41 改訂・正本は spec §5.4）。残る仮称は (b) `shiftBoundary` 一語のみ
-  （`k` 可変組の射程外問題と連動するため 1.0 送り継続。**裁定材料の比較表は整理済み**＝
-  [30-syntax/01-shiftboundary-naming.md](30-syntax/01-shiftboundary-naming.md)〈2026-07-24・候補 5 語・
-  確認事項 3 点〉——裁定は 1.0 宣言時）。
+  改名して確定（ADR-41 改訂・正本は spec §5.4）。
+  ~~(b) `shiftBoundary`~~ → **`rephase` に裁定・命名完全確定（2026-07-26・設計者裁定＝1.0 宣言時
+  予定を前倒し）**: 展開の実体（`span` の `phase:` 差し替え）との一致・`rebase`/`anchor:` との
+  語彙系対称・簡潔（7 字）の三点。比較表と経緯は
+  [30-syntax/01-shiftboundary-naming.md](30-syntax/01-shiftboundary-naming.md)（裁定結果を追記済み）。
+  **これで仮称はゼロ——命名の宿題は完了**。
   （日付・幅リテラルの**字句**は ADR-28 で確定済み）。
 - ~~並列 week 窓の生成語~~ → **§1.16 補で解消**: 専用生成語は不要。`week = day |> segmentBy(weekStart)`（weekStart
   ＝wkst ラベル日、前文メンバーの遅延解決）で立ち、パーティション性は I5 検査で証明。`nextWeekday` は

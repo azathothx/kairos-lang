@@ -1,5 +1,5 @@
 ---
-source_sha: d89003c356db
+source_sha: fe3349fcfacb
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -278,26 +278,26 @@ Calendar days, `day`/`month`, `monthStart` are fixed. 2026-03-01 remains "March 
 window** it belongs to changes (fiscal 2025 = Apr2025–Mar2026).
 
 **The pipe is sugar; expansion is a single phase shift of span** — the everyday form is
-`premise Fiscal = Gregorian |> shiftBoundary(+3, on: year, unit: month)`. `shiftBoundary` is sugar
+`premise Fiscal = Gregorian |> rephase(+3, on: year, unit: month)`. `rephase` is sugar
 expanding to the `with` above, with the expansion rule:
 
 ```text
-shiftBoundary(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)   # negative δ is also normalized by the modulus (F65)
+rephase(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)   # negative δ is also normalized by the modulus (F65)
 #   k  = the number of U's contained in W (12 for year ⊃ month)
 #   φ₀ = W's phase in the base (0 for Gregorian's year)
 ```
 
 View `W` as "a `span` bundling `U` in groups of `k`" and simply advance its phase by δ. Pairs where
 `k` is not constant (shifting `month ⊃ day` in units of `day`, etc.) are not fiscal-calendar-type
-operations and lie outside `shiftBoundary`'s reach (a separate operator if ever needed).
+operations and lie outside `rephase`'s reach (a separate operator if ever needed).
 
 **An orthogonal, separate knob** — year numbering ("fiscal 2025" = the starting calendar year /
 US FY = the ending calendar year) is a projection of ordinals and labels independent of window
-cutting, with conventions that differ by country. It is not baked into `shiftBoundary` but absorbed
+cutting, with conventions that differ by country. It is not baked into `rephase` but absorbed
 into the labeling side (`label:` attachment expressions) of the window→value projection family
 (§4.9, ADR-27). The binding rule of attachment expressions is settled by ADR-34 — the lambda
 receives the window's **first point** (`label: (p => yearNo(p))` labels with the starting calendar
-year); adjacent-window reference is out of reach (§4.9). `shiftBoundary` expands **preserving** the
+year); adjacent-window reference is out of reach (§4.9). `rephase` expands **preserving** the
 base's `label:` (the cut knob and the label knob are orthogonal), and the composite phase is
 normalized modulo `k` (F65).
 
@@ -403,9 +403,10 @@ premise JPGazette {
 
 The naming status is in §5.4: `grid`, `span`, `split`, `cycle`, `anchor:`, `phase:`, `by:`, `with`,
 `chronos` (the lexical name of the base. ADR-29), and `axis:` (the operating axis) are settled, and
-RC2 also settled `covering:`, `labels:`, and `label:` (table and attachment sides). The sole
-placeholder is `shiftBoundary` (carried to 1.0 — the batch confirmation F51 (2026-07-09) made all
-others official. §5.4). The lexis of date and width literals is settled (ADR-28/43, §5.5).
+RC2 also settled `covering:`, `labels:`, and `label:` (table and attachment sides). Naming is final
+for every word — the last placeholder was settled as `rephase` (2026-07-26, formerly
+`shiftBoundary`; together with the batch confirmation F51 of 2026-07-09, no placeholders remain.
+§5.4). The lexis of date and width literals is settled (ADR-28/43, §5.5).
 
 ## 3.9 Calendar entities (ADR-35)
 

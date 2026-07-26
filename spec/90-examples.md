@@ -42,7 +42,7 @@ everyDay |> filter(on: bizDay) |> within(month) |> nth(2)
 
 ```text
 # 糖衣（日常形）
-premise Fiscal = Gregorian |> shiftBoundary(+3, on: year, unit: month)
+premise Fiscal = Gregorian |> rephase(+3, on: year, unit: month)
 
 # core 展開（with 上書き）
 premise Fiscal = Gregorian with {
@@ -52,7 +52,7 @@ premise Fiscal = Gregorian with {
 
 `Gregorian` の `year` を「暦月を 4 月始まりで 12 ずつ束ねる」に組み替えるだけ。`month` に触れないので暦日・月末は
 不動（§3.7）。`quarter` は継承定義（`year split by month`）が新しい `year` に自動追従し、会計四半期（Apr-Jun/…）に
-なる。`shiftBoundary` は `span` の位相ずらし一発に展開される（`k=12`・`φ₀=0`・`δ=+3`）。
+なる。`rephase` は `span` の位相ずらし一発に展開される（`k=12`・`φ₀=0`・`δ=+3`）。
 
 会計暦は元と同じ資格で使える。本体式の前文で `calendar-system: Fiscal` を敷けば、以降の `within(year)` は会計
 年度で束ねる。

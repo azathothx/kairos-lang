@@ -50,4 +50,4 @@ everyDay |> within(pentad) |> first
 ## 関連
 
 [`grid`](grid.md)・[`split`](split.md)・[`with`](with.md)（`phase:` ずらしの実例）・
-[`shiftBoundary`](shiftBoundary.md)（span 位相ずらしへの糖衣）・紀元（ADR-31）。
+[`rephase`](rephase.md)（span 位相ずらしへの糖衣）・紀元（ADR-31）。

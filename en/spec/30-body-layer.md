@@ -1,5 +1,5 @@
 ---
-source_sha: a4afa59abcaf
+source_sha: 0b9ee48aed69
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -333,7 +333,7 @@ complexity is borne by the core it expands into; the sugar stays thin.
 **Expansion = mechanical insertion of the right-hand side** — `x |> nextWeekday(Fri)` inserts the
 definition's right-hand side and opens into
 `x |> roll(Following, on: (everyDay |> filter(x => weekday(x) == Fri)))`. Expand all sugar and
-only core remains. The premise layer's pipe sugar (`shiftBoundary`; §3.7) is the same one-way
+only core remains. The premise layer's pipe sugar (`rephase`; §3.7) is the same one-way
 expansion; that one opens into the `with` of `premise → premise`.
 
 ## 4.9 Window-to-value projection (the connection to value expressions)

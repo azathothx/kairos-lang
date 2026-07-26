@@ -31,12 +31,12 @@ premise Fiscal = Gregorian with {
 
 この定義は同梱ソース [`../impl/stdlib/fiscal.kairos`](../impl/stdlib/fiscal.kairos) そのものであり、前文で
 `calendar-system: Fiscal` と書けば宣言なしで使える。`year` の上書きだけなら、糖衣
-[`shiftBoundary`](../reference/shiftBoundary.md)（**仮称**。言語で唯一の仮称語）でも書ける:
+[`rephase`](../reference/rephase.md)（正式名＝2026-07-26 裁定・旧仮称 shiftBoundary）でも書ける:
 
 ```text
-premise Fiscal = Gregorian |> shiftBoundary(+3, on: year, unit: month)   # year 一行と同じ展開（仮称）
+premise Fiscal = Gregorian |> rephase(+3, on: year, unit: month)   # year 一行と同じ展開
 
-# 展開規則: shiftBoundary(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)
+# 展開規則: rephase(δ, on: W, unit: U)  ≡  W = U span (_ => k) phase: ((φ₀ + δ) mod k)
 #   （負の δ も法で正規化＝F65。base の label: は保存＝F96——§1 の label: 同時付与と等価が立つ根拠）
 #   ここでは k = 12（year ⊃ month の個数）・φ₀ = 0（Gregorian の year の位相）・δ = +3
 ```
@@ -248,7 +248,7 @@ everyDay |> within(half) |> first
 ```
 
 **射程外の「会計年度」もある**。英国の個人課税年度（4 月 6 日開始）は日単位のずらしで、`month ⊃ day` の
-`k`（窓が含む単位の個数）が可変な組——`shiftBoundary` の射程（`k` 定数の組）の外であり、`span` の位相ずらし
+`k`（窓が含む単位の個数）が可変な組——`rephase` の射程（`k` 定数の組）の外であり、`span` の位相ずらし
 一発では書けない（spec §3.7。必要になれば別演算子＝宿題）。4-4-5 週会計（52/53 週制）も `week` 基準の別系統
 で、`Fiscal` の変種ではなく別の premise として設計する問題である。
 

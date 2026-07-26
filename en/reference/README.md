@@ -1,5 +1,5 @@
 ---
-source_sha: 6b5cf0637c4d
+source_sha: 6bb438892405
 ---
 
 # <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Descriptor Reference
@@ -88,7 +88,7 @@ so the guarantee carries over. The same conventions extend to the explanatory pa
 | Window-generating word | [`split`](split.md) | variable division of a parent window (dependent windows) |
 | Window-generating word | [`cycle`](cycle.md) | parallel repeating labels (labels, not windows) |
 | Derivation | [`with`](with.md) | override an existing premise's public words |
-| Derivation | [`shiftBoundary`](shiftBoundary.md) (placeholder) | sugar shifting window cut points by a unit |
+| Derivation | [`rephase`](rephase.md) | sugar shifting window cut points by a unit (re-phase; formerly the placeholder shiftBoundary) |
 | Literal | [table literal](table-literal.md) | stream constant of an instant sequence (covering:/labels:) |
 | Supply | [`external`](external.md) | external supply declaration (a table literal resolved at run time. ADR-46) |
 | Calendar entity | [`nonWorking`](nonWorking.md) | the entity's reserved public word and the `bizDay` standard derivation (ADR-35) |
