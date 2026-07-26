@@ -1,5 +1,5 @@
 ---
-source_sha: 180fce107c75
+source_sha: 139392d30050
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -9,11 +9,11 @@ source_sha: 180fce107c75
 > Japanese original changes.
 
 An index for lookup while reading the specification. Each entry is 〈term｜one-line
-definition｜references〉. Entries whose structure is settled but whose name awaits confirmation
-the naming status is §5.4 — **every word is final; no placeholders remain** (batch confirmation F51 of 2026-07-09 and the final `rephase` ruling of 2026-07-26, formerly `shiftBoundary`)
-(the batch confirmation F51 〈2026-07-09〉 settled everything else as official
-names, and the supply pair was renamed to `sessionOpens`/`sessionCloses`). In the references, "§"
-points to chapters of this specification and `stdlib/…` to the standard premise commentary.
+definition｜references〉. The naming status is §5.4 — **every word is final; no placeholders
+remain** (the batch confirmation F51 of 2026-07-09 settled everything else as official names and
+renamed the supply pair to `sessionOpens`/`sessionCloses`; the final `rephase` ruling of
+2026-07-26, formerly `shiftBoundary`, completed the set). In the references, "§" points to
+chapters of this specification and `stdlib/…` to the standard premise commentary.
 
 ## 6.1 Layers, types, and overall structure
 

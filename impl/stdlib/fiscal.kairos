@@ -1,6 +1,6 @@
 # 標準 premise: Fiscal（会計暦・4 月始まり。stdlib/fiscal.md §1 の完全定義）
 # Gregorian の派生的定義。上書きは year 一行だけで、quarter・yearStart は機構 A で自動追従（spec §3.7）。
-# 糖衣形 `Gregorian |> rephase(+3, on: year, unit: month)` と同じ展開（rephase は仮称）。
+# 糖衣形 `Gregorian |> rephase(+3, on: year, unit: month)` と同じ展開（正式名＝2026-07-26 裁定）。
 
 premise Fiscal = Gregorian with {
   year = month span (_ => 12) phase: 3 label: (p => yearNo(p))   # 暦月を 4 月始まりで 12 ずつ束ね直す。

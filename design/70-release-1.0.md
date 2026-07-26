@@ -49,17 +49,18 @@ external の実運用を見て宣言する**（比較 3 案〈全信号の自然
   （窓列への周期ラベルは **ADR-47 で確定・実装済み 2026-07-25**＝ブロック要因から消化）
 - **F77（dailyAt 級糖衣）＝見送り裁定済み**（2026-07-24——糖衣需要は実装期に集中する分布と判明し
   頻度待ちでは閉じない構造のため裁定で完結。再開は 1.0 後の新規実装局面での再頻出＝需要駆動）
-- `shiftBoundary` の `k` 可変組（射程外・必要になれば別演算子）・DST gap/overlap の解決規約
-  （opt-in premise の将来拡張）・tzdb の版供給（スコープ外連動）
+- `rephase`（旧仮称 `shiftBoundary`）の `k` 可変組（射程外・必要になれば別演算子）・DST gap/overlap
+  の解決規約（opt-in premise の将来拡張）・tzdb の版供給（スコープ外連動）
 
 ## 宣言時の作業一覧
 
-1. `shiftBoundary` の正式名への一括置換（裁定次第。全コーパス＝spec・reference・stdlib・impl・
-   40-examples——F51 一括確定と同じ手順）
+1. ~~`shiftBoundary` の正式名への一括置換~~ → **前倒し完了（2026-07-26・`rephase` に裁定＝条件 3・
+   全コーパス置換済み・CHANGELOG 追補 11）**
 2. spec/README の RC5→1.0 表記更新・spec/CHANGELOG に「RC5→1.0」節
-3. 英語版の追従（**全章訳済み 2026-07-24＝前倒し完了**——1.0 時に残るのは shiftBoundary 置換と
-   最終改稿の追従・`source_sha` 更新のみ。ドリフトは doc-consistency 検査が自動検出）
-4. git タグ付け・公開同期（publish.sh＝設計者の手動実行）・GitHub Release
+3. 英語版の追従（**全章訳済み 2026-07-24＝前倒し完了・rephase 置換も英日同時済み**——1.0 時に
+   残るのは最終改稿の追従・`source_sha` 更新のみ。ドリフトは doc-consistency 検査が自動検出）
+4. git タグ付け・公開同期（publish.sh＝設計者の手動実行）・GitHub Release。**公開ページを改名・
+   削除する場合は旧 URL に `redirect_from` を張る**（2026-07-27 常設化＝外部レビュー第 5 回 N4）
 5. 設計ジャーナル（非公開）に宣言記録・90-open-questions の最終スナップショット確認
 
 ## 時期の目安と継続観測

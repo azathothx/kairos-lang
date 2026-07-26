@@ -52,12 +52,15 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
   it('仮称印がどこにも残っていない（rephase 裁定〈2026-07-26〉で仮称ゼロ）', () => {
     // 「（仮称）」を記法・経緯として説明する行（凡例・旧仮称の言及）は対象外
     const legend = /「（仮称）」|仮称印|と記す|\(placeholder\)|旧仮称|formerly/;
-    // spec/CHANGELOG は RC 変更履歴（当時の記録）なので対象外
-    const docs = CURRENT_DOCS.filter(p => p !== 'spec/CHANGELOG.md');
+    // spec/CHANGELOG は RC 変更履歴（当時の記録）なので対象外。
+    // .kairos の同梱ソースも対象（外部レビュー第 5 回 N3——.md のみの走査では網の外だった）
+    const kairosFiles = readdirSync(new URL('impl/stdlib/', root))
+      .filter(f => f.endsWith('.kairos')).map(f => `impl/stdlib/${f}`);
+    const docs = [...CURRENT_DOCS.filter(p => p !== 'spec/CHANGELOG.md'), ...kairosFiles];
     const stale: string[] = [];
     for (const p of docs) {
       for (const [i, line] of read(p).split('\n').entries()) {
-        if (/（仮称[）・]|\*\*仮称\*\*/.test(line) && !legend.test(line)) {
+        if (/（仮称[）・]|\*\*仮称\*\*|は仮称/.test(line) && !legend.test(line)) {
           stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 60)}`);
         }
       }
@@ -104,16 +107,19 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
   });
 
   it('「残る仮称」の主張がどこにも残っていない（rephase 裁定〈2026-07-26〉で仮称ゼロ——2026-07-13 レビュー指摘 A の検査を状態遷移）', () => {
-    // 歴史記録（ADR・作業ジャーナル・CHANGELOG・綻びログ・命名裁定材料）は対象外。draft は「作業層だが現状主張を含む」ため対象
+    // 歴史記録（ADR・作業ジャーナル・CHANGELOG・綻びログ・命名裁定材料）は対象外。draft は「作業層だが現状主張を含む」
+    // ため対象。70-release は現在形の計画文書のため対象（外部レビュー第 5 回 N5——対象外だったため自己矛盾を見逃した）
     const docs = [...CURRENT_DOCS.filter(p => p !== 'spec/CHANGELOG.md'),
-      'design/00-overview.md', 'design/10-domain-model.md',
+      'design/00-overview.md', 'design/10-domain-model.md', 'design/70-release-1.0.md',
       'design/30-syntax/00-syntax-draft.md', 'design/90-open-questions.md', 'design/INDEX.md', 'llms.txt'];
     const stale: string[] = [];
     for (const p of docs) {
       for (const [i, line] of read(p).split('\n').entries()) {
-        // 「残る仮称は…」「one/remaining placeholder」級の残存主張は全て陳腐化（過去形・裁定言及の行は除く）
-        if (!/残る仮称|仮称は `|one placeholder|remaining placeholder|placeholder name/.test(line)) continue;
+        // 「残る仮称は…」「X は仮称」「one/remaining placeholder」級の残存主張は全て陳腐化（過去形・裁定言及の行は除く。
+        // F51 前の命名経緯を語る歴史叙述の慣用〈確定を急がない・比較候補として記録・仮称 N 語目・当時の呼称踏襲〉も対象外）
+        if (!/残る仮称|仮称は `|は仮称|one placeholder|remaining placeholder|placeholder name/.test(line)) continue;
         if (/裁定|旧仮称|settled|formerly|残っていない|no placeholders remain/.test(line)) continue;
+        if (/確定を急がない|比較候補として記録|仮称[一二三四五]語目|と呼んだ語をそのまま/.test(line)) continue;
         stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 70)}`);
       }
     }
@@ -264,7 +270,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
         if (e.isDirectory()) {
           if (['.git', 'node_modules'].includes(e.name) || isPrivate(p)) continue;
           walk(`${p}/`);
-        } else if (p.endsWith('.md') && !isPrivate(p)) all.add(p);
+        } else if (p.endsWith('.md') && !isPrivate(p) && p !== '404.md') all.add(p);   // 404.md はインフラページ（リンク到達の外・Pages が自動配信）
       }
     };
     walk('');

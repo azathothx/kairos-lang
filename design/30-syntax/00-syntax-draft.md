@@ -1934,7 +1934,7 @@ premise 層・原始的定義の窓生成語（§1.11。名は確定＝spec §5.
 - `cycle(labels) anchor: r : Stream -> Stream(labeled)` — 並列反復ラベル（曜日。ADR-03）。窓でなくラベルを生む。
 - 公開語は premise ブロック top-level の束縛（`Gregorian.month`）。境界は選択子の再利用（`monthStart = month |> first`）。
 
-premise 層・派生的定義（§1.12。`with` は確定・`shiftBoundary` は仮称）:
+premise 層・派生的定義（§1.12。`with` は確定・旧仮称 `shiftBoundary` は `rephase` に裁定済み〈2026-07-26〉）:
 
 - `Base with { w = … } : premise -> premise` — base の公開語を上書き/追加した新 premise。裸名は派生スコープで再解決、`Base.w` は base 値にピン（機構 A・ADR-17）。継承語は依存する上書き語に自動追従。
 - `|> shiftBoundary(δ, on: W, unit: U) : premise -> premise` — 窓 `W` の切れ目を単位 `U` で δ ずらす糖衣。展開は `W = U span (_ => k) phase: φ₀+δ`（`k`＝`W ⊃ U` の個数、`φ₀`＝base の位相。§1.12）。`k` 可変組は射程外。日付は不動（解釈 P・I1）。
@@ -1951,9 +1951,9 @@ premise 層・派生的定義（§1.12。`with` は確定・`shiftBoundary` は�
 
 - ~~年度ラベル・序数の射影~~ → ADR-27 の射影一族（窓ラベル付与 `label:`）に吸収。付与側も ADR-30 で確定
   （別点の窓参照は可・隣接窓は射程外）。
-- `shiftBoundary` の射程外＝`k`（`W ⊃ U` の個数）が可変な組（`month ⊃ day` を `day` 単位でずらす等）を扱う
-  別演算子（必要になれば。§1.12 の `shiftBoundary` は `k` 定数の span 位相ずらしに限定）。
-- 命名はほぼ確定（spec §5.4）: `grid`/`span`/`split`/`cycle`・`anchor:`/`phase:`/`by:`・`with` は RC1 で確定。
+- `rephase`（旧仮称 `shiftBoundary`）の射程外＝`k`（`W ⊃ U` の個数）が可変な組（`month ⊃ day` を `day`
+  単位でずらす等）を扱う別演算子（必要になれば。§1.12 の位相ずらしは `k` 定数の span に限定）。
+- 命名は全語確定（spec §5.4・仮称ゼロ〈2026-07-26〉）: `grid`/`span`/`split`/`cycle`・`anchor:`/`phase:`/`by:`・`with` は RC1 で確定。
   ~~基底の名 `axis` の二義~~ → ADR-29 で解消（基底＝`chronos`・操作軸＝`axis:` 双方確定）。
   ~~射影一族の名~~ → RC2 で確定（`ordinalIn`/`epochOrdinal`/`snapTo`・`label:`/`labels:`・`covering:`。
   `labelOf` は ADR-30 で廃語）。最後の仮称 `shiftBoundary` も `rephase` に裁定済み〈2026-07-26〉（`nonWorking` は 2026-07-09 の F51

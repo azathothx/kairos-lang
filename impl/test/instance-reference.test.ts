@@ -233,9 +233,9 @@ fy(1)
 describe('F96 回帰（rephase は base の label: を保存——Fiscal.year の同時付与と等価）', () => {
   it('rephase(+3) の year(2026) ＝ Fiscal の year(2026)（ラベルも切断も一致）', () => {
     const opts = { from: '2026-01-01', to: '2027-06-01' };
-    const viaSB = evalDates('premise Fiscal2 = Gregorian |> rephase(+3, on: year, unit: month)\n'
+    const viaRephase = evalDates('premise Fiscal2 = Gregorian |> rephase(+3, on: year, unit: month)\n'
       + 'premise F2 { calendar-system: Fiscal2; tz: "Asia/Tokyo"; wkst: Mon }\n@F2\nyear(2026)', opts);
-    expect(viaSB).toEqual(days('2026-04-01', '2027-04-01'));
-    expect(viaSB).toEqual(evalDates(F + 'year(2026)', opts));
+    expect(viaRephase).toEqual(days('2026-04-01', '2027-04-01'));
+    expect(viaRephase).toEqual(evalDates(F + 'year(2026)', opts));
   });
 });

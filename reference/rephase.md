@@ -1,3 +1,8 @@
+---
+redirect_from:
+  - /reference/shiftBoundary.html
+---
+
 # `rephase` — 窓の切れ目を単位でずらす糖衣（再位相）
 
 **分類**: 派生の糖衣（premise 層） ／ **シグネチャ**: `|> rephase(δ, on: W, unit: U) : premise -> premise` ／ 正式名（2026-07-26 裁定・旧仮称 `shiftBoundary`・spec §5.4）

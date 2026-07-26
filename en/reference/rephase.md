@@ -1,5 +1,7 @@
 ---
-source_sha: 61e2c7981053
+source_sha: 40e3d720f395
+redirect_from:
+  - /en/reference/shiftBoundary.html
 ---
 
 # `rephase` — sugar that shifts window cuts by a unit (re-phase)

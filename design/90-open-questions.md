@@ -75,7 +75,7 @@
 - `rephase`（旧仮称 `shiftBoundary`）の射程外＝`k`（`W ⊃ U` の個数）可変な組（`month ⊃ day` を `day` 単位で
   ずらす等）の別演算子（必要になれば。§1.12。`boundary` の語はそちらに温存＝rephase 裁定 2026-07-26）。
   **［追加拡張］**（既存 `rephase` の意味は不変）
-- 命名: **ほぼ確定**（2026-07-07・spec §5.4）**［純命名］**——`grid`/`span`/`split`/`cycle`・
+- 命名: **完全確定・仮称ゼロ**（2026-07-26 完了・spec §5.4）**［純命名・完了］**——`grid`/`span`/`split`/`cycle`・
   `anchor:`/`phase:`/`by:`・`with` は RC1 で確定（40-examples の検証で綻びなし）。
   ~~(a) `axis` の二義~~ → **ADR-29 で解消**: 基底の字句名は `chronos`（型名 `Chronos`）、操作軸 `axis:` は
   そのまま正式名に確定。

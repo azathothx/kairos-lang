@@ -24,6 +24,9 @@ plugins:
   - jekyll-titles-from-headings
   - jekyll-seo-tag
   - jekyll-sitemap
+  # ページ改名時の旧 URL 温存（2026-07-27・外部レビュー第 5 回 N4——改名で旧 URL が即 404 になる
+  # クラスの恒久対策。改名時は新ページの front matter に redirect_from を張る規律・70-release 作業一覧）
+  - jekyll-redirect-from
 
 optional_front_matter:
   remove_originals: true

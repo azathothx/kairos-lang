@@ -1,5 +1,5 @@
 ---
-source_sha: 7eef30eec4d3
+source_sha: b3ead453f11e
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -148,10 +148,11 @@ names.
 phase-shift sugar is **`rephase`** (formerly the placeholder `shiftBoundary`). The name matches the
 expansion's substance (replacing `span`'s `phase:`) and is symmetric with `rebase` (re-anchor) and
 `anchor:` (the real day that pins a phase) in the vocabulary family. Rejected candidates: promoting
-`rephase` (same stem as the point transform `shift` despite being a different thing; 13
+`shiftBoundary` (same stem as the point transform `shift` despite being a different thing; 13
 characters), `shiftPhase` (the stem confusion remains), `offsetBoundary`/`moveBoundary` (new stems).
 The word `boundary` is reserved for a possible future operator handling variable-`k` pairs (§3.7,
-out of scope). **With this, every word bears its official name — no placeholders remain.**
+out of scope). **With this, every word bears its official name — no placeholders remain** (the
+history is CHANGELOG addendum 11).
 
 ## 5.5 Lexis (ADR-28)
 
