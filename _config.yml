@@ -6,8 +6,9 @@ description: >-
   Kairos is a schedule definition language — a composable time-stream DSL with
   first-class calendars, business days, windows, and projections.
   「月末 3 営業日前」のようなスケジュールを式で書けるスケジュール定義言語。
-url: "https://azathothx.github.io"
-baseurl: "/kairos-lang"
+# 正準ドメイン（2026-07-27 移行・CNAME と対）。旧 azathothx.github.io/kairos-lang は GitHub が自動 301
+url: "https://kairos-lang.org"
+baseurl: ""
 repository: azathothx/kairos-lang
 
 theme: jekyll-theme-primer
