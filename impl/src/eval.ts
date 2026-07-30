@@ -443,18 +443,41 @@ function dependImageAnn(axisAnn: Ann[], axis: number[], conv: 'Following' | 'Pre
   }));
 }
 
-/** shift（窓語 unit）の平行移動像: 区間端を同じ窓添字ずらしで写す（過大近似可） */
+/** shift（窓語 unit）の平行移動像: 区間端を同じ窓添字ずらしで写す（過大近似可）。
+ *  実体化範囲外の端は ±∞ でなく端別に挟む（F106）——旧形の「外→安全側 ±∞」は、紀元より前へ
+ *  伸びる covering の補集合（遠い過去の註釈端）を全軸註釈に爆発させ（from=-∞ の区間の to 端だけが
+ *  +∞ へ飛ぶ）、覆域を広げるほど註釈が増える単調性の逆転を生んでいた。窓単位 shift は順序保存
+ *  （窓添字 +n・窓内オフセット保存）なので、範囲外の端も「その値自身」（n の逆方向は動かない）と
+ *  「範囲内最寄り窓からの n 歩」で抑えられる——from は下界・to は上界のまま、いずれも過大近似 */
 function shiftAnnByWindows(ann: Ann[], iv: Iv[], n: number): Ann[] {
-  const move = (ms: number): number => {
-    if (!isFinite(ms)) return ms;
-    const i = ivIndexOf(iv, ms);
-    if (i < 0) return n >= 0 ? Infinity : -Infinity;   // 実体化の外→安全側
+  const moveIn = (ms: number, i: number): number => {
     const j = i + n;
     if (j < 0) return -Infinity;
     if (j >= iv.length) return Infinity;
     return iv[j].start + (ms - iv[i].start);
   };
-  return normAnn(ann.map(a => ({ ...a, from: move(a.from), to: move(a.to) })));
+  const lo = (ms: number): number => {                 // from 端: 真の写り先 ≥ 返り値
+    if (!isFinite(ms)) return ms;
+    const i = ivIndexOf(iv, ms);
+    if (i >= 0) return moveIn(ms, i);
+    if (n >= 0) return ms;
+    if (iv.length > 0 && ms >= iv[iv.length - 1].end) {
+      const j = iv.length + n;                         // 右外: 範囲内最終窓の次からの n 歩
+      return j >= 0 && j < iv.length ? iv[j].start : -Infinity;
+    }
+    return -Infinity;
+  };
+  const hi = (ms: number): number => {                 // to 端: 真の写り先 ≤ 返り値
+    if (!isFinite(ms)) return ms;
+    const i = ivIndexOf(iv, ms);
+    if (i >= 0) return moveIn(ms, i);
+    if (n <= 0) return ms;
+    if (iv.length > 0 && ms < iv[0].start) {           // 左外: 範囲内先頭窓からの n 歩
+      return n < iv.length ? iv[n].start : Infinity;
+    }
+    return Infinity;
+  };
+  return normAnn(ann.map(a => ({ ...a, from: lo(a.from), to: hi(a.to) })));
 }
 
 /** shift（点列軸 unit）の平行移動像: 区間端を軸上の n 歩で写す（過大近似可） */

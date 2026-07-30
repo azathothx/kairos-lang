@@ -164,6 +164,30 @@ dues |> shift(90, unit: day)
       expect.objectContaining({ from: '2028-01-01', to: '2028-03-31' }),
     ]);
   });
+
+  it('紀元より前へ伸びる covering の補集合端は全軸註釈に爆発しない（F106）', () => {
+    // 遠い過去の註釈端（-∞, 1955-01-01）の to 端は単位窓の実体化範囲（紀元 1970〜）の外。
+    // 旧形は「外→安全側 ±∞」で (-∞, +∞) に爆発し評価窓全域が註釈されていた——
+    // 窓単位 shift の順序保存で「範囲内先頭窓からの n 歩」に抑え、覆域内の評価は無註釈のまま
+    const r = run(JP2 + `
+[2026-08-11] covering: 1955-01-01..2027-12-31
+ |> shift(9, unit: day)
+`, { from: '2026-07-24', to: '2026-09-07' });
+    expect(r.results[0].dates).toEqual(['2026-08-20']);
+    expect(r.results[0].annotations).toEqual([]);
+  });
+
+  it('覆域を広げても註釈は増えない（F106 の単調性）・評価窓に掛かる端の輸送は保存', () => {
+    const probe = (coveringFrom: string) => run(JP2 + `
+[2026-08-11] covering: ${coveringFrom}..2027-12-31
+ |> shift(9, unit: day)
+`, { from: '2026-07-24', to: '2026-09-07' }).results[0].annotations;
+    expect(probe('1955-01-01')).toEqual(probe('2026-01-01'));   // 広い覆域が註釈を生まない
+    // 覆域左端が評価窓内なら、その端の +9d 像は従来どおり註釈される（輸送の保存）
+    expect(probe('2026-07-24')).toEqual([
+      expect.objectContaining({ from: '2026-07-24', to: '2026-08-02' }),
+    ]);
+  });
 });
 
 describe('輸送表: roll の依存像と軸の尽き（ADR-37 判断 4）', () => {
