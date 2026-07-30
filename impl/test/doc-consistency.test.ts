@@ -68,6 +68,16 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     expect(stale).toEqual([]);
   });
 
+  it('公開 Markdown にテーブル用エスケープ \\| が残っていない（kramdown はコードスパン内の \\| を戻さない——2026-07-30 設計者指摘・テーブル内は <code>&#124;</code> を使う）', () => {
+    const stale: string[] = [];
+    for (const p of CURRENT_DOCS) {
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (line.includes('\\|')) stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 60)}`);
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
   it('確定済みの綻び（F 番号）を「宿題」と書いている行がない', () => {
     // 90-findings の全件表から「処置が確定・解消・明文化済み」の F 番号を集める
     const findings = read('design/40-examples/90-findings.md');

@@ -54,7 +54,7 @@ Kairos の記述語（演算子・窓生成語・リテラル）を 1 語 1 フ�
 | フィルタ | [`filter`](filter.md) | 述語で間引く（premise 述語／値式述語） |
 | ストライド | [`stride`](stride.md) | 入力の点を「n ごと」（境界無視・連続） |
 | ストライド | [`strideBy`](strideBy.md) | 幅で刻む「w ごと」 |
-| 結合子 | [`\|` `&` `\`](combinators.md) | 和・積・差とカスケード |
+| 結合子 | [<code>&#124;</code> `&` `\`](combinators.md) | 和・積・差とカスケード |
 | 射影 | [`ordinalIn`](ordinalIn.md) | 枠窓内で単位窓が第何番目か（1 起点） |
 | 射影 | [`epochOrdinal`](epochOrdinal.md) | 紀元からの通し序数（0 起点） |
 | 射影 | [`coincides`](coincides.md) | 窓所属の述語（d の窓に S の点が在るか） |

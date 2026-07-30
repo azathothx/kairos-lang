@@ -1,5 +1,5 @@
 ---
-source_sha: 0b9ee48aed69
+source_sha: 63e2fa6561fa
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -199,7 +199,7 @@ flowchart TD
 
 | Form of expression | Alignment |
 |---|---|
-| `everyDay`, public-window-word derived (`month \|> first`, etc.) | element grid (for `Gregorian`, the `day` grid) |
+| `everyDay`, public-window-word derived (<code>month &#124;> first</code>, etc.) | element grid (for `Gregorian`, the `day` grid) |
 | table (all elements lexically date-only) | civil-day grid (tz = the tz used to anchor the literal; entity and data premises converge to inner fixing) |
 | table (containing timed or non-lexical elements) | none |
 | **empty table** (`[] covering:`, ADR-45) | **vacuous conformance** (conforms vacuously to every alignment, passes the check; preserving stages preserve vacuous conformance) |
@@ -209,7 +209,7 @@ flowchart TD
 | `snapTo(w)` | claims w's element grid (= the **explicit means of realignment**; for windows from `segmentBy`, the markers' alignment) |
 | `strideBy(w, from: p)` derived (including materialized `everyInstant`) | anchored grid (width w, anchor p) |
 | `rebase(to: "tz")` | constructively claims the day grid of the to tz (= label-correspondence realignment; ADR-40) |
-| `A \| B` | if both sides are identical, that; otherwise none (if one side is vacuously conformant, **inherits the other**) |
+| <code>A &#124; B</code> | if both sides are identical, that; otherwise none (if one side is vacuously conformant, **inherits the other**) |
 | `A & B`, `A \ B` | the common alignment (the check guarantees identity; if one side is vacuously conformant, **inherits the other**) |
 
 **The check**: `&`, `\`, `filter(on:)`, `roll(on:)`, and `shift(unit: point-sequence axis)`
@@ -259,7 +259,7 @@ exist. It splits into two operators by argument kind.
 
 | Operator | Argument | What it counts | Example |
 |---|---|---|---|
-| `stride(n, from:)` input count | integer ≥ 1 (violation is a static error) | **points of the input stream** (no axis argument; ADR-38, F70) | `filter(on: bizDay) \|> stride(3, from: …)` = every 3 business days |
+| `stride(n, from:)` input count | integer ≥ 1 (violation is a static error) | **points of the input stream** (no axis argument; ADR-38, F70) | <code>filter(on: bizDay) &#124;> stride(3, from: …)</code> = every 3 business days |
 | `strideBy(w, from:)` width step | a width = a physical quantity across multiple axes | width (an absolute amount) | `strideBy(24h39m35.244s, from: …)` = every 1 sol |
 
 `stride` is **input-relative** — what it counts is decided upstream ("every 3 business days" puts
@@ -347,7 +347,7 @@ core of the reading side is these three words.
 |---|---|---|
 | `ordinalIn(u, w, d)` | point → number | Within the `w` window containing point `d`, the ordinal of the `u` window containing `d` (1-based). `ordinalIn(day, month, d)` = which day of the month. The counting unit `u` is explicit, so it does not depend on the input granularity |
 | `epochOrdinal(u, d)` | point → number | The running ordinal of `u` windows from the epoch (the same coordinate as the window ordinal of §3.6; **0-based**; negative before the epoch. The epoch is the language default 1970-01-01, overridable by the calendar system's `epoch:`. For data-derived windows whose sequence does not reach the epoch, **the first existing window is 0** = ADR-31 revision, F60) |
-| `coincides(S, w, d)` | point → boolean | Whether at least one point of stream `S` lies within the `w` window containing point `d` (**the window-membership predicate** = bounded existential quantification in value expressions; ADR-38, F68). Alone in the family, its first argument is a stream (a window word is a static error — get a point sequence via `month \|> first`) |
+| `coincides(S, w, d)` | point → boolean | Whether at least one point of stream `S` lies within the `w` window containing point `d` (**the window-membership predicate** = bounded existential quantification in value expressions; ADR-38, F68). Alone in the family, its first argument is a stream (a window word is a static error — get a point sequence via <code>month &#124;> first</code>) |
 
 `coincides` is the vessel for F68 (applying exception days to timed and mixed schedules) — the
 canonical form is `notices |> filter(t => not coincides(closures, day, t))` (preserve the firing
@@ -488,7 +488,7 @@ the governance table of ADR-36):
 
 | Operator | Output's annotated intervals |
 |---|---|
-| combinators `\|`, `&`, `\` | the **union** of both sides (no automatic cancellation) |
+| combinators <code>&#124;</code>, `&`, `\` | the **union** of both sides (no automatic cancellation) |
 | shift | input annotations ∪ the **translated image** of the annotated intervals |
 | roll | the image of the input annotations ∪ the **dependency image** of the axis's annotated intervals (extended against the convention's direction to the nearest known axis point before/after). Axis exhaustion is empty + annotation; but under a completed coverage (open end), an unannotated empty |
 | selectors | if the target window intersects an annotation, widened to the **whole window** |

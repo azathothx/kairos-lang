@@ -1,5 +1,5 @@
 ---
-source_sha: c2367a8c048e
+source_sha: a486c6a26437
 ---
 
 # Standard premise: Fiscal
@@ -69,7 +69,7 @@ premise Fiscal = Gregorian |> rephase(+3, on: year, unit: month)   # the same ex
 | `fiscalYearNo` | value function (added) | The point's **fiscal-year number**. The starting-calendar-year convention ("fiscal 2026" = 2026; §5). |
 | `fiscalMonthNo` | value function (added) | The **fiscal month number** 1..12 (April = 1 … March = 12). A reuse of `ordinalIn`. |
 | `quarter` | window (inherited, **auto-tracking**) | The inherited definition `year split (_ => [3, 3, 3, 3]) by: month` tracks the new `year` and becomes the fiscal quarters (Apr–Jun/Jul–Sep/Oct–Dec/Jan–Mar) (§3). |
-| `yearStart` | public boundary word (inherited, **auto-tracking**) | The inherited definition `year \|> first` tracks the new `year` → the April 1 days. |
+| `yearStart` | public boundary word (inherited, **auto-tracking**) | The inherited definition <code>year &#124;> first</code> tracks the new `year` → the April 1 days. |
 | `day` / `month` / `week` / `weekday` | windows and labels (inherited, fixed) | Calendar days, calendar months, weeks, and weekdays stay Gregorian's (§4). |
 | `monthStart` / `monthEnd` | public boundary words (inherited, fixed) | Calendar-month starts and ends. Unaffected by the fiscal-year cut (§4). |
 | `yearNo` / `monthNo` / `dayNo` | value functions (inherited, fixed) | Sugar for **calendar** coordinates (gregorian.md §2). They do not track, because their definitions reference the `month` ordinal, not the `year` window — `yearNo` is the calendar year, not the fiscal year (the fiscal year is `fiscalYearNo`). |

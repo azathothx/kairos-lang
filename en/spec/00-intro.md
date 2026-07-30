@@ -1,5 +1,5 @@
 ---
-source_sha: 1c8d034a6b61
+source_sha: 75e2ce67d598
 ---
 
 # Kairos Language Specification — 1. Introduction
@@ -44,7 +44,7 @@ pair a business-day-calendar object with before/after shift flags ("BDC products
 |---|---|---|---|---|---|
 | Fixed-time recurrence (daily at 9:00) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Nth weekday (2nd Monday) | △ (day/weekday OR trap) | ✓ (`#`) | ✓ (BYDAY + BYSETPOS) | ✓ | ✓ (`nth`, §4.3) |
-| Month-end / N calendar days before it | ✗ (28–31 hack) | ✓ (`L`) | ✓ (BYMONTHDAY=-1) | ✓ | ✓ (`month \|> last \|> shift`) |
+| Month-end / N calendar days before it | ✗ (28–31 hack) | ✓ (`L`) | ✓ (BYMONTHDAY=-1) | ✓ | ✓ (<code>month &#124;> last &#124;> shift</code>) |
 | Business days (holiday-aware) | ✗ | △ (exclusion = skip only) | ✗ (static EXDATE) | ✓ | ✓ (calendar entity + derived `bizDay`, §3.9) |
 | Business-day **arithmetic** (Nth business day, 3 business days before month-end) | ✗ | ✗ | ✗ | △ (shift flags only) | ✓ (`roll` / `shift(unit: bizDay)`, §7.1) |
 | **Deriving** holidays by rule (substitute holidays, citizens' holidays) | ✗ | ✗ | ✗ | ✗ (enumeration only) | ✓ (cascade, §7.5) |

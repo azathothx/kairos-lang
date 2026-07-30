@@ -1,5 +1,5 @@
 ---
-source_sha: 03b162f6d7d5
+source_sha: 986a66e0e92e
 ---
 
 # Kairos Language Specification — 2. Types and Layers
@@ -107,9 +107,9 @@ assigned to separate symbols, one-to-one.
 
 | Symbol | Role |
 |---|---|
-| `\|>` | Stage connection (flows the time stream into the next stage; in the premise layer, connects premise → premise) |
+| <code>&#124;></code> | Stage connection (flows the time stream into the next stage; in the premise layer, connects premise → premise) |
 | `.` | Premise qualification (hierarchical namespace reference; `Gregorian.month`) |
-| `\|` | Combinator (stream union; paired with intersection `&` and difference `\`; §4.5) |
+| <code>&#124;</code> | Combinator (stream union; paired with intersection `&` and difference `\`; §4.5) |
 
 ## 2.6 Invariants
 

@@ -1,5 +1,5 @@
 ---
-source_sha: 6bb438892405
+source_sha: 466a48be84bf
 ---
 
 # <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Descriptor Reference
@@ -79,7 +79,7 @@ so the guarantee carries over. The same conventions extend to the explanatory pa
 | Filter | [`filter`](filter.md) | thin by predicate (premise predicate / value-expression predicate) |
 | Stride | [`stride`](stride.md) | "every n" points of the input (boundary-ignoring, continuous) |
 | Stride | [`strideBy`](strideBy.md) | step by width, "every w" |
-| Combinator | [`\|` `&` `\`](combinators.md) | union, intersection, difference, and the cascade |
+| Combinator | [<code>&#124;</code> `&` `\`](combinators.md) | union, intersection, difference, and the cascade |
 | Projection | [`ordinalIn`](ordinalIn.md) | the ordinal of the unit window within the frame window (1-based) |
 | Projection | [`epochOrdinal`](epochOrdinal.md) | running ordinal from the epoch (0-based) |
 | Projection | [`coincides`](coincides.md) | window-membership predicate (is a point of S in d's window) |

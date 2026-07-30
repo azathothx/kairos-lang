@@ -1,5 +1,5 @@
 ---
-source_sha: 139392d30050
+source_sha: 03ff4bfdd519
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -84,7 +84,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | table literal（テーブルリテラル） | Promotion of an instant list to a time-stream constant (`[2026-03-20, …]`). Ascending order required; source governance; validity range via `covering:`. `labels:` gives a parallel label sequence (the definition of a point → label projection). The empty form `[] covering: …` requires an explicit covering (the primary form of "zero points but a coverage to claim"; ADR-45) | §3.8 · ADR-26/30/45 |
 | `external` | The external-supply declaration = a table literal resolved at run time. Restricted to the right-hand side (head position) of a premise binding. `kind:` = the alignment claim (`dates`/`instants`; holds as declared even when empty); `labels:` = the enumeration of the label range; covering/asof are always carried by the resolved value (the supply contract). Resolution is an adjunct of the evaluation context (one resolution per evaluation, demand-driven); failure is a supply error (machine-readable subcategories) | §3.8 · ADR-46 |
 | public word（公開語） | A top-level binding in a premise block. Referenced with `.` (`Gregorian.month`) | §3.6 |
-| public boundary word（公開境界語） | A public word that derives boundaries by reusing selectors (`monthEnd = month \|> last`). What generators really are | §3.6 |
+| public boundary word（公開境界語） | A public word that derives boundaries by reusing selectors (<code>monthEnd = month &#124;> last</code>). What generators really are | §3.6 |
 | `with` | The core of derivation. Overrides/adds the base's public words (`Fiscal = Gregorian with {…}`) | §3.7 |
 | `rephase` | Derivation sugar that shifts window `W`'s cuts by δ in unit `U` (re-phase). Expands into a `span` phase shift | §3.7 |
 | phase（位相） | The phase origin of `span`/`split` (a fiscal calendar's April start, etc.) | §3.7 |
@@ -106,23 +106,23 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | label projection (binding name)（ラベル射影（束縛名）） | The binding name of a labeled window/cycle/table doubles as the projection name (`weekday(d)`, `sekki(d)`). Points store no labels; labels are read via projections (the generic word `labelOf` was retired; ADR-30) | §4.9 · §3.6 |
 | window instance reference `W(v)`（窓インスタンス参照） | **Value** application to a label-sourced **window** binding = the preimage (`year(2020)` = the days of that year; returned as a time stream). Union of all matches; empty is legitimate; outside a statically enumerable label range is a static error. The dual of binding-name projection; point vs. value branches on the argument expression's type (decided after expansion = §2.7) | §4.9 · §2.7 · ADR-42 |
 | element point sequence（要素点列） | Of the **input point sequence** that window binding W's definition bundled into windows, the points belonging to W's windows (grid/span/split chains = equivalent to the atomic grid ticks; segmentBy = the input points). The carrier of window instance references. An internal concept (not a word users write) | §4.9 · ADR-42 |
-| combinator（結合子） | Stream × stream → stream. Union `\|`, intersection `&`, difference `\`. Intersection and difference require matching alignment on both sides | §4.5 |
+| combinator（結合子） | Stream × stream → stream. Union <code>&#124;</code>, intersection `&`, difference `\`. Intersection and difference require matching alignment on both sides | §4.5 |
 | cascade（カスケード） | Prioritized overriding. Has no dedicated symbol; expressed by left-associative ordered application of union and difference (last wins) | §4.5 |
 | alignment（整列） | The static property of a stream: "every point lies on the ticks of an atomic grid G = (width, normalized phase, tz name)". `&`/`\`/axis membership require the same G (mismatch is a static error); `snapTo` is the explicit re-alignment. Not a type (ADR-05/36). The value is a G, "none", or **vacuous conformance** (an empty table conforms vacuously to every alignment; it passes the check and combinations inherit the partner's. ADR-45) | §4.5 |
 | filter `filter`（フィルタ） | Thins by predicate. Takes both premise predicates (`on:`) and value-expression predicates (lambdas) | §4.6 |
 | stride `stride(n, from:)`（ストライド） | Thins the **input points** to "every nth" (input-relative; no axis argument — what gets counted is decided by the preceding stage = ADR-38). n is an integer ≥ 1. Consumes no windows; ignores boundaries; continuous. Origin `from:` required (the first input point at or after `from:` is step 0) | §4.7 · ADR-31/38 |
 | stride `strideBy(w, from:)`（ストライド） | Steps by width (a physical magnitude across multiple axes; e.g. 1 sol). Origin `from:` required | §4.7 · ADR-31 |
 | window-membership predicate `coincides(S, w, d)`（窓所属述語） | Whether the `w` window containing point `d` holds a point of S (boolean = bounded existential quantification). Interval membership, so alignment is not required (only the tz name is checked); settled by the witness rule (true = a point in a non-annotated interval; false = the window lies within the effective coverage). The receiving vessel for F68 | §4.9 · ADR-38 |
-| sugar definition (base form B)（糖衣定義（基底 B）） | `name(args) = s => s \|> core-chain`. Binds the preceding stage with `s =>` | §4.8 |
+| sugar definition (base form B)（糖衣定義（基底 B）） | <code>name(args) = s => s &#124;> core-chain</code>. Binds the preceding stage with `s =>` | §4.8 |
 | sugar definition (shorthand A)（糖衣定義（略記 A）） | When the preceding stage is straightforward, omit `s =>` — point-free (eta reduction) | §4.8 |
 
 ## 6.5 Symbols, prefixes, and named arguments
 
 | Symbol | Meaning | References |
 |---|---|---|
-| `\|>` | Stage connection (body layer stream→stream / premise layer premise→premise) | §2.5 |
+| <code>&#124;></code> | Stage connection (body layer stream→stream / premise layer premise→premise) | §2.5 |
 | `.` | premise qualification (`Gregorian.month`) | §2.5 |
-| `\|` `&` `\` | Combinators: union, intersection, difference (`\` = U+005C, not the yen sign ¥) | §4.5 |
+| <code>&#124;</code> `&` `\` | Combinators: union, intersection, difference (`\` = U+005C, not the yen sign ¥) | §4.5 |
 | `=` / `==` | Binding (definition) / equality comparison | §3.5 |
 | `=>` | Lambda binding (distinct from the type notation `->`) | §3.5 |
 | `+ - * /` `mod` `div` | Arithmetic (`mod` and `div` are words) | §3.5 |

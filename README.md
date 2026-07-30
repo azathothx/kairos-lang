@@ -58,7 +58,7 @@ shift flags. Full version with section pointers: [spec §1.2](en/spec/00-intro.m
 |---|---|---|---|---|---|
 | Fixed-time recurrence (daily at 9:00) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Nth weekday (2nd Monday) | △ (day/weekday OR trap) | ✓ (`#`) | ✓ (BYDAY + BYSETPOS) | ✓ | ✓ (`nth`) |
-| Month-end / N calendar days before it | ✗ (28–31 hack) | ✓ (`L`) | ✓ (BYMONTHDAY=-1) | ✓ | ✓ (`month \|> last \|> shift`) |
+| Month-end / N calendar days before it | ✗ (28–31 hack) | ✓ (`L`) | ✓ (BYMONTHDAY=-1) | ✓ | ✓ (<code>month &#124;> last &#124;> shift</code>) |
 | Business days (holiday-aware) | ✗ | △ (exclusion = skip only) | ✗ (static EXDATE) | ✓ | ✓ (calendar entity + derived `bizDay`) |
 | Business-day **arithmetic** (Nth business day) | ✗ | ✗ | ✗ | △ (shift flags only) | ✓ (`roll` / `shift(unit: bizDay)`) |
 | **Deriving** holidays by rule (substitute holidays) | ✗ | ✗ | ✗ | ✗ (enumeration only) | ✓ (cascade) |
@@ -139,7 +139,7 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 **Release candidate (RC5, declared 2026-07-08; addenda through no. 11, 2026-07-26).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (466 tests),
+is validated against 20 well-known schedule families and by a reference implementation (467 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |

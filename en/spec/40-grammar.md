@@ -1,5 +1,5 @@
 ---
-source_sha: b3ead453f11e
+source_sha: c9d8bd1d330f
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -12,9 +12,9 @@ source_sha: b3ead453f11e
 
 | Symbol | Layer / role | Meaning |
 |---|---|---|
-| `\|>` | Both layers | Stage connection (body layer: stream → stream / premise layer: premise → premise) |
+| <code>&#124;></code> | Both layers | Stage connection (body layer: stream → stream / premise layer: premise → premise) |
 | `.` | Both layers | Premise qualification (`Gregorian.month`) |
-| `\|` | Both layers | Combinator: union |
+| <code>&#124;</code> | Both layers | Combinator: union |
 | `&` | Both layers | Combinator: intersection |
 | `\` | Both layers | Combinator: difference (U+005C — not the yen sign ¥) |
 | `=` | Both layers | Binding (definition) |
@@ -54,7 +54,7 @@ source_sha: b3ead453f11e
   granularity-independent) / `epochOrdinal(u, d) : point -> number`. Labels are read through bound
   names (`weekday(d)` and the like; the generic word `labelOf` is abolished — points store no
   labels. §4.9, ADR-27/30).
-- Combinators: `A \| B` union / `A & B` intersection / `A \ B` difference. Prioritized overriding
+- Combinators: `A | B` union / `A & B` intersection / `A \ B` difference. Prioritized overriding
   is expressed by left-associative, order-sensitive application of union and difference (no
   dedicated symbol).
 - Strides (a family separate from the selectors): `stride(n, from:)` input counting (every n
@@ -99,7 +99,7 @@ source_sha: b3ead453f11e
 - `Base with { w = … } : premise -> premise` — overrides/extends the base's public words. Bare
   names re-resolve in the derived scope; `Base.w` pins to the base value (mechanism A). Inherited
   words automatically track the overridden words they depend on.
-- `\|> rephase(δ, on: W, unit: U) : premise -> premise` — sugar that
+- `|> rephase(δ, on: W, unit: U) : premise -> premise` — sugar that
   shifts the boundaries of window `W` by δ in unit `U`. The expansion is
   `W = U span (_ => k) phase: (φ₀+δ) mod k` (`k` = the count of `W ⊃ U`; `φ₀` = the base's phase;
   negative δ is also normalized by the modulus = F65). The base's `label:` is preserved.

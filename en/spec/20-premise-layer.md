@@ -1,5 +1,5 @@
 ---
-source_sha: fe3349fcfacb
+source_sha: b8f943679bbd
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -123,7 +123,7 @@ not to collide with the combinators (`&`, `|`, `\`).
 |---|---|
 | Arithmetic | `+ - * /`, remainder `mod`, integer division `div` (words). `div` is **floor** division and `mod` the mathematical remainder (they disagree with trunc for negative dividends. ADR-31 revised, F63) |
 | Comparison | `< <= > >= == !=` |
-| Logic | `and`, `or`, `not` (words; the symbols `&`/`\|` are reserved for the combinators) |
+| Logic | `and`, `or`, `not` (words; the symbols `&`/<code>&#124;</code> are reserved for the combinators) |
 | Conditional | ternary `cond ? a : b` |
 | List | literal `[a, b, …]`, indexing `l[i]` (0-based), membership predicate `x in l` |
 | String | literal `"…"` (no newlines, no escapes; used for TZ and source values. ADR-32) |

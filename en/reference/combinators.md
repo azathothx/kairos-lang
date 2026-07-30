@@ -1,5 +1,5 @@
 ---
-source_sha: fc41386ebe96
+source_sha: 581883c9a28f
 ---
 
 # `|` `&` `\` — combinators (union, intersection, difference) and the cascade
@@ -15,7 +15,7 @@ settled (ADR-22 · spec §5.4)
 
 | Symbol | Meaning |
 |---|---|
-| `\|` | **Union** (merger) |
+| <code>&#124;</code> | **Union** (merger) |
 | `&` | **Intersection** (the points contained in both) |
 | `\` | **Difference** (removes the right side's points from the left). **Backslash U+005C** — even when a Japanese font shows the yen glyph ¥, the code point is U+005C (¥ = U+00A5 is a different character) |
 

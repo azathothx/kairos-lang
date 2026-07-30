@@ -49,7 +49,7 @@ premise Fiscal = Gregorian |> rephase(+3, on: year, unit: month)   # year 一行
 | `fiscalYearNo` | 値関数（追加） | 点の**年度番号**。開始暦年の規約（「2026 年度」= 2026。§5）。 |
 | `fiscalMonthNo` | 値関数（追加） | **会計月番号** 1..12（4 月 = 1 … 3 月 = 12）。`ordinalIn` の再利用。 |
 | `quarter` | 窓（継承・**自動追従**） | 継承定義 `year split (_ => [3, 3, 3, 3]) by: month` が新 `year` に追従し、会計四半期（Apr–Jun/Jul–Sep/Oct–Dec/Jan–Mar）になる（§3）。 |
-| `yearStart` | 公開境界語（継承・**自動追従**） | 継承定義 `year \|> first` が新 `year` に追従 → 4 月 1 日群。 |
+| `yearStart` | 公開境界語（継承・**自動追従**） | 継承定義 <code>year &#124;> first</code> が新 `year` に追従 → 4 月 1 日群。 |
 | `day` / `month` / `week` / `weekday` | 窓・ラベル（継承・不動） | 暦日・暦月・週・曜日は Gregorian のまま（§4）。 |
 | `monthStart` / `monthEnd` | 公開境界語（継承・不動） | 暦月の月初・月末。年度の切れ目に影響されない（§4）。 |
 | `yearNo` / `monthNo` / `dayNo` | 値関数（継承・不動） | **暦**座標の糖衣（gregorian.md §2）。定義が `year` 窓でなく `month` 序数を参照するため追従しない——`yearNo` は暦年であって年度ではない（年度は `fiscalYearNo`）。 |
