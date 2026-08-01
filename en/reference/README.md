@@ -1,5 +1,5 @@
 ---
-source_sha: 466a48be84bf
+source_sha: 5c686ba6fe10
 ---
 
 # <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Descriptor Reference
@@ -12,6 +12,46 @@ Explains Kairos's descriptors (operators, window-generating words, literals), on
 file. The norm is the language specification [`../spec/`](../spec/) (this book is the explanatory
 layer — the same division of roles by which `stdlib/` carries Gregorian). The index of terms is
 [`../spec/50-glossary.md`](../spec/50-glossary.md).
+
+Every code example on these pages is execution-verified. The meaning of `# eval:`/`#=>` inside
+examples is specified at the bottom of this page under
+[Conventions for runnable examples (doctest)](#conventions-for-runnable-examples-doctest) — for
+reading purposes it suffices to know that `# eval:` is the evaluation range and `#=>` is the
+actual result of running the example.
+
+## Index
+
+<p align="center"><img src="../../assets/figures/operator-map.svg" width="920"
+  alt="The descriptor map: the seven body-layer families compose; projections bridge windows to value expressions; the premise layer supplies the vocabulary."></p>
+
+| Category | Word | One line |
+|---|---|---|
+| Generator | [`everyDay`](everyDay.md) | streams every day of the in-scope calendar system |
+| Generator | [`everyInstant`](everyInstant.md) | every point of the continuous base (used with strideBy) |
+| Window | [`within`](within.md) | partition-type window (bundle by window name) |
+| Window | [`segmentBy`](segmentBy.md) | interval-sequence-type window (cut at markers) |
+| Selector | [`first`](first.md) / [`nth`](nth.md) / [`last`](last.md) | the Nth, first, and last within a window |
+| Point transform | [`roll`](roll.md) | nudge invalid points to valid ones |
+| Point transform | [`shift`](shift.md) | move by n units |
+| Point transform | [`snapTo`](snapTo.md) | map to the first point of the containing window (floor) |
+| Point transform | [`rebase`](rebase.md) | date-label-preserving re-anchoring (cross-tz same date) |
+| Filter | [`filter`](filter.md) | thin by predicate (premise predicate / value-expression predicate) |
+| Stride | [`stride`](stride.md) | "every n" points of the input (boundary-ignoring, continuous) |
+| Stride | [`strideBy`](strideBy.md) | step by width, "every w" |
+| Combinator | [<code>&#124;</code> `&` `\`](combinators.md) | union, intersection, difference, and the cascade |
+| Projection | [`ordinalIn`](ordinalIn.md) | the ordinal of the unit window within the frame window (1-based) |
+| Projection | [`epochOrdinal`](epochOrdinal.md) | running ordinal from the epoch (0-based) |
+| Projection | [`coincides`](coincides.md) | window-membership predicate (is a point of S in d's window) |
+| Window-generating word | [`grid`](grid.md) | uniform partition of the continuous axis (the calendar's atoms) |
+| Window-generating word | [`span`](span.md) | variable aggregation of unit sequences (bottom-up) |
+| Window-generating word | [`split`](split.md) | variable division of a parent window (dependent windows) |
+| Window-generating word | [`cycle`](cycle.md) | parallel repeating labels (labels, not windows) |
+| Derivation | [`with`](with.md) | override an existing premise's public words |
+| Derivation | [`rephase`](rephase.md) | sugar shifting window cut points by a unit (re-phase; formerly the placeholder shiftBoundary) |
+| Literal | [table literal](table-literal.md) | stream constant of an instant sequence (covering:/labels:) |
+| Supply | [`external`](external.md) | external supply declaration (a table literal resolved at run time. ADR-46) |
+| Calendar entity | [`nonWorking`](nonWorking.md) | the entity's reserved public word and the `bizDay` standard derivation (ADR-35) |
+| Calendar entity | [`isOpen`](isOpen.md) | the business-hours supply convention `sessionOpens`/`sessionCloses` and the standard derivations `bizOpen`/`bizClose`/`isOpen` (ADR-41) |
 
 ## Conventions for runnable examples (doctest)
 
@@ -59,37 +99,3 @@ so the guarantee carries over. The same conventions extend to the explanatory pa
   `calendar: TSE` (ADR-35 — the doctest suite as a whole doubles as execution verification of
   entity-mediated derivation).
 - ` ```text ` fences are explanatory (not executed).
-
-## Index
-
-<p align="center"><img src="../../assets/figures/operator-map.svg" width="920"
-  alt="The descriptor map: the seven body-layer families compose; projections bridge windows to value expressions; the premise layer supplies the vocabulary."></p>
-
-| Category | Word | One line |
-|---|---|---|
-| Generator | [`everyDay`](everyDay.md) | streams every day of the in-scope calendar system |
-| Generator | [`everyInstant`](everyInstant.md) | every point of the continuous base (used with strideBy) |
-| Window | [`within`](within.md) | partition-type window (bundle by window name) |
-| Window | [`segmentBy`](segmentBy.md) | interval-sequence-type window (cut at markers) |
-| Selector | [`first`](first.md) / [`nth`](nth.md) / [`last`](last.md) | the Nth, first, and last within a window |
-| Point transform | [`roll`](roll.md) | nudge invalid points to valid ones |
-| Point transform | [`shift`](shift.md) | move by n units |
-| Point transform | [`snapTo`](snapTo.md) | map to the first point of the containing window (floor) |
-| Point transform | [`rebase`](rebase.md) | date-label-preserving re-anchoring (cross-tz same date) |
-| Filter | [`filter`](filter.md) | thin by predicate (premise predicate / value-expression predicate) |
-| Stride | [`stride`](stride.md) | "every n" points of the input (boundary-ignoring, continuous) |
-| Stride | [`strideBy`](strideBy.md) | step by width, "every w" |
-| Combinator | [<code>&#124;</code> `&` `\`](combinators.md) | union, intersection, difference, and the cascade |
-| Projection | [`ordinalIn`](ordinalIn.md) | the ordinal of the unit window within the frame window (1-based) |
-| Projection | [`epochOrdinal`](epochOrdinal.md) | running ordinal from the epoch (0-based) |
-| Projection | [`coincides`](coincides.md) | window-membership predicate (is a point of S in d's window) |
-| Window-generating word | [`grid`](grid.md) | uniform partition of the continuous axis (the calendar's atoms) |
-| Window-generating word | [`span`](span.md) | variable aggregation of unit sequences (bottom-up) |
-| Window-generating word | [`split`](split.md) | variable division of a parent window (dependent windows) |
-| Window-generating word | [`cycle`](cycle.md) | parallel repeating labels (labels, not windows) |
-| Derivation | [`with`](with.md) | override an existing premise's public words |
-| Derivation | [`rephase`](rephase.md) | sugar shifting window cut points by a unit (re-phase; formerly the placeholder shiftBoundary) |
-| Literal | [table literal](table-literal.md) | stream constant of an instant sequence (covering:/labels:) |
-| Supply | [`external`](external.md) | external supply declaration (a table literal resolved at run time. ADR-46) |
-| Calendar entity | [`nonWorking`](nonWorking.md) | the entity's reserved public word and the `bizDay` standard derivation (ADR-35) |
-| Calendar entity | [`isOpen`](isOpen.md) | the business-hours supply convention `sessionOpens`/`sessionCloses` and the standard derivations `bizOpen`/`bizClose`/`isOpen` (ADR-41) |
