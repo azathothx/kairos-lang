@@ -1,5 +1,5 @@
 ---
-source_sha: 9bb309467de8
+source_sha: 980462a2b1cb
 ---
 
 # `cycle` — parallel repeating labels (labels, not windows)
@@ -64,6 +64,15 @@ everyDay |> filter(d => weekday(d) == Mon)
   label rotates at once (the phase is decided by "the window containing the anchor = the first
   label". The old wording "the same anchor gives the same calendar" was wrong — corrected
   2026-07-25). That the list order has nothing to do with the week's **start** (WKST) still holds.
+- **Choosing the anchor (practical guidance; runtime-side reflux, 2026-08)**: as a rule, **write a
+  verified real day as the anchor, as-is**. Whether verification is needed splits by the anchor's
+  nature — **observation-verified anchors** (day stems-and-branches, the 28 lunar mansions: which
+  real day carries which label can only be settled by checking primary sources and printed
+  almanacs) versus **convention-defined anchors** (like the solar-term month's "the window of
+  Risshun is the Tiger month", where the definition itself gives the phase — no verification
+  needed). When the traditional list order disagrees with the verified real day's phase, **keep
+  the verified day fixed and rotate the list side** (the flip side of the item above — "rotation
+  comes paired with re-taking the anchor", applied by choosing to pin the verified value).
 - A composite period like the 60-term sexagenary cycle may be a single 60-element cycle, or the two
   cycles of the ten heavenly stems and the twelve earthly branches composed in a predicate (a zip
   product of cycles is not introduced — open item F16).
