@@ -46,6 +46,9 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 
 ## クイックスタート（リファレンス実装）
 
+**まずブラウザで試す**: [Playground](https://kairos-lang.org/playground/) はリファレンス実装を
+そのまま実行する——インストール不要・式はブラウザの外に出ない。
+
 Node.js 24+ で TypeScript をそのまま実行できる。
 
 ```bash

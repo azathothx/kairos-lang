@@ -119,6 +119,9 @@ Full explanation with sequence diagrams and runnable doctests:
 
 ## Quick start (reference implementation)
 
+**Try it in your browser first**: the [Playground](https://kairos-lang.org/playground/) runs the
+reference implementation as-is — no install, nothing leaves your browser.
+
 Runs TypeScript directly with Node.js 24+; zero runtime dependencies.
 
 ```bash

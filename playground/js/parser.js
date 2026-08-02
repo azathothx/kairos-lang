@@ -1,0 +1,640 @@
+// Kairos 構文解析器（spec §5.6 EBNF）
+// 再帰下降。優先順位は EBNF の入れ子どおり:
+//   stream-expr = pipe { (|,&,\) pipe }（同一優先度・左結合）
+//   pipe = atom { |> stage }
+//   value-expr = ternary > or > and > not > comparison > additive > multiplicative > unary > postfix
+import { lex, LexError } from './lexer.js';
+export class ParseError extends Error {
+    constructor(msg, tok) {
+        super(`構文エラー(${tok.line}:${tok.col}): ${msg}（'${tok.text || tok.kind}' の位置）`);
+    }
+}
+const GEN_WORDS = new Set(['grid', 'span', 'split', 'cycle']);
+const MEMBER_KEYS = new Set(['calendar-system', 'calendar', 'axis', 'roll', 'granularity',
+    'tz', 'wkst', 'asof', 'source', 'epoch']);
+const WORD_OPS = new Set(['and', 'or', 'not', 'mod', 'div', 'in', 'premise', 'with']);
+export function parse(src) {
+    return new Parser(lex(src)).program();
+}
+/** covering-list 字面の単体パース（external の解決値 wire 用。ADR-46）——
+ *  端の含意・年略記・開端・区間リストの意味論をテーブルリテラルと完全共有するための入口 */
+export function parseCoveringText(text) {
+    const p = new Parser(lex(text));
+    return p.coveringOnly();
+}
+class Parser {
+    i = 0;
+    toks;
+    constructor(toks) { this.toks = toks; }
+    peek(o = 0) { return this.toks[Math.min(this.i + o, this.toks.length - 1)]; }
+    next() { return this.toks[this.i++]; }
+    at(kind, text) {
+        const t = this.peek();
+        return t.kind === kind && (text === undefined || t.text === text);
+    }
+    atPunct(text) { return this.at('punct', text); }
+    atName(text) { return this.at('name', text); }
+    eat(kind, text) {
+        if (!this.at(kind, text))
+            throw new ParseError(`${text ?? kind} を期待`, this.peek());
+        return this.next();
+    }
+    skipNewlines() { while (this.at('newline'))
+        this.next(); }
+    /** newline の先が式の継続——段接続 |> または結合子 | & \——なら newline を飛ばす（F91・ADR-44。
+     *  文・前文メンバーは結合子で始まれないので一義: 行頭の結合子＝前行の継続） */
+    skipContinuation() {
+        let j = this.i;
+        while (this.toks[j]?.kind === 'newline')
+            j++;
+        const t = this.toks[j];
+        if (t?.kind === 'punct' && (t.text === '|>' || t.text === '|' || t.text === '&' || t.text === '\\')) {
+            this.i = j;
+        }
+    }
+    program() {
+        const statements = [];
+        this.skipNewlines();
+        while (!this.at('eof')) {
+            statements.push(this.statement());
+            this.skipNewlines();
+            while (this.atPunct(';')) {
+                this.next();
+                this.skipNewlines();
+            }
+        }
+        return { statements };
+    }
+    statement() {
+        if (this.atName('premise')) {
+            // premise-def か完全形前文か: `premise 名前 …` は定義、`premise {` は前文
+            if (this.peek(1).kind === 'name')
+                return this.premiseDef();
+            this.next();
+            const block = this.premiseBlock();
+            return { t: 'preamble', form: 'inline', members: block.members };
+        }
+        if (this.atPunct('@'))
+            return this.preamble();
+        // binding か stream-expr か: NAME [(params)] = … を先読み
+        if (this.at('name')) {
+            const save = this.i;
+            const name = this.next().text;
+            let params = [];
+            if (this.atPunct('('))
+                params = this.tryParams();
+            if (params !== null && this.atPunct('=')) {
+                this.next();
+                const rhs = this.expression();
+                const covering = this.tryBindingCovering(); // 束縛後置＝明示の被覆主張（ADR-37 判断 5）
+                return { t: 'binding', name, params, rhs, covering };
+            }
+            this.i = save;
+        }
+        return { t: 'streamExpr', expr: this.expression() };
+    }
+    /** 束縛の仮引数 (a, b, on: p)。パターン外なら null（呼び出し式だった） */
+    tryParams() {
+        const save = this.i;
+        this.eat('punct', '(');
+        const params = [];
+        if (!this.atPunct(')')) {
+            for (;;) {
+                if (!this.at('name')) {
+                    this.i = save;
+                    return null;
+                }
+                const first = this.next().text;
+                if (this.atPunct(':')) { // named-param: on: p
+                    this.next();
+                    if (!this.at('name')) {
+                        this.i = save;
+                        return null;
+                    }
+                    params.push({ key: first, name: this.next().text });
+                }
+                else {
+                    params.push({ name: first });
+                }
+                if (this.atPunct(',')) {
+                    this.next();
+                    continue;
+                }
+                break;
+            }
+        }
+        if (!this.atPunct(')')) {
+            this.i = save;
+            return null;
+        }
+        this.next();
+        return params;
+    }
+    premiseDef() {
+        this.eat('name', 'premise');
+        const name = this.eat('name').text;
+        if (this.atPunct('{'))
+            return { t: 'premiseDef', name, block: this.premiseBlock() };
+        this.eat('punct', '=');
+        const base = this.eat('name').text;
+        let withBlock;
+        const stages = [];
+        if (this.atName('with')) {
+            this.next();
+            withBlock = this.premiseBlock();
+        }
+        this.skipContinuation();
+        while (this.atPunct('|>')) {
+            this.next();
+            stages.push(this.stage());
+            this.skipContinuation();
+        }
+        return { t: 'premiseDef', name, expr: { base, withBlock, stages } };
+    }
+    premiseBlock() {
+        this.eat('punct', '{');
+        const members = [];
+        const bindings = [];
+        this.skipNewlines();
+        while (!this.atPunct('}')) {
+            if (this.at('name') && MEMBER_KEYS.has(this.peek().text) && this.peek(1).text === ':') {
+                members.push(this.member());
+            }
+            else {
+                const name = this.eat('name').text;
+                let params = [];
+                if (this.atPunct('(')) {
+                    const p = this.tryParams();
+                    if (p === null)
+                        throw new ParseError('束縛の仮引数を期待', this.peek());
+                    params = p;
+                }
+                this.eat('punct', '=');
+                const rhs = this.expression();
+                const covering = this.tryBindingCovering(); // 束縛後置＝明示の被覆主張（ADR-37 判断 5）
+                bindings.push({ name, params, rhs, covering });
+            }
+            this.skipNewlines();
+            while (this.atPunct(';')) {
+                this.next();
+                this.skipNewlines();
+            }
+        }
+        this.eat('punct', '}');
+        return { members, bindings };
+    }
+    member() {
+        const key = this.eat('name').text;
+        this.eat('punct', ':');
+        return { key, value: this.valueAtomForMember() };
+    }
+    /** メンバー値は単純式（名前・数値・日付・文字列）に限る */
+    valueAtomForMember() {
+        const t = this.peek();
+        if (t.kind === 'date') {
+            this.next();
+            return { t: 'date', v: t.date };
+        }
+        if (t.kind === 'number') {
+            this.next();
+            return { t: 'num', v: t.num };
+        }
+        if (t.kind === 'string') {
+            this.next();
+            return { t: 'str', v: t.text };
+        }
+        if (t.kind === 'name') {
+            this.next();
+            return { t: 'name', name: t.text };
+        }
+        throw new ParseError('前文メンバーの値を期待', t);
+    }
+    preamble() {
+        this.eat('punct', '@');
+        const name = this.eat('name').text;
+        const members = [];
+        // 後置畳み込み: @JP axis: bizDay …（行末まで）
+        while (this.at('name') && MEMBER_KEYS.has(this.peek().text) && this.peek(1).text === ':') {
+            members.push(this.member());
+        }
+        if (this.atPunct('{')) {
+            // ブロック形: @名前 { 文の並び }
+            this.next();
+            const block = [];
+            this.skipNewlines();
+            while (!this.atPunct('}')) {
+                block.push(this.statement());
+                this.skipNewlines();
+            }
+            this.eat('punct', '}');
+            return { t: 'preamble', form: 'light', name, members, block };
+        }
+        return { t: 'preamble', form: 'light', name, members };
+    }
+    // ---- 式 ----
+    expression() {
+        return this.combineExpr();
+    }
+    /** 結合子 | & \（同一優先度・左結合） */
+    combineExpr() {
+        let l = this.pipeExpr();
+        for (;;) {
+            this.skipContinuation();
+            if (this.atPunct('|') || this.atPunct('&') || this.atPunct('\\')) {
+                const op = this.next().text;
+                this.skipNewlines(); // 行末結合子＝次行へ継続（F91・ADR-44。|> の行末継続と同じ扱い）
+                const r = this.pipeExpr();
+                l = { t: 'combine', op, l, r };
+            }
+            else
+                break;
+        }
+        return l;
+    }
+    pipeExpr() {
+        let head = this.genOrValue();
+        const stages = [];
+        this.skipContinuation();
+        while (this.atPunct('|>')) {
+            this.next();
+            this.skipNewlines();
+            stages.push(this.stage());
+            this.skipContinuation();
+        }
+        return stages.length ? { t: 'pipe', head, stages } : head;
+    }
+    stage() {
+        let name = this.eat('name').text;
+        let ns;
+        if (this.atPunct('.')) {
+            this.next();
+            ns = name;
+            name = this.eat('name').text;
+        }
+        let args = [];
+        if (this.atPunct('('))
+            args = this.args();
+        return { name, ns, args };
+    }
+    args() {
+        this.eat('punct', '(');
+        const args = [];
+        const seen = new Set(); // named-arg の二重指定は黙殺せず静的エラー（ADR-47 で顕在化した穴）
+        if (!this.atPunct(')')) {
+            for (;;) {
+                if (this.at('name') && this.peek(1).text === ':') {
+                    const name = this.next().text;
+                    if (seen.has(name))
+                        throw new ParseError(`名前付き引数 ${name}: の二重指定`, this.peek());
+                    seen.add(name);
+                    this.next(); // ':'
+                    // labels: cycle […] anchor: 実日（窓列への周期ラベル・ADR-47）——cycle は core 語で
+                    // 再束縛できないため、labels: 直後の cycle は常に cycle 形
+                    if (name === 'labels' && this.atName('cycle')) {
+                        args.push({ name, value: this.cycleLabels() });
+                    }
+                    else {
+                        args.push({ name, value: this.expression() });
+                    }
+                }
+                else {
+                    args.push({ value: this.expression() });
+                }
+                if (this.atPunct(',')) {
+                    this.next();
+                    continue;
+                }
+                break;
+            }
+        }
+        this.eat('punct', ')');
+        return args;
+    }
+    /** labels: の cycle 形（ADR-47）: cycle (リスト|リスト束縛名) anchor: 実日。anchor は形の一部
+     *  （カンマで切ると segmentBy の未知引数に化ける——専用文言で導く） */
+    cycleLabels() {
+        this.eat('name', 'cycle');
+        let list;
+        if (this.atPunct('['))
+            list = this.listLiteral(false);
+        else if (this.at('name'))
+            list = { t: 'name', name: this.next().text };
+        else
+            throw new ParseError('labels: cycle はリスト（リテラルまたはリスト束縛名）を取る', this.peek());
+        if (this.atPunct(',') && this.peek(1).kind === 'name' && this.peek(1).text === 'anchor') {
+            throw new ParseError('labels: cycle の anchor: はカンマなしで続ける'
+                + '（cycle 形の一部——labels: cycle […] anchor: 実日）', this.peek());
+        }
+        if (!(this.atName('anchor') && this.peek(1).text === ':')) {
+            throw new ParseError('labels: cycle は anchor: が必須（位相を留める実日）', this.peek());
+        }
+        this.next();
+        this.next();
+        return { t: 'cycleLabels', list, anchor: this.ternary() };
+    }
+    /** gen-expr（`day span f phase: 0`）と値式を判別。並置は窓生成語 4 語のみ（EBNF・F46） */
+    genOrValue() {
+        const e = this.ternary();
+        if (e.t === 'name' && this.at('name') && !WORD_OPS.has(this.peek().text)) {
+            const word = this.peek().text;
+            if (GEN_WORDS.has(word)) {
+                this.next();
+                const arg = this.genArg();
+                const named = this.namedArgsTrail();
+                return { t: 'gen', operand: e, word: word, arg, named };
+            }
+        }
+        return e;
+    }
+    genArg() {
+        const t = this.peek();
+        if (t.kind === 'width') {
+            this.next();
+            return { t: 'width', v: t.width };
+        }
+        if (this.atPunct('(')) {
+            // (ラムダ) または括弧式
+            const save = this.i;
+            this.next();
+            const inner = this.expression();
+            this.eat('punct', ')');
+            return inner;
+        }
+        if (this.atPunct('['))
+            return this.listLiteral();
+        if (t.kind === 'name') {
+            // ラムダ `n => …` か裸名
+            if (this.peek(1).text === '=>')
+                return this.ternary();
+            this.next();
+            return { t: 'name', name: t.text };
+        }
+        if (this.atPunct('_'))
+            return this.ternary();
+        throw new ParseError('窓生成語の引数を期待', t);
+    }
+    namedArgsTrail() {
+        const named = {};
+        while (this.at('name') && this.peek(1).text === ':' && !MEMBER_KEYS.has(this.peek().text)) {
+            const key = this.next().text;
+            this.next();
+            named[key] = this.ternary();
+        }
+        return named;
+    }
+    // ---- 値式（EBNF の入れ子どおり） ----
+    ternary() {
+        const c = this.orExpr();
+        if (this.atPunct('?')) {
+            this.next();
+            const a = this.ternary();
+            this.eat('punct', ':');
+            const b = this.ternary();
+            return { t: 'ternary', c, a, b };
+        }
+        return c;
+    }
+    orExpr() {
+        let l = this.andExpr();
+        while (this.atName('or')) {
+            this.next();
+            l = { t: 'bin', op: 'or', l, r: this.andExpr() };
+        }
+        return l;
+    }
+    andExpr() {
+        let l = this.notExpr();
+        while (this.atName('and')) {
+            this.next();
+            l = { t: 'bin', op: 'and', l, r: this.notExpr() };
+        }
+        return l;
+    }
+    notExpr() {
+        if (this.atName('not')) {
+            this.next();
+            return { t: 'not', e: this.notExpr() };
+        }
+        return this.comparison();
+    }
+    comparison() {
+        const l = this.additive();
+        const t = this.peek();
+        if ((t.kind === 'punct' && ['==', '!=', '<', '<=', '>', '>='].includes(t.text)) ||
+            (t.kind === 'name' && t.text === 'in')) {
+            this.next();
+            return { t: 'bin', op: t.text, l, r: this.additive() };
+        }
+        return l;
+    }
+    additive() {
+        let l = this.multiplicative();
+        while (this.atPunct('+') || this.atPunct('-')) {
+            const op = this.next().text;
+            l = { t: 'bin', op, l, r: this.multiplicative() };
+        }
+        return l;
+    }
+    multiplicative() {
+        let l = this.unary();
+        while (this.atPunct('*') || this.atPunct('/') || this.atName('mod') || this.atName('div')) {
+            const op = this.next().text;
+            l = { t: 'bin', op, l, r: this.unary() };
+        }
+        return l;
+    }
+    unary() {
+        if (this.atPunct('-')) {
+            this.next();
+            return { t: 'neg', e: this.unary() };
+        }
+        if (this.atPunct('+')) {
+            this.next();
+            return this.unary();
+        }
+        return this.postfix();
+    }
+    postfix() {
+        let e = this.atom();
+        for (;;) {
+            if (this.atPunct('[')) {
+                this.next();
+                const index = this.expression();
+                this.eat('punct', ']');
+                e = { t: 'index', target: e, index };
+            }
+            else if (this.atPunct('(')) {
+                e = { t: 'call', callee: e, args: this.args() };
+            }
+            else
+                break;
+        }
+        return e;
+    }
+    atom() {
+        const t = this.peek();
+        // ラムダ: name => / _ => / (params) =>
+        if ((t.kind === 'name' || t.text === '_') && this.peek(1).text === '=>') {
+            const p = this.next().text;
+            this.next();
+            const body = this.expression();
+            return { t: 'lambda', params: [p], body };
+        }
+        if (t.text === '(') {
+            // (a, b) => … の多引数ラムダを先読み
+            const save = this.i;
+            const params = this.tryParams();
+            if (params !== null && this.atPunct('=>')) {
+                this.next();
+                return { t: 'lambda', params: params.map(p => p.name), body: this.expression() };
+            }
+            this.i = save;
+            this.next();
+            const inner = this.expression();
+            this.eat('punct', ')');
+            return inner;
+        }
+        if (t.kind === 'number') {
+            this.next();
+            return { t: 'num', v: t.num };
+        }
+        if (t.kind === 'date') {
+            this.next();
+            return { t: 'date', v: t.date };
+        }
+        if (t.kind === 'width') {
+            this.next();
+            return { t: 'width', v: t.width };
+        }
+        if (t.kind === 'string') {
+            this.next();
+            return { t: 'str', v: t.text };
+        }
+        if (t.text === '[')
+            return this.listLiteral();
+        if (t.text === '_') {
+            this.next();
+            return { t: 'name', name: '_' };
+        }
+        if (t.kind === 'name') {
+            this.next();
+            let e = { t: 'name', name: t.text };
+            if (this.atPunct('.') && this.peek(1).kind === 'name' && this.peek(2).text !== '.') {
+                this.next();
+                e = { t: 'qualified', ns: t.text, name: this.eat('name').text };
+            }
+            return e;
+        }
+        throw new ParseError('式を期待', t);
+    }
+    /** リスト／テーブルリテラル（covering: / labels: 後置つき。§3.8・ADR-26/30） */
+    listLiteral(allowPostfix = true) {
+        this.eat('punct', '[');
+        const elems = [];
+        if (!this.atPunct(']')) {
+            for (;;) {
+                const e = this.ternary();
+                if (this.atPunct('..')) {
+                    this.next();
+                    elems.push({ t: 'range', a: e, b: this.ternary() });
+                }
+                else {
+                    elems.push(e);
+                }
+                if (this.atPunct(',')) {
+                    this.next();
+                    continue;
+                }
+                break;
+            }
+        }
+        this.eat('punct', ']');
+        if (!allowPostfix)
+            return { t: 'list', elems };
+        // 後置は順序自由（F104——labels: の値リストが後続の covering: を吸って黙殺する穴の封じ。
+        // labels: の値は後置なしでパースし、covering:/labels: は外側でどの順でも受ける。二重指定はエラー）
+        let covering;
+        let labels;
+        for (;;) {
+            this.skipToPostfixKeyword();
+            if (this.atName('covering') && this.peek(1).text === ':') {
+                if (covering)
+                    throw new ParseError('covering: の二重指定', this.peek());
+                this.next();
+                this.next();
+                covering = this.coveringList();
+            }
+            else if (this.atName('labels') && this.peek(1).text === ':') {
+                if (labels)
+                    throw new ParseError('labels: の二重指定', this.peek());
+                this.next();
+                this.next();
+                labels = this.listLiteral(false);
+            }
+            else
+                break;
+        }
+        return { t: 'list', elems, covering, labels };
+    }
+    /** covering:/labels: は改行を挟んだ継続を許す（|> の継続と同じ扱い） */
+    skipToPostfixKeyword() {
+        let j = this.i;
+        while (this.toks[j]?.kind === 'newline')
+            j++;
+        const t = this.toks[j];
+        if (t?.kind === 'name' && (t.text === 'covering' || t.text === 'labels')
+            && this.toks[j + 1]?.text === ':')
+            this.i = j;
+    }
+    /** 束縛後置の covering:（明示の被覆主張。rhs が裸のテーブルリテラルなら listLiteral が先に食う） */
+    tryBindingCovering() {
+        this.skipToPostfixKeyword();
+        if (this.atName('covering') && this.peek(1).text === ':') {
+            this.next();
+            this.next();
+            return this.coveringList();
+        }
+        return undefined;
+    }
+    /** covering-list 単体のパース（parseCoveringText の実体。末尾は EOF を要求） */
+    coveringOnly() {
+        this.skipNewlines();
+        const list = this.coveringList();
+        this.skipNewlines();
+        if (!this.at('eof'))
+            throw new ParseError('covering-list の末尾に余分な字句', this.peek());
+        return list;
+    }
+    /** covering-list = covering-range { "," covering-range }（§5.6・ADR-37 判断 9） */
+    coveringList() {
+        const list = [];
+        for (;;) {
+            list.push(this.coveringRange());
+            // 区間リストの継続: "," の先が covering-range の開始（数値・日付・..）のときだけ食う
+            // （引数位置のテーブルリテラルでは "," は外側の引数区切り）
+            if (this.atPunct(',')) {
+                const t = this.peek(1);
+                if (t.kind === 'number' || t.kind === 'date' || (t.kind === 'punct' && t.text === '..')) {
+                    this.next();
+                    continue;
+                }
+            }
+            break;
+        }
+        return list;
+    }
+    /** covering-range = [端] ".." [端]。端の省略＝開端（完結主張・ADR-37）。
+     *  後端は字句で判定（covering-edge = 年 | 日付）——`covering: 2021..` の直後の labels: 等を食わない */
+    coveringRange() {
+        let a = null;
+        if (!this.atPunct('..'))
+            a = this.ternary();
+        this.eat('punct', '..');
+        let b = null;
+        const t = this.peek();
+        if (t.kind === 'number' || t.kind === 'date')
+            b = this.ternary();
+        return { a, b };
+    }
+}
+export { LexError };
