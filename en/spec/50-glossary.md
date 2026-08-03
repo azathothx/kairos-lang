@@ -1,5 +1,5 @@
 ---
-source_sha: 03ff4bfdd519
+source_sha: da7a8767246d
 ---
 
 # Kairos Language Specification — 6. Glossary

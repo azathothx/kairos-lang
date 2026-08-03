@@ -1,5 +1,5 @@
 ---
-source_sha: 65cce16e358c
+source_sha: f4be32a9a34f
 ---
 
 # `shift` — move by n units
@@ -72,6 +72,11 @@ To land on a date, add [`snapTo(day)`](snapTo.md) downstream.
   (ADR-36). **Window words** (`unit: day` and the like) are interval membership
   (offset-preserving within the window) and hence outside the check — moving timed points with
   `shift(+87, unit: day)` is legal (the Hachijūhachiya idiom).
+- **Annotations translate too** (transport, ADR-37 decision 4): the input's "unknown intervals"
+  (out-of-coverage annotations) accompany the result as their **image** shifted by n units
+  (spec §4.10 transport table). When the image of a coverage gap overlaps the evaluation range,
+  an annotation appears even where no points fire — "no points came out" and "the absence is
+  trustworthy" are different claims, and the transported annotation carries the latter.
 
 ## Related
 

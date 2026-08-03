@@ -78,6 +78,31 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     expect(stale).toEqual([]);
   });
 
+  it('テーブル行のコードスパンに裸の | が残っていない（GFM はコードスパン内でもセルを割る——2026-08-03 外部レビュー第 7 回 K2＝エスケープ剥がれの取りこぼし形）', () => {
+    const stale: string[] = [];
+    for (const p of CURRENT_DOCS) {
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (!/^\s*\|/.test(line)) continue;
+        for (const m of line.matchAll(/`[^`]*`/g)) {
+          if (m[0].includes('|')) stale.push(`${p}:${i + 1}: ${m[0].slice(0, 40)}（<code>&#124;</code> 形で書く）`);
+        }
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
+  it('playground/js が impl/src・stdlib と同期している（焼き込み指紋の一致——2026-08-03 外部レビュー第 7 回 K1。割れたら正本で tools/build-playground.mjs を再実行）', () => {
+    // 式は tools/build-playground.mjs と一字一句同一: sha256(SRC 6 ファイル連結 + stdlib 3 ファイル連結) 先頭 12 桁
+    const SRC = ['ast.ts', 'lexer.ts', 'parser.ts', 'tz.ts', 'eval.ts', 'index.ts'];
+    const STDLIB_FILES = ['gregorian.kairos', 'fiscal.kairos', 'isoweek.kairos'];
+    const actual = createHash('sha256')
+      .update(SRC.map(f => read(`impl/src/${f}`)).join('')
+        + STDLIB_FILES.map(f => read(`impl/stdlib/${f}`)).join(''))
+      .digest('hex').slice(0, 12);
+    const burned = /IMPL_SOURCE_SHA = '([0-9a-f]{12})'/.exec(read('playground/js/build-info.js'))?.[1];
+    expect(burned, 'playground/js/build-info.js の指紋が impl ソースと不一致').toBe(actual);
+  });
+
   it('確定済みの綻び（F 番号）を「宿題」と書いている行がない', () => {
     // 90-findings の全件表から「処置が確定・解消・明文化済み」の F 番号を集める
     const findings = read('design/40-examples/90-findings.md');
