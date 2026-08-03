@@ -1531,7 +1531,7 @@ WindowsV（gen-expr 由来）と StreamV＋wins（segmentBy 由来）の二表�
 逆像は「ラベルは窓ごとに一定」（ADR-34 の構造保証）から**窓単位評価**に最適化でき外延等価
 （naive filter の 1/5〜1/25・`year(2020)` 実測 29ms）。切れ端窓（impl 制約）のラベルずれは
 インスタンス参照で「別の年への漏れ」に増幅される——除外か警告（impl/README 注記）。繰り返し
-使う参照は premise 束縛に置く誘導（F80・本体層は defCache されない）。
+使う参照は premise 束縛に置く誘導（F80。当時＝本体層は defCache されず・2026-08-03 のメモ化で解消）。
 
 **reference への分岐案内**（ADR 化後の反映先）: `sekkiW("立春")`＝節の期間の日々 vs
 `sekki |> filter` ＝節気点の対比・coincides の S 位置エラー文言に「特定インスタンスなら W(v)」・

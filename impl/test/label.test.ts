@@ -132,6 +132,17 @@ everyDay |> filter(d => w(d) == 1)
 `, { from: '2026-01-01', to: '2026-02-01' })).toThrow(/定義中の束縛名（自己または相互）のラベル射影を呼べない/);
   });
 
+  it('自己参照（本体層束縛）も同じエラー——メモ化がクロージャ同一性を保存しガードが効く'
+    + '（旧実装は解決ごとの新クロージャですり抜けて無限再帰し得た既知の穴）', () => {
+    expect(() => evalDates(`
+premise JPS3 { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JPS3
+w = everyDay |> segmentBy([2026-01-05, 2026-02-04] covering: 2026-01-05..2026-02-04,
+                          edges: drop, empties: error, label: (p => w(p)))
+everyDay |> filter(d => w(d) == Mon)
+`, { from: '2026-01-10', to: '2026-01-12' })).toThrow(/定義中の束縛名（自己または相互）のラベル射影を呼べない/);
+  });
+
   it('cycle は label: を取らない（ラベル列は cycle 自身が持つ）', () => {
     expect(() => evalDates(`
 premise CycL = Gregorian with {

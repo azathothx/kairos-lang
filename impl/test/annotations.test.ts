@@ -456,4 +456,32 @@ everyDay \\ D2.t
     expect(r.results[1].annotations[0]).toEqual(
       expect.objectContaining({ source: 'D2.t', asof: '2027-02-02' }));
   });
+
+  it('top-level 束縛も評価文脈ごとにメモ化される——述語内の反復参照で右辺評価は一回'
+    + '（警告の重複で観測。実体化全点×右辺再評価の O(N²) の封止）', () => {
+    const r = run(JP2 + `
+far = [2026-06-01, 2126-06-01T04:00] covering: .. |> snapTo(day)
+everyDay |> filter(d => not coincides(far, day, d))
+`, { from: '2026-01-01', to: '2026-01-08' });
+    expect(r.results[0].dates).toEqual(days('2026-01-01', '2026-01-08'));
+    // 述語は実体化全点（紀元〜to+400 日）で far を参照する——メモ化がなければ
+    // horizon-clip 警告が点数ぶん（数万件）重複する
+    expect(r.warnings.filter(w => w.startsWith('horizon-clip: snapTo'))).toHaveLength(1);
+  });
+
+  it('top-level 束縛のメモ化は tz の違う premise 文脈を誤共有しない（defCache と同じ文脈キー）', () => {
+    const r = run(`
+premise SJ { calendar-system: Gregorian; tz: "Asia/Tokyo"; source: "test"; asof: 2026-01-01
+  s = tbl }
+premise SC = SJ with { tz: "Asia/Shanghai" }
+premise UTCY { calendar-system: Gregorian; tz: "UTC"; wkst: Mon }
+tbl = [2026-01-01T23:30] covering: ..
+@UTCY
+SJ.s
+SC.s
+`, { from: '2025-12-25', to: '2026-01-10', tz: 'UTC' });
+    // 同じ字面の時刻リテラルが各 premise の tz で錨打ちされる（JST 23:30 → UTC 14:30・CST → 15:30）
+    expect(r.results[0].dates).toEqual(['2026-01-01T14:30']);
+    expect(r.results[1].dates).toEqual(['2026-01-01T15:30']);
+  });
 });

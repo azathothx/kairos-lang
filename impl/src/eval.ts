@@ -804,6 +804,13 @@ export class Evaluator {
     if (this.rt.topBindings.has(name)) {
       const b = this.rt.topBindings.get(name)!;
       if (b.params.length > 0) this.err(`${name} は引数付き束縛（呼び出しが必要）`);
+      // 評価文脈ごとのメモ化（premise 公開語の defCache と同じ面・同じ文脈キー）: 述語内の
+      // 束縛名射影（sekkiMonth(d) 級）が実体化全点で右辺を再評価する O(N²) の封止
+      const key = `#top#${env.premise?.name ?? ''}#${name}#`
+        + ['wkst', 'tz', 'calendar-system', 'calendar', 'axis', 'roll', 'asof', 'source']
+          .map(k => this.memberStr(env.members, k)).join('#');
+      const hit = this.defCache.get(key);
+      if (hit !== undefined) return hit;
       // top-level 束縛は external 不可（source: 統治が premise に要る。ADR-46）——premise 定義の
       // 評価中に参照されても文脈を継がない（合法位置のすり抜け防止）
       const prevCtx = this.externalCtx;
@@ -813,6 +820,7 @@ export class Evaluator {
       if (isObj(v) && v.k === 'table' && !v.src) v = { ...v, src: name };   // 出自の焼印（ADR-37 判断 2）
       if (isObj(v) && v.k === 'windows' && !v.name) v = { ...v, name };     // 診断用の束縛名（ADR-42）
       if (b.covering) v = this.applyClaim(v, b.covering, name, env);        // 明示の被覆主張（判断 5）
+      this.defCache.set(key, v);
       return v;
     }
     if (name === 'chronos') return { k: 'chronos' };
