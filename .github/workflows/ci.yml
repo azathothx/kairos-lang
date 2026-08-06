@@ -1,0 +1,33 @@
+# CI マトリクス: 「Windows でも動く」を主張でなく機械検査にする（2026-08-06 新設）。
+# テストは Linux/Windows の 2 レーンで全数実行（doctest・文書整合検査・Playground 同期
+# ゲート込み）。単一バイナリ配布（Node SEA）に先行する移植性の網。
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: impl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: impl/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      # testTimeout はローカル 30s（vitest.config）。CI ランナーは速度の揺らぎが大きく、
+      # タイムアウトは「遅い」でなく「壊れた」の検出に使う方針（同 config の注記）のため
+      # CI では 90s に緩める——高負荷時の偽陽性タイムアウト（2026-08-03 実測）と同型の対策。
+      - run: npx vitest run --testTimeout=90000
