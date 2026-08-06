@@ -30,7 +30,7 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 
 **ステータス: リリース候補（RC5＝2026-07-08 宣言・追補 11〈2026-07-26〉まで反映）**。意味論・演算子族・文法（EBNF）・字句は確定、命名も
 **全語確定**（最後の仮称 `shiftBoundary` は `rephase` に裁定済み＝2026-07-26）。表現力は既知スケジュール 20 要素のサンプル
-検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・474 テスト）で実証済み。
+検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・493 テスト）で実証済み。
 
 ## 構成
 
@@ -56,9 +56,10 @@ cd impl
 npm install          # devDependencies（typescript / vitest）のみ
 npm test             # 仕様の代表例・実データ照合・doctest（reference/ と stdlib/ の実行例）
 
-node src/cli.ts examples/payday.kairos      --from 2026-01-01 --to 2027-01-01
-node src/cli.ts examples/jp-holidays.kairos --from 2026-01-01 --to 2027-01-01
-node src/cli.ts examples/rokuyo.kairos      --from 2026-01-01 --to 2027-01-01
+node src/cli.ts list examples/payday.kairos      --from 2026-01-01 --to 2027-01-01
+node src/cli.ts list examples/jp-holidays.kairos --from 2026-01-01 --to 2027-01-01
+node src/cli.ts list examples/rokuyo.kairos      --from 2026-01-01 --to 2027-01-01
+node src/cli.ts next -n 3 examples/payday.kairos   # 今日から次の 3 発火（--json で機械可読）
 ```
 
 `jp-holidays.kairos` は法定祝日の表だけから、振替休日（2026-05-06）と国民の休日（2026-09-22）を言語の式で

@@ -16,7 +16,7 @@ Key facts:
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 474 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 493 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
 - Documentation language: Japanese documentation is canonical; the spec, the descriptor reference,
@@ -59,6 +59,7 @@ same paths without the `en/` segment (a hash check keeps the mirror in step).
   lunisolar calendar, Easter, ISO week numbers, business hours, injected-origin schedules
 - [Runnable examples](https://github.com/azathothx/kairos-lang/tree/main/impl/examples):
   payday, Japanese-holiday derivation, rokuyō via the reference CLI
+  (subcommands `list` and `next -n`; `--json` for machine-readable points/annotations/coverage)
 
 ## Optional
 

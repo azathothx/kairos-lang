@@ -12,11 +12,29 @@ npm install          # devDependencies（typescript / vitest）のみ
 npm test             # spec §7 全代表例・NAOJ 暦要項実データ・静的エラー・reference/ と stdlib/ の doctest
 npm run typecheck
 
-# CLI（Node 24+。TS をネイティブ実行）
-node src/cli.ts examples/payday.kairos      --from 2026-01-01 --to 2027-01-01
-node src/cli.ts examples/jp-holidays.kairos --from 2026-01-01 --to 2027-01-01
-node src/cli.ts examples/rokuyo.kairos      --from 2026-01-01 --to 2027-01-01   # 旧暦・六曜（大安など）
+# CLI（Node 24+。TS をネイティブ実行。サブコマンド省略時は list）
+node src/cli.ts list examples/payday.kairos      --from 2026-01-01 --to 2027-01-01
+node src/cli.ts list examples/jp-holidays.kairos --from 2026-01-01 --to 2027-01-01
+node src/cli.ts list examples/rokuyo.kairos      --from 2026-01-01 --to 2027-01-01   # 旧暦・六曜（大安など）
+node src/cli.ts next -n 3 examples/payday.kairos             # 今日から次の 3 発火
+node src/cli.ts next --json examples/payday.kairos           # 機械可読（下記 CliReport）
 ```
+
+### CLI サブコマンド
+
+- **`list [--from] [--to] [--tz] [--json] <file>`** — 範囲 `[from, to)` の全発火・区間註釈・
+  被覆サマリ。既定は実行 tz の今日から 1 年。
+- **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--json] <file>`** — `from`（既定＝今日）以降の
+  次の N 発火（既定 1）。探索窓を 1 年から倍々に広げ（上限 `--horizon` 年・既定 10）、見つかったら
+  **[from, 最終発火日の翌日) で確定再評価**——区間註釈・残走路が答えの範囲と整合する。
+  本体式 1 つのファイル向け（複数は明示エラー。`list` を使う）。
+- **`--json`** — `CliReport`（`command`/`version`/`tz`/`from`/`to`/`results`〔`dates`・`points`＝
+  epoch ms・`annotations`＝`fromMs`/`toMs` 込み〕/`coverage`/`warnings`）を書き出す。人間表示と
+  同じ器から直列化するため両表示は乖離しない。`points`/`fromMs` は「判定は外部」（ADR-37）の
+  交差計算を呼び手が epoch ms のまま行うための器。
+- **終了コード**: 0＝成功・1＝エラー・2＝`next` が地平線内に要求件数未達（部分結果は出力し、
+  stderr に不足の内訳）。
+- `external` の解決子は持たない（解決時は供給エラー＝ADR-46 の既定どおり）。警告は常に stderr。
 
 ライブラリとして:
 
@@ -199,6 +217,9 @@ instants ms・doctest `# resolve:` ディレクティブ——external.test.ts 3
   固定オフセット tz の厳格一意形・時点の裸の値束縛（F97）の挙動固定。
 - `test/continuation.test.ts` — 文の区切りと複数行継続（ADR-44）。行頭/行末の結合子継続・premise
   ブロック内の複数行右辺・「文頭の結合子は引き続き構文エラー」の退行なし。
+- `test/cli.test.ts` — CLI サブコマンド。list/next・`--json` の CliReport（無損失直列化・points の
+  市民日開始一致）・旧形式互換の黄金出力・next の倍々探索窓と確定再評価・被覆の切れ目をまたぐ答えへの
+  註釈併走・終了コード契約（0/1/2）をサブプロセス実走で検査。
 - `test/doc-consistency.test.ts` — 文書の整合性（機械検査）。ADR 範囲表記 vs 実ファイル数・改名済み
   旧名の残存・仮称印・stdlib の .kairos↔解説 md の label: 同期。
 - `test/doctest.test.ts` — [`../reference/`](../reference/) と [`../stdlib/`](../stdlib/) の実行例

@@ -129,9 +129,10 @@ cd impl
 npm install          # devDependencies only (typescript / vitest)
 npm test             # spec examples, real-ephemeris cross-checks, doctests
 
-node src/cli.ts examples/payday.kairos      --from 2026-01-01 --to 2027-01-01
-node src/cli.ts examples/jp-holidays.kairos --from 2026-01-01 --to 2027-01-01
-node src/cli.ts examples/rokuyo.kairos      --from 2026-01-01 --to 2027-01-01
+node src/cli.ts list examples/payday.kairos      --from 2026-01-01 --to 2027-01-01
+node src/cli.ts list examples/jp-holidays.kairos --from 2026-01-01 --to 2027-01-01
+node src/cli.ts list examples/rokuyo.kairos      --from 2026-01-01 --to 2027-01-01
+node src/cli.ts next -n 3 examples/payday.kairos   # next 3 firings from today (--json for machines)
 ```
 
 `jp-holidays.kairos` derives Japan's substitute holidays and citizens' holidays from the statutory
@@ -142,7 +143,7 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 **Release candidate (RC5, declared 2026-07-08; addenda through no. 11, 2026-07-26).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (474 tests),
+is validated against 20 well-known schedule families and by a reference implementation (493 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
