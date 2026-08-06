@@ -33,7 +33,7 @@ node src/cli.ts next --json examples/payday.kairos           # 機械可読（�
   同じ器から直列化するため両表示は乖離しない。`points`/`fromMs` は「判定は外部」（ADR-37）の
   交差計算を呼び手が epoch ms のまま行うための器。
 - **終了コード**: 0＝成功・1＝エラー・2＝`next` が地平線内に要求件数未達（部分結果は出力し、
-  stderr に不足の内訳）。
+  stderr に不足の内訳）。`--version` は実装版を出して 0 終了。
 - `external` の解決子は持たない（解決時は供給エラー＝ADR-46 の既定どおり）。警告は常に stderr。
 
 ライブラリとして:

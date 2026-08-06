@@ -174,4 +174,10 @@ describe('CLI 実走（サブプロセス）', () => {
     expect(r.status).toBe(1);
     expect(r.stderr).toMatch(/使い方/);
   });
+
+  it('--version は実装版を出して終了コード 0（配布バイナリの身元確認）', () => {
+    const r = cli('--version');
+    expect(r.status).toBe(0);
+    expect(r.stdout.trim()).toBe(VERSION);
+  });
 });

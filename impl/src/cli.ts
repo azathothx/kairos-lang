@@ -137,7 +137,7 @@ const USAGE = `使い方（kairos ＝ node src/cli.ts）:
       範囲 [from, to) の全発火・区間註釈・被覆サマリ（既定: 実行 tz の今日から 1 年）
   kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--json] <file.kairos>
       from 以降の次の N 発火（既定: n=1・from=今日・地平線 10 年。本体式 1 つのファイル向け）
-サブコマンド省略時は list。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達`;
+サブコマンド省略時は list・--version で実装版。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達`;
 
 const OPTS = {
   list: {
@@ -155,7 +155,12 @@ const posInt = (s: string, name: string) => {
   return +s;
 };
 
-function main(argv: string[]): number {
+/** 入口（SEA ビルドのエントリスタブからも呼ぶ）。戻り値＝終了コード */
+export function main(argv: string[]): number {
+  if (argv[0] === '--version' || argv[0] === '-v') {   // 配布バイナリの身元確認（単体で 0 終了）
+    console.log(VERSION);
+    return 0;
+  }
   let cmd: 'list' | 'next';
   let rest = argv;
   if (argv[0] === 'list' || argv[0] === 'next') {
