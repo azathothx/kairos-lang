@@ -19,9 +19,10 @@ const CURRENT_DOCS = [
   ...mdFiles('spec/'),
   ...mdFiles('reference/'),
   ...mdFiles('stdlib/'),
-  ...mdFiles('en/spec/'), // 英語版ミラー（日本語が正・spec/reference/stdlib 全章ミラー）
+  ...mdFiles('en/spec/'), // 英語版ミラー（日本語が正・spec/reference/stdlib 全章＋40-examples README）
   ...mdFiles('en/reference/'),
   ...mdFiles('en/stdlib/'),
+  ...mdFiles('en/design/40-examples/'), // カタログのみ英訳（研究本体は日本語・2026-08-06 設計者裁定）
 ];
 
 describe('文書の整合性（現在形の文書 vs 実態）', () => {
@@ -230,7 +231,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     // en/spec/X.md の front matter `source_sha:` ＝対訳元 spec/X.md の sha256 先頭 12 桁。
     // 日本語側が更新されたらここが割れる——英訳の追従漏れを黙らせない。
     const stale: string[] = [];
-    for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/')]) {
+    for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'),
+                     ...mdFiles('en/design/40-examples/')]) {
       const m = /^---\n[\s\S]*?source_sha: ([0-9a-f]{12})[\s\S]*?\n---\n/.exec(read(p));
       if (!m) continue;   // ハッシュ宣言のないページ（README 等）は対象外
       const ja = p.replace('en/', '');
@@ -252,7 +254,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     }).filter(l => l !== null).join('\n');
     const fences = (src: string) => [...src.matchAll(/```kairos\n([\s\S]*?)```/g)].map(m => m[1]);
     const stale: string[] = [];
-    for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/')]) {
+    for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'),
+                     ...mdFiles('en/design/40-examples/')]) {
       const en = fences(read(p));
       const ja = fences(read(p.replace('en/', '')));
       if (en.length !== ja.length) { stale.push(`${p}: kairos フェンス数 ${en.length} ≠ 日本語側 ${ja.length}`); continue; }

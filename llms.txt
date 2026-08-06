@@ -16,12 +16,13 @@ Key facts:
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 494 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 498 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
 - Documentation language: Japanese documentation is canonical; the spec, the descriptor reference,
   and the stdlib guides are fully mirrored in English under en/ (en/spec/, en/reference/,
-  en/stdlib/ — Kyureki is Japanese-only). The README is English with a Japanese counterpart
+  en/stdlib/ — Kyureki is Japanese-only), plus an English index of the expressiveness studies
+  (en/design/40-examples/). The README is English with a Japanese counterpart
   (README.ja.md). Code examples and the EBNF grammar are language-neutral.
 - License: Apache-2.0.
 - Repository: https://github.com/azathothx/kairos-lang
@@ -54,9 +55,10 @@ same paths without the `en/` segment (a hash check keeps the mirror in step).
 
 ## Examples
 
-- [Expressiveness studies](https://raw.githubusercontent.com/azathothx/kairos-lang/main/design/40-examples/README.md)
-  (Japanese): 20 schedule families — Japanese holidays, sexagenary cycle, rokuyō, 24 solar terms,
-  lunisolar calendar, Easter, ISO week numbers, business hours, injected-origin schedules
+- [Expressiveness studies](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/design/40-examples/README.md)
+  (English index; the studies themselves are Japanese): 20+ schedule families — Japanese holidays,
+  sexagenary cycle, rokuyō, 24 solar terms, lunisolar calendar, Easter, ISO week numbers,
+  business hours, injected-origin schedules, DST and the civil/elapsed width rules
 - [Runnable examples](https://github.com/azathothx/kairos-lang/tree/main/impl/examples):
   payday, Japanese-holiday derivation, rokuyō via the reference CLI
   (subcommands `list` and `next -n`; `--json` for machine-readable points/annotations/coverage)
