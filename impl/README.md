@@ -32,6 +32,13 @@ node src/cli.ts next --json examples/payday.kairos           # 機械可読（�
   epoch ms・`annotations`＝`fromMs`/`toMs` 込み〕/`coverage`/`warnings`）を書き出す。人間表示と
   同じ器から直列化するため両表示は乖離しない。`points`/`fromMs` は「判定は外部」（ADR-37）の
   交差計算を呼び手が epoch ms のまま行うための器。
+- **`--supply <file.json>`** — `external`（ADR-46）の解決値を**静的束**で渡す。形は
+  `{キー: {dates|instants, covering, asof [, labels]}}`——キーは**束縛名**または
+  `"premise.束縛名"`（修飾が優先）。`dates` は `"YYYY-MM-DD"` の配列・`instants` は epoch ms の
+  数値配列（`CliReport` の `points` と同じ規約）。CLI は JSON の**形**だけを検査し、覆域の包含・
+  昇順・実在日などの**供給契約はそのまま評価器の検査**（ADR-46 の 12 種）に掛かる——被覆サマリの
+  `asof`/残走路も供給値から出る。`--supply` 無しで `external` を解決しようとすると供給エラー
+  （ADR-46 の既定）。
 - **終了コード**: 0＝成功・1＝エラー・2＝`next` が地平線内に要求件数未達（部分結果は出力し、
   stderr に不足の内訳）。`--version` は実装版を出して 0 終了。
 - `external` の解決子は持たない（解決時は供給エラー＝ADR-46 の既定どおり）。警告は常に stderr。
