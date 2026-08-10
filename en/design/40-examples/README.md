@@ -1,5 +1,5 @@
 ---
-source_sha: 6395277cfa8e
+source_sha: 1df2f5606460
 ---
 
 # 40-examples — Expressiveness studies (a sample book of known schedules)
@@ -57,7 +57,7 @@ the write-ups are executed directly as doctests by the reference implementation.
 | [07-injected-origin.md](../../../design/40-examples/07-injected-origin.md) | Decomposing "relative to the last run" (next-fire computation from an injected instant = the doctests behind spec §7.7, plus measured alignment errors for the wrong forms) |
 | [08-backup-schedules.md](../../../design/40-examples/08-backup-schedules.md) | Multi-generation backups (daily incremental / weekly differential / monthly full, higher-tier suppression, decreasing start times = finite case-splits + combinators; 2 doctests) |
 | [09-dst-widths.md](../../../design/40-examples/09-dst-widths.md) | DST and the width rules (`1d` = civil day vs `24h` = elapsed time, operationally verified; gap/overlap resolution of derived points; named times are strict, derived times follow conventions; 4 doctests and an accident-type → rule table) |
-| [90-findings.md](../../../design/40-examples/90-findings.md) | The consolidated tear log (F1–F106) and its mapping onto completion mechanisms |
+| [90-findings.md](../../../design/40-examples/90-findings.md) | The consolidated tear log (F1–F107) and its mapping onto completion mechanisms |
 | [95-reference-data.md](../../../design/40-examples/95-reference-data.md) | Primary data from the NAOJ 2026 ephemeris (solar terms, moon phases, equinoxes) and comparison results |
 
 ## The verdict matrix (all elements)

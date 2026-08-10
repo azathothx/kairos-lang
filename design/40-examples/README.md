@@ -56,7 +56,7 @@ Kairos が「利用者が実際に書きたい既知のスケジュール」を�
 | [07-injected-origin.md](07-injected-origin.md) | 実行起点相対の分解（注入された時点からの次回計算＝spec §7.7 の doctest 4 例・誤形の整列エラー実測） |
 | [08-backup-schedules.md](08-backup-schedules.md) | バックアップの多段世代（日次増分・週次差分・月次フル・上位優先の抑止・開始時刻の漸減＝有限場合分け＋結合子。doctest 2 例） |
 | [09-dst-widths.md](09-dst-widths.md) | DST と幅の規約（`1d`＝市民日 vs `24h`＝経過時間の運用検証・導出点の隙間/重複解決・名指しは厳格/導出は規約。doctest 4 例・事故の型→規約の対応表） |
-| [90-findings.md](90-findings.md) | 綻びログの集約（F1〜F106）と補完機構への写像 |
+| [90-findings.md](90-findings.md) | 綻びログの集約（F1〜F107）と補完機構への写像 |
 | [95-reference-data.md](95-reference-data.md) | NAOJ 令和8年暦要項の一次データ（節気・朔弦望・春分秋分）と照合結果 |
 
 ## 仕分けマトリクス（全要素）

@@ -2504,6 +2504,11 @@ export class Evaluator {
                   + '（計算範囲 to+400日 の実体化地平線——言語の地平線ではない。ADR-37 判断 8）');
                 continue;
               }
+              if (p < this.windowFloorOf(unitV)) {   // ①' 単位窓列の実体化下限（紀元は tz 相対＝ADR-33。F107）
+                this.rt.warnings.push(`horizon-clip: shift ${this.rt.fmt(p)}`
+                  + '（単位窓列の実体化下限より前——紀元は tz 相対・言語の地平線ではない。ADR-37 判断 8・F107）');
+                continue;
+              }
               this.err('shift: 点が単位窓の外');
             }
             const j = i + n;
@@ -2566,6 +2571,11 @@ export class Evaluator {
           }
           const hit = annAt(wAnn, p);
           if (hit.length > 0) { extra = annUnion(extra, hit); continue; }   // ②範囲外→落として註釈
+          if (p < this.windowFloorOf(wV)) {   // ①' 窓列の実体化下限（紀元は tz 相対＝ADR-33。F107）
+            this.rt.warnings.push(`horizon-clip: snapTo ${this.rt.fmt(p)}`
+              + '（対象窓列の実体化下限より前——紀元は tz 相対・言語の地平線ではない。ADR-37 判断 8・F107）');
+            continue;
+          }
           this.err('snapTo: 点が窓の外');                                    // ③覆域内→硬エラー維持
         }
         // ADR-36 判断 5: 出力は w の要素グリッドを主張（＝再整列の明示手段）。
@@ -2742,6 +2752,14 @@ export class Evaluator {
       if (v.k === 'stream' && v.wins.length > 0) return v.wins[v.wins.length - 1].grain ?? null;
     }
     return null;
+  }
+
+  /** 対象窓列の実体化下限＝窓 tz の紀元の市民日開始（紀元は tz 相対＝ADR-33。F107）。
+   *  市民グリッド以外（経過・整列なし）は実行既定 tz の紀元（従来判定）に落とす——
+   *  anchored grid の位相による頭の切り欠き（紀元以後・窓なし）は従来どおり③硬エラー側 */
+  private windowFloorOf(v: V): number {
+    const g = this.winGrainOf(v);
+    return g && g.kind === 'civil' && g.tz ? getTz(g.tz).civilDayStart(1970, 1, 1) : this.rt.epoch;
   }
 
   toPoints(v: V): number[] {

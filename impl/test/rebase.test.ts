@@ -168,3 +168,26 @@ Tok.biz |> segmentBy(NYk.biz, edges: drop, empties: keep) |> first
     expect(dates.length).toBeGreaterThan(0);
   });
 });
+
+// ---- F107: 窓列の実体化下限（紀元の tz 相対性）の horizon-clip ----
+// 実行既定 tz（rt.epoch の基準）が対象窓 tz より東のとき、帯 [実行 tz 紀元, 対象窓 tz 紀元) の
+// 規則由来点（everyDay の 1970-01-01 近傍）が三分岐①に拾われず③硬エラーに落ちていた。
+// 下限側も①同様の horizon-clip 警告（ADR-37 判断 8——実体化の端は言語の地平線ではない）。
+
+describe('F107: 対象窓列の実体化下限より前の点は警告クリップ（硬エラーにしない）', () => {
+  const east = { from: '2026-01-05', to: '2026-01-10' };   // 実行既定 tz＝Asia/Tokyo（東）
+  it('snapTo: 西行きクロス tz の everyDay 由来列が評価でき、1 日ずれ（chronos 所属）が出る', () => {
+    const r = run(NYU + 'Tok.biz |> snapTo(day)\n', east);
+    // 東京の営業日 1/6〜1/9 が NY の前日 1/5〜1/8 の先頭（JST 表示 14:00）へ floor される
+    expect(r.results[0].dates).toEqual(
+      ['2026-01-05T14:00', '2026-01-06T14:00', '2026-01-07T14:00', '2026-01-08T14:00']);
+    expect(r.warnings.some(w => w.startsWith('horizon-clip: snapTo') && w.includes('F107'))).toBe(true);
+  });
+  it('shift(unit: day): 同帯で同型（単位窓列の下限）', () => {
+    const r = run(NYU + 'Tok.biz |> shift(1, unit: day)\n', { from: '2026-01-05', to: '2026-01-08' });
+    expect(r.results[0].dates.length).toBeGreaterThan(0);
+    expect(r.warnings.some(w => w.startsWith('horizon-clip: shift') && w.includes('F107'))).toBe(true);
+  });
+  // 位相の頭の切り欠き（紀元以後・窓なし）の③硬エラー維持は annotations.test.ts
+  // 「anchored grid の頭の隙間」が担保（windowFloorOf は窓 tz の紀元で判定＝切り欠きは下限の内側）
+});
