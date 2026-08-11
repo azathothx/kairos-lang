@@ -1,5 +1,5 @@
 ---
-source_sha: 4dd208bf85eb
+source_sha: 074ed27c59d2
 ---
 
 # `span` — variable aggregation of a unit sequence (bottom-up)
@@ -14,10 +14,11 @@ source_sha: 4dd208bf85eb
 ## Meaning
 
 **Bundles** a sequence of finer units into consecutive windows according to `f = n => count`
-(bottom-up aggregation). `n` is the **epoch-based ordinal** of the window under generation
-(0-based; the same coordinate as [`epochOrdinal`](epochOrdinal.md)); the count may be variable
-(`month`'s 28–31 days) or constant (`year`'s 12 months). `phase:` is the phase at which bundling
-starts (a fiscal calendar's April start is `phase: 3`).
+(bottom-up aggregation). `n` is the **0-based ordinal of the complete windows about to be
+generated**; the count may be variable (`month`'s 28–31 days) or constant (`year`'s 12 months).
+`phase:` is the phase at which bundling starts (a fiscal calendar's April start is `phase: 3`).
+Without `phase:`, `n` coincides with the coordinate read by [`epochOrdinal`](epochOrdinal.md)
+(see the pitfall below — with a phase they differ by 1).
 
 The Gregorian backbone stands on this word — **the dependency runs chiefly bottom-up**
 (`day → month → year`):
@@ -61,6 +62,14 @@ projection time, lazily evaluated). The canonical form of the fiscal-year label,
 - The ordinal `f` receives is **epoch-based** — to align the phase to a particular date origin, use
   `phase:`, or, for uniform widths, [`grid`](grid.md) with `anchor:` is more natural (this is why
   the pentad above does not start on Jan 1).
+- **With `phase:`, the generator-side ordinal of `f` and the reader-side ordinal of
+  `epochOrdinal` differ by 1** (F108): the head stub window ([epoch, phase end) — the phase
+  remainder `f` does not control) occupies ordinal **0** on the reader side (“the running ordinal
+  of the windows that exist”, ADR-31 revision = F60). The same window is called `n` by the
+  generator and `n + 1` by the reader — in premises that compute labels from ordinals (custom
+  calendars with a phase), offset the two bases by 1 (worked example = the Hijri calendar in
+  design/40-examples/10). Reading via a `label:` expression (computed from the head instant),
+  as `fiscal` does, is unaffected.
 - What it bundles is **a sequence of unit windows** (`day`, `month`) — it does not take the
   continuous axis itself (that is `grid`).
 

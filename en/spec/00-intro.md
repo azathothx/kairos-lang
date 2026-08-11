@@ -1,5 +1,5 @@
 ---
-source_sha: 75e2ce67d598
+source_sha: 22b7cb31c9eb
 ---
 
 # Kairos Language Specification — 1. Introduction
@@ -48,7 +48,7 @@ pair a business-day-calendar object with before/after shift flags ("BDC products
 | Business days (holiday-aware) | ✗ | △ (exclusion = skip only) | ✗ (static EXDATE) | ✓ | ✓ (calendar entity + derived `bizDay`, §3.9) |
 | Business-day **arithmetic** (Nth business day, 3 business days before month-end) | ✗ | ✗ | ✗ | △ (shift flags only) | ✓ (`roll` / `shift(unit: bizDay)`, §7.1) |
 | **Deriving** holidays by rule (substitute holidays, citizens' holidays) | ✗ | ✗ | ✗ | ✗ (enumeration only) | ✓ (cascade, §7.5) |
-| User-defined calendars (fiscal year, ISO week, lunisolar, solar terms) | ✗ | ✗ | △ (RFC 7529 RSCALE, rarely implemented) | ✗ | ✓ (premise layer = user-defined calendar systems, §3) |
+| User-defined calendars (fiscal year, ISO week, lunisolar, Islamic, solar terms) | ✗ | ✗ | △ (RFC 7529 RSCALE, rarely implemented) | △ (groupware such as Outlook keeps alternate-calendar recurrences as internal rules only — crossing the RRULE/API boundary degrades them to **expanded point lists**) | ✓ (premise layer = user-defined calendar systems, §3; alternate-calendar verification and the structural contrast with the Outlook style = [design/40-examples/10](../../design/40-examples/10-alternative-calendars.md)) |
 | Composition / closure (derived dates feed the next rule) | ✗ | ✗ | △ (RDATE/EXDATE union/difference only) | ✗ | ✓ (every expression is stream → stream, §2.3) |
 | Cross-timezone composition (Tokyo × NY joint business days) | ✗ | ✗ | ✗ | ✗ | ✓ (`rebase` + alignment checks, §4.4) |
 | DST semantics | △ (implementation-defined — skips, double fires) | △ | ✓ (wall clock) | △ | ✓ (wall-clock declarations; gaps/overlaps are explicit errors, §3.6) |
