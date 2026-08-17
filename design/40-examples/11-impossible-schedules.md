@@ -33,11 +33,11 @@
 
 | # | 要求 | 既存側の挫折（代表出典） | Kairos 判定 |
 |---|---|---|---|
-| 1 | 月末日・月末 N 日前 | cron 最頻出（[SO 閲覧 32.5 万](https://stackoverflow.com/questions/6139189/cron-job-to-run-on-the-last-day-of-the-month)）・K8s CronJob は [issue 再提起ループ](https://github.com/kubernetes/kubernetes/issues/121088)・`L` は方言で処理系間移植不能 | ○語彙（`month \|> last`・spec §1.2 済） |
+| 1 | 月末日・月末 N 日前 | cron 最頻出（[SO 閲覧 32.5 万](https://stackoverflow.com/questions/6139189/cron-job-to-run-on-the-last-day-of-the-month)）・K8s CronJob は [issue 再提起ループ](https://github.com/kubernetes/kubernetes/issues/121088)・`L` は方言で処理系間移植不能 | ○語彙（<code>month &#124;> last</code>・spec §1.2 済） |
 | 2 | 月末最終営業日 | Google Calendar は[編集不可警告つき ICS 輸入でしか置けない](https://www.garethjmsaunders.co.uk/2022/03/26/how-to-set-up-recurring-events-on-the-last-working-day-of-the-month-in-google-calendar/)・Quartz `LW` は祝日不可 | ○語彙＋データ（→ (a)） |
 | 3 | 日付∧曜日の AND（13 日の金曜） | POSIX が DOM/DOW を **OR** と規定・[Debian Bug#460070 は 15 年 wontfix](https://groups.google.com/g/linux.debian.bugs.dist/c/LM4Rqrf9oQM)・Vixie cron ソース自身が「bizarre…it's the standard」 | ○語彙（`filter` の and。ブログ第 3 弾） |
 | 4 | 第 n 曜日（Patch Tuesday・第 3 火曜に再起動） | `15-21 * * 2` が OR 罠で**第 3 水曜に全システム再起動**した[実害報告](https://superuser.com/questions/348348/crontab-day-of-week-vs-day-of-month) | ○語彙（→ (h)） |
-| 5 | 最終○曜日（最終金曜リリース） | 月長変動×OR 罠の複合・[croniter が結局カレンダー逆引きを自前実装](https://github.com/taichino/croniter/issues/159) | ○語彙（`filter(Fri) \|> within(month) \|> last`・reference/roll.md に別解） |
+| 5 | 最終○曜日（最終金曜リリース） | 月長変動×OR 罠の複合・[croniter が結局カレンダー逆引きを自前実装](https://github.com/taichino/croniter/issues/159) | ○語彙（<code>filter(Fri) &#124;> within(month) &#124;> last</code>・reference/roll.md に別解） |
 | 6 | 第 N 営業日・第 10 営業日 | [ADF「通常のトリガーでは不可」](https://stackoverflow.com/questions/76503521/how-to-schedule-an-azure-datafactory-pipeline-to-run-on-every-nth-business-day)・Quartz 回答「CRON は祝日を恐らく永遠に知らない」 | ○語彙＋データ（→ (i)・F102 確定済み） |
 | 7 | 営業日振替（25 日払い・休日なら前営業日） | RRULE は[「不可能と思う」が回答](https://stackoverflow.com/questions/38170676/recurring-calendar-event-on-first-of-the-month)・EXDATE は消せるが**代替日を生成できない**・この不可能性を動機に [DSL が新造される](https://dev.to/chatii/schedules-are-rules-not-lists-of-timestamps-introducing-yarunoka-98i)ほど | ○語彙＋データ（`roll`・spec §7.4 doctest 済） |
 | 8 | 祝日を除く平日（3 連休の月曜スキップ） | cron に外部カレンダー参照が無く[100 台を手動コメントアウト運用](https://superuser.com/questions/239591/cron-tips-for-not-running-cron-jobs-on-holidays-the-monday-of-a-three-day-weeke)・Airflow は cron を諦め [Timetable 機構を新設](https://airflow.apache.org/docs/apache-airflow/stable/howto/timetable.html) | ○語彙＋データ（`bizDay` カスケード・01） |
@@ -47,7 +47,7 @@
 | 12 | 1 分未満（30 秒ごと） | cron の粒度床（[SF 閲覧 8.1 万](https://serverfault.com/questions/49082/can-i-run-a-cron-job-more-frequently-than-every-minute)・`sleep 30` 二連発が定番） | ○語彙（`strideBy(30s)`。粒度は連続基底の射影で床が無い） |
 | 13 | 期間限定の定期実行（6/29〜12/30 の毎日 7 時） | cron に年も期間も無く[「翌年が来る前に手でコメントアウトせよ」が回答](https://stackoverflow.com/questions/704927/does-cron-expression-in-unix-linux-allow-specifying-exact-start-and-end-dates) | ○語彙（評価範囲の分離が第一級・在圏比較も可→ (n)） |
 | 14 | 除外・否定条件（特定 1 日だけ・第 2/4 日曜の 1〜3 時だけ止める） | cron に NOT が無い（[閲覧 2.0 万](https://unix.stackexchange.com/questions/236120/excluding-specific-date-and-time-in-cronjob)）・RFC 5545 は EXRULE を**廃止** | ○語彙（`\` と `filter(not …)`・→ (o)） |
-| 15 | 月 2 回を単一系列で（1 日と 15 日・第 2 火曜と第 4 木曜） | Graph API は[閉じた 6 パターン](https://learn.microsoft.com/en-us/graph/api/resources/recurrencepattern?view=graph-rest-1.0)・`BYDAY=2TU,4TH` は合法なのに Outlook が拒否し [W3C が提供自体を断念](https://github.com/w3c/calendar/issues/25) | ○語彙（結合子 `\|`・→ (h)） |
+| 15 | 月 2 回を単一系列で（1 日と 15 日・第 2 火曜と第 4 木曜） | Graph API は[閉じた 6 パターン](https://learn.microsoft.com/en-us/graph/api/resources/recurrencepattern?view=graph-rest-1.0)・`BYDAY=2TU,4TH` は合法なのに Outlook が拒否し [W3C が提供自体を断念](https://github.com/w3c/calendar/issues/25) | ○語彙（結合子 <code>&#124;</code>・→ (h)） |
 | 16 | 規則の和・積（毎日 8:00 と 9:30・3 日毎∩月曜） | BY 句は直積のみ・RFC 5545 が複数 RRULE を**未定義化**・RRuleSet は[規格外で .ics に運べない](https://www.vitavonni.de/blog/200702/2007021501-icalendar-is-broken.html) | ○語彙（全式が閉包・結合子が中核。ADR-04/22） |
 | 17 | 曜日ごとに違う時刻（火水 15 時・金 17 時） | [Google Calendar API は系列内単一時刻](https://stackoverflow.com/questions/62979226/how-do-i-repeat-the-event-at-different-times-weekly)——「例外で個別上書き」が回答 | ○語彙（→ (k)） |
 | 18 | 3 営業日ごと（週末を数えない N 日周期） | [「Google Calendar にネイティブな方法は無い」](https://webapps.stackexchange.com/questions/88418/google-calendar-recurring-event-every-x-weekdays)——3 週×3 系列に手で分解 | ○語彙＋データ（→ (i)） |

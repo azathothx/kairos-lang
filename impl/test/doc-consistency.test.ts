@@ -25,6 +25,22 @@ const CURRENT_DOCS = [
   ...mdFiles('en/design/40-examples/'), // カタログ＋需要順の研究英訳（11→10→05→09→06・2026-08-17 設計者裁定。旧: カタログのみ＝2026-08-06）
 ];
 
+// 公開される design 文書（kramdown 検査の対象＝2026-08-17 設計者指摘: 11 の表で \| が再発——
+// 従来の検査対象は上の CURRENT_DOCS のみで、公開層である design/ が網の外だった）。
+// 対象は明示列挙（歴史記録の層＝作業記と受領記録〈60-reviews・「エスケープ自体の引用」を含む〉は
+// 対象外。design/ 直下に現在形の文書を新設したらここに足す）
+const PUBLISHED_DESIGN = [
+  'design/00-overview.md',
+  'design/10-domain-model.md',
+  'design/70-release-1.0.md',
+  'design/90-open-questions.md',
+  'design/INDEX.md',
+  'design/README.md',
+  ...mdFiles('design/20-adr/'),
+  ...mdFiles('design/30-syntax/'),
+  ...mdFiles('design/40-examples/'),
+];
+
 describe('文書の整合性（現在形の文書 vs 実態）', () => {
   it('「ADR-01〜NN」の範囲表記が design/20-adr/ のファイル数と一致する', () => {
     const adrCount = readdirSync(new URL('design/20-adr/', root))
@@ -69,9 +85,9 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     expect(stale).toEqual([]);
   });
 
-  it('公開 Markdown にテーブル用エスケープ \\| が残っていない（kramdown はコードスパン内の \\| を戻さない——2026-07-30 設計者指摘・テーブル内は <code>&#124;</code> を使う）', () => {
+  it('公開 Markdown にテーブル用エスケープ \\| が残っていない（kramdown はコードスパン内の \\| を戻さない——2026-07-30 設計者指摘・テーブル内は <code>&#124;</code> を使う。2026-08-17 に公開 design 文書へ拡張＝11 の再発指摘）', () => {
     const stale: string[] = [];
-    for (const p of CURRENT_DOCS) {
+    for (const p of [...CURRENT_DOCS, ...PUBLISHED_DESIGN]) {
       for (const [i, line] of read(p).split('\n').entries()) {
         if (line.includes('\\|')) stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 60)}`);
       }
@@ -79,9 +95,9 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     expect(stale).toEqual([]);
   });
 
-  it('テーブル行のコードスパンに裸の | が残っていない（GFM はコードスパン内でもセルを割る——2026-08-03 外部レビュー第 7 回 K2＝エスケープ剥がれの取りこぼし形）', () => {
+  it('テーブル行のコードスパンに裸の | が残っていない（GFM はコードスパン内でもセルを割る——2026-08-03 外部レビュー第 7 回 K2＝エスケープ剥がれの取りこぼし形。2026-08-17 に公開 design 文書へ拡張）', () => {
     const stale: string[] = [];
-    for (const p of CURRENT_DOCS) {
+    for (const p of [...CURRENT_DOCS, ...PUBLISHED_DESIGN]) {
       for (const [i, line] of read(p).split('\n').entries()) {
         if (!/^\s*\|/.test(line)) continue;
         for (const m of line.matchAll(/`[^`]*`/g)) {
