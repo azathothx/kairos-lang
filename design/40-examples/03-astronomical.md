@@ -240,6 +240,9 @@ easter = everyDay |> filter(d => monthNo(d) == easterMonth(yearNo(d)) and dayNo(
 **判定**: **値計算は書ける・時点化で要補完**。`mod`・`div`・四則・入れ子の関数適用だけで Computus は
 完全に書けた（値レイヤーの表現力は十分）。書けないのは最後の一歩＝**値 (y, m, d) から基底上の点への
 持ち上げ**である。
+**（後日談 2026-08-17）判定を「書ける」に更新**——射影一族の確定（ADR-27/30）後の現行語彙
+（`month(d)`・`year(d)`・`ordinalIn`）で暫定案 2 の filter 形がそのまま動く。実測（2024〜2028 の
+5 年全て公知の復活祭と一致・doctest）は [11 §(g)](11-impossible-schedules.md) に固定（F28 解消の実証）。
 
 **綻び**:
 

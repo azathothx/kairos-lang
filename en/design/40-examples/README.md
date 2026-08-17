@@ -1,5 +1,5 @@
 ---
-source_sha: 0810b57507e9
+source_sha: b663cf466cb3
 ---
 
 # 40-examples — Expressiveness studies (a sample book of known schedules)
@@ -42,7 +42,7 @@ the write-ups are executed directly as doctests by the reference implementation.
 | 02 Sexagenary cycle, rokuyō, … | Expected-value comparison | Year cycle in `examples.test.ts` (§7.6); cycles in general in `cycle-labels.test.ts`; rokuyō/lunisolar in the `stdlib/kyureki` doctests (NAOJ new-moon data) |
 | 03 Astronomical calendars | Expected-value comparison + **primary-data comparison** (`95-reference-data.md` = NAOJ ephemeris) | Solar terms, seasonal markers, lunar new year in stdlib guides and later studies' doctests |
 | 04 Projection tear-out | Exploration record (settled form = an ADR) | Settled projections in `projections.test.ts` and the doctests of each reference page |
-| 05–09 | **Doctests (living tests)** — fenced blocks with `# eval:` are scanned and executed by `impl/test/doctest.test.ts` | The write-ups are themselves tests (tithi, business hours, injected origins, backup generations, DST and width rules) |
+| 05–09, 11 | **Doctests (living tests)** — fenced blocks with `# eval:` are scanned and executed by `impl/test/doctest.test.ts` | The write-ups are themselves tests (tithi, business hours, injected origins, backup generations, DST and width rules, and 17 measured runs of “impossible” schedules) |
 
 ## Files
 
@@ -58,7 +58,8 @@ the write-ups are executed directly as doctests by the reference implementation.
 | [08-backup-schedules.md](../../../design/40-examples/08-backup-schedules.md) | Multi-generation backups (daily incremental / weekly differential / monthly full, higher-tier suppression, decreasing start times = finite case-splits + combinators; 2 doctests) |
 | [09-dst-widths.md](../../../design/40-examples/09-dst-widths.md) | DST and the width rules (`1d` = civil day vs `24h` = elapsed time, operationally verified; gap/overlap resolution of derived points; named times are strict, derived times follow conventions; 4 doctests and an accident-type → rule table) |
 | [10-alternative-calendars.md](../../../design/40-examples/10-alternative-calendars.md) | Alternate calendars in arithmetic form (survey of how Outlook / the OS implement them = baked-in tables, arithmetic, degradation to expanded point lists at API boundaries; the tabular Hijri calendar verified as a **zero-data rule premise** with 3 doctests; structural contrast of the two styles, a three-step treatment of the Hebrew calendar, and a head-on answer to “what can Outlook do that Kairos cannot”) |
-| [90-findings.md](../../../design/40-examples/90-findings.md) | The consolidated tear log (F1–F108) and its mapping onto completion mechanisms |
+| [11-impossible-schedules.md](../../../design/40-examples/11-impossible-schedules.md) | Schedules long said to be “unwritable” (32 limitation cases collected from the wild — cron, RRULE, calendar APIs and business SaaS, with sources; 17 representative cases measured in the current vocabulary as doctests; a three-way classification — vocabulary / data / out of scope with named receptacles; the Easter verdict upgraded to “writable”, F109) |
+| [90-findings.md](../../../design/40-examples/90-findings.md) | The consolidated tear log (F1–F109) and its mapping onto completion mechanisms |
 | [95-reference-data.md](../../../design/40-examples/95-reference-data.md) | Primary data from the NAOJ 2026 ephemeris (solar terms, moon phases, equinoxes) and comparison results |
 
 ## The verdict matrix (all elements)

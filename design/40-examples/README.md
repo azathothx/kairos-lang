@@ -31,7 +31,7 @@ Kairos が「利用者が実際に書きたい既知のスケジュール」を�
 | 02 干支・六曜ほか | 期待値照合 | 年干支は `examples.test.ts`（§7.6）・cycle 一般は `cycle-labels.test.ts`・六曜/旧暦は `stdlib/kyureki` の doctest（NAOJ 朔データ） |
 | 03 天文・暦 | 期待値照合＋**一次データ照合**（`95-reference-data.md`＝NAOJ 暦要項） | 節気・雑節・旧正月は stdlib 解説と `40-examples` 後続ファイルの doctest・月相の算術近似 1 例は本文 doctest（§3.4） |
 | 04 射影の綻び出し | 探索記録（確定形は ADR-30） | 確定後の射影は `projections.test.ts`・reference 各ページの doctest |
-| 05〜09 | **doctest（生きたテスト）**——`# eval:` 付きフェンスを `impl/test/doctest.test.ts` が走査・実行 | 本文がそのままテスト（ティティ・営業時間・注入起点・バックアップ多段・DST と幅規約） |
+| 05〜09・11 | **doctest（生きたテスト）**——`# eval:` 付きフェンスを `impl/test/doctest.test.ts` が走査・実行 | 本文がそのままテスト（ティティ・営業時間・注入起点・バックアップ多段・DST と幅規約・「書けない」実例の実測 17 本） |
 
 01〜04 の本文例の順次 doctest 化（確定語彙への書き直し込み）は進行中の宿題。それまでの間、
 「書ける」の一次証跡は上表の実装テスト・doctest・一次データ照合が担う。
@@ -57,7 +57,8 @@ Kairos が「利用者が実際に書きたい既知のスケジュール」を�
 | [08-backup-schedules.md](08-backup-schedules.md) | バックアップの多段世代（日次増分・週次差分・月次フル・上位優先の抑止・開始時刻の漸減＝有限場合分け＋結合子。doctest 2 例） |
 | [09-dst-widths.md](09-dst-widths.md) | DST と幅の規約（`1d`＝市民日 vs `24h`＝経過時間の運用検証・導出点の隙間/重複解決・名指しは厳格/導出は規約。doctest 4 例・事故の型→規約の対応表） |
 | [10-alternative-calendars.md](10-alternative-calendars.md) | 代替暦の算術形（Outlook/OS の実装様式調査＝焼き込みテーブル・算術・境界で展開点列化／タブラー・ヒジュラ暦を**データゼロの規則 premise** で実行検証＝doctest 3 例／方式の構造対比・ヘブライ暦の三段整理・「Outlook にできて Kairos にできないこと」の正面回答） |
-| [90-findings.md](90-findings.md) | 綻びログの集約（F1〜F108）と補完機構への写像 |
+| [11-impossible-schedules.md](11-impossible-schedules.md) | 「書けない」と言われてきたスケジュール（cron・RRULE・API/業務系の限界実例 32 項目を Web 収集＝出典付き／代表 17 本を現行語彙で実測＝doctest／三分類〈語彙・データ・射程外＝受け皿明文化〉／イースター判定の「書ける」更新・F109） |
+| [90-findings.md](90-findings.md) | 綻びログの集約（F1〜F109）と補完機構への写像 |
 | [95-reference-data.md](95-reference-data.md) | NAOJ 令和8年暦要項の一次データ（節気・朔弦望・春分秋分）と照合結果 |
 
 ## 仕分けマトリクス（全要素）
