@@ -1,5 +1,5 @@
 ---
-source_sha: b6f2b588be40
+source_sha: 02f3f4e9ff0c
 ---
 
 # `within` — the partition-type window
@@ -55,9 +55,11 @@ everyDay |> within(quarter) |> within(month) |> nth(2, of: month)
 - A selector without a window is a type error (I4). `everyDay |> first` cannot be written.
 - `within(week)` requires a `wkst:` declaration in the preamble (the week's cut depends on WKST;
   undeclared is a static error. stdlib/gregorian.md §4.5).
-- Windows cut by markers (fiscal closes, lunar phases) cannot be written with `within` — use
-  [`segmentBy`](segmentBy.md). The argument kinds differ fundamentally, so the two are not unified
-  (ADR-08).
+- Windows cut by markers (fiscal closes, lunar phases) cannot be **built** with `within` — build
+  them with [`segmentBy`](segmentBy.md). The argument kinds differ fundamentally, so the two are
+  not unified (ADR-08 — but **acceptance** is decided by property: once the window sequence is an
+  effective partition, `within(its name)` can group by it, and a rule-marker-built one can also be
+  the parent of [`split`](split.md). ADR-08 addendum · ADR-48).
 
 ## Related
 

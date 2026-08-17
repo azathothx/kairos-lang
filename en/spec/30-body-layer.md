@@ -1,5 +1,5 @@
 ---
-source_sha: 63e2fa6561fa
+source_sha: 16e90dc4ee8f
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -249,28 +249,39 @@ everyDay |> filter(on: bizDay)                       # keep business days only
 everyDay |> filter(d => weekday(d) == Mon)           # keep Mondays only (label predicate)
 ```
 
-## 4.7 Strides (scan and thin)
+## 4.7 Strides (scan and thin, or cut off)
 
 A stateful online transform, a family apart from selectors. Where a selector consumes a window and
 picks "the Nth" window-relative (each window → one point, resetting per window), a stride consumes
-no window and thins "every N" (continuous across boundaries, never resetting). "Every N business
-days, ignoring month boundaries" cannot be written with selectors — that is the stride's reason to
-exist. It splits into two operators by argument kind.
+no window and counts through (continuous across boundaries, never resetting). "Every N business
+days, ignoring month boundaries" and "five sessions total" cannot be written with selectors — that
+is the stride's reason to exist. It splits into three operators by argument kind and how the count
+is used.
 
 | Operator | Argument | What it counts | Example |
 |---|---|---|---|
-| `stride(n, from:)` input count | integer ≥ 1 (violation is a static error) | **points of the input stream** (no axis argument; ADR-38, F70) | <code>filter(on: bizDay) &#124;> stride(3, from: …)</code> = every 3 business days |
+| `stride(n, from:)` input count, thin | integer ≥ 1 (violation is a static error) | **points of the input stream** (no axis argument; ADR-38, F70) | <code>filter(on: bizDay) &#124;> stride(3, from: …)</code> = every 3 business days |
+| `take(n, from:)` input count, **cut off** | integer ≥ 1 (violation is a static error) | points of the input stream (only the first n pass. ADR-49) | <code>(lessons \ cancelled) &#124;> take(5, from: …)</code> = five sessions total |
 | `strideBy(w, from:)` width step | a width = a physical quantity across multiple axes | width (an absolute amount) | `strideBy(24h39m35.244s, from: …)` = every 1 sol |
 
-`stride` is **input-relative** — what it counts is decided upstream ("every 3 business days" puts
-`filter(on: bizDay)` first). The counting origin is "the **first input point** at or after
-`from:`" (that point is step 0 = it survives; `from:` is not required to be a point of the input).
-The form "count along an axis, apply to another stream" is composed as
+`stride` and `take` are **input-relative** — what they count is decided upstream ("every 3
+business days" puts `filter(on: bizDay)` first). The counting origin is "the **first input
+point** at or after `from:`" (that point is step 0 = it survives; `from:` is not required to be a
+point of the input). The form "count along an axis, apply to another stream" is composed as
 `(stride sequence of the axis) & input` (day-aligned) or
 `filter(d => coincides(strideSequence, day, d))` (timed; §4.9).
 
+`take` is the COUNT counterpart of RRULE, but **counting after exclusion** falls out of
+composition order — in `(lessons \ cancelled) |> take(5, from: …)`, later points move up to fill
+the n as exclusions remove earlier ones (structurally avoiding COUNT's trap of counting the
+generated set before exclusion and shrinking). After the nth point the output is a **legitimate
+empty** (no annotation; ADR-37 decision 2). **Windowed input is a guided static error** — the
+per-window "first N" is `within` followed by `nth` (§4.3) or an `ordinalIn` predicate (§4.9)
+(take counts through). Time-boxing belongs to the separation of definition and evaluation range,
+not to take.
+
 The origin (the phase anchor) is **always made explicit with `from:`** (absence is a static error;
-common to the stride/strideBy family). The former "supplied from the upstream window's origin" was
+common to the stride/take/strideBy family). The former "supplied from the upstream window's origin" was
 abolished: with multiple windows it is ambiguous and evaluation-range-dependent (in tension with
 I7) (ADR-31, F49). **No reset by default** (boundary-ignoring, continuous). The per-window
 recounting variant is written by reduction to `ordinalIn` (§4.9, ADR-27).
@@ -345,7 +356,7 @@ core of the reading side is these three words.
 
 | Word | Type | Meaning |
 |---|---|---|
-| `ordinalIn(u, w, d)` | point → number | Within the `w` window containing point `d`, the ordinal of the `u` window containing `d` (1-based). `ordinalIn(day, month, d)` = which day of the month. The counting unit `u` is explicit, so it does not depend on the input granularity |
+| `ordinalIn(u, w, d)` | point → number | Within the `w` window containing point `d`, the ordinal of the `u` window containing `d` (1-based). `ordinalIn(day, month, d)` = which day of the month. The counting unit `u` is explicit, so it does not depend on the input granularity. **Alignment check** (ADR-50): when `u` is an elapsed-width grid, an explicit error if the start of `d`'s `w` window is off `u`'s lattice (zones whose epoch difference is not an integral number of unit widths — no silently fractional ordinals; per-instance, in the data-relative layer) |
 | `epochOrdinal(u, d)` | point → number | The running ordinal of `u` windows from the epoch (the same coordinate as the window ordinal of §3.6; **0-based**; negative before the epoch. The epoch is the language default 1970-01-01, overridable by the calendar system's `epoch:`. For data-derived windows whose sequence does not reach the epoch, **the first existing window is 0** = ADR-31 revision, F60) |
 | `coincides(S, w, d)` | point → boolean | Whether at least one point of stream `S` lies within the `w` window containing point `d` (**the window-membership predicate** = bounded existential quantification in value expressions; ADR-38, F68). Alone in the family, its first argument is a stream (a window word is a static error — get a point sequence via <code>month &#124;> first</code>) |
 
@@ -493,6 +504,7 @@ the governance table of ADR-36):
 | roll | the image of the input annotations ∪ the **dependency image** of the axis's annotated intervals (extended against the convention's direction to the nearest known axis point before/after). Axis exhaustion is empty + annotation; but under a completed coverage (open end), an unannotated empty |
 | selectors | if the target window intersects an annotation, widened to the **whole window** |
 | stride/strideBy | if the walk intersects, **everything from the first intersection onward** (phase contamination) |
+| take | the stride row's isomorph plus a **reduction**: once the nth point settles before any intersection, annotation intervals beginning after the settlement are not transported (the output depends only on the input's first n points — required for consistency with "after n, a legitimate empty with no annotation". ADR-49) |
 | segmentBy | the complement of the marker coverage. `edges:`/`empties:` fire at the **coverage edges** (not the sequence edges) — within the coverage, even the window starting at the final marker is determined up to the coverage edge (= the window sequence's **effective coverage**). Stretches where no window is laid (the head side under `edges: drop`/`error`; gaps under `empties: drop`) are out-of-coverage for the window sequence = annotated (ADR-37 revision 3) |
 | filter | points that demanded an out-of-coverage reference are **dropped**, and the annotation widens to the **preimage of the region (window) the predicate read** (ADR-37 revision 2 = F75; for predicates reading only d's neighborhood, as before: the dependency's annotated intervals ∩ the evaluation region) |
 | generators, within, snapTo | pass the input's annotations through (point transforms, via the image). A calendar-system-pure generator itself produces no annotations |

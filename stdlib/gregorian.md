@@ -10,6 +10,7 @@
 ```text
 premise Gregorian {
   day     = chronos grid 1d                                 # 原子（連続基底 Chronos を市民日で分割）
+  hour    = chronos grid 1h                                 # 経過 1 時間のタイル（市民時ではない。ADR-50）
   weekday = day cycle [Mon, Tue, Wed, Thu, Fri, Sat, Sun] anchor: 2000-01-03
 
   epochYear    = 1970                                       # 補助値関数（紀元年。ADR-31 の言語既定）
@@ -71,6 +72,7 @@ grid の**位相**は既定で整列する——市民時幅（`d`）は在圏 `
 | 語 | 種別 | 説明 |
 |---|---|---|
 | `day` | 窓（原子） | 連続基底 Chronos を幅 1 日で一様分割（`grid`）した暦の原子。 |
+| `hour` | 窓（タイル） | **経過** 1 時間のタイル（`grid 1h`・紀元整列）。**day と違い市民時ではない**——「その日の第 N 時間」の読み（`ordinalIn(hour, day, d)`）が壁時計の時＋1 と一致するのは紀元差が保たれる tz に限る。落とし穴は §2.1。ADR-50。 |
 | `weekday` | 並列ラベル | 各 `day` に曜日ラベルを巡回で付す（`cycle`）。窓ではなくラベル。詳細は §4。 |
 | `isLeap` | 値式 | 閏年判定（グレゴリオ暦の規則）。引数は暦年（値）。 |
 | `daysInMonth` | 値式 | month 序数から日数を返す。閏を**値**として見る（§3）。 |
@@ -102,6 +104,35 @@ month(5) & year(2026)
 everyDay |> filter(d => dayNo(d) > daysInMonthOf(d) - 3)
 #=> 2026-02-26 2026-02-27 2026-02-28
 ```
+
+### 2.1 hour の落とし穴（ADR-50）
+
+「その日の第 N 時間」の帯（営業時間内 90 分スロットなど）は標準の `hour` で書ける:
+
+```kairos
+# eval: 2026-01-05..2026-01-06
+@JP
+everyInstant |> strideBy(1h30m, from: 2026-01-05T09:00)
+  |> filter(d => ordinalIn(hour, day, d) >= 10 and ordinalIn(hour, day, d) <= 17)
+#=> 2026-01-05T09:00 2026-01-05T10:30 2026-01-05T12:00 2026-01-05T13:30 2026-01-05T15:00 2026-01-05T16:30
+```
+
+ただし三点に注意する。
+
+1. **DST 切替日は序数が壁時計とずれる**（検査では守れない側・最頻の罠）。整数時 DST の tz
+   （America/New_York 等）では境界一致が保たれ検査も通るが、切替日は day が 23/25 タイルになり
+   `ordinalIn(hour, day, d)`＝壁時計の時＋1 の等式が割れる（秋戻し日の壁 23:30＝序数 25）。
+   **壁時計概念の帯は宣言側が正準**——`isOpen`（ADR-41）か壁時計 anchor の `strideBy(1d,
+   from: …T09:00)` で書く（F76 の教訓）。
+2. **紀元差が崩れた tz は整合検査が弾く**。`hour` の位相は在圏 tz の市民紀元（1970-01-01T00:00）
+   ——紀元以降にオフセットが 1h の非整数倍動いた tz（Asia/Kathmandu＝1986 改定・Asia/Singapore＝
+   1981 改定〈現行整数時なのに破れる〉・Australia/Lord_Howe＝半時 DST で季節反転）では、
+   `ordinalIn(hour, day, d)` が**明示エラー**になる（黙って半端な序数は出さない。ADR-50）。
+   恒常 +05:30 の Asia/Kolkata は紀元差ゼロで正しく動く——破れの述語は「オフセットの整数時性」
+   ではなく**紀元差**である。
+3. **hour の全実体化は高価**（F80）。tick の生成は `hour |> first` でなく `strideBy(1h, from:)`
+   へ。分未満が要るときは派生 1 行（`premise M = Gregorian with { minuteW = chronos grid 1m }`）
+   ——minute/second は標準に入れない（同じ 1 行で足り・常設の価値が薄い）。
 
 ## 3. 依存方向と「閏は窓でなく値」
 

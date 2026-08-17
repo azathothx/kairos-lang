@@ -1,5 +1,5 @@
 ---
-source_sha: c8d01a32fbd6
+source_sha: 5a683bff1f81
 ---
 
 # `strideBy` — step by width, "every w"
@@ -46,5 +46,5 @@ For every Martian sol, see the example in [`everyInstant`](everyInstant.md)
 
 ## Related
 
-[`stride`](stride.md) · [`everyInstant`](everyInstant.md) · width literals (spec §5.5 ·
-ADR-11/12/28).
+[`stride`](stride.md) · [`take`](take.md) · [`everyInstant`](everyInstant.md) · width literals
+(spec §5.5 · ADR-11/12/28).

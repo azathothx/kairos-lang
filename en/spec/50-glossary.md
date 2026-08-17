@@ -1,5 +1,5 @@
 ---
-source_sha: da7a8767246d
+source_sha: bf001fc9a1ff
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -111,6 +111,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | alignment（整列） | The static property of a stream: "every point lies on the ticks of an atomic grid G = (width, normalized phase, tz name)". `&`/`\`/axis membership require the same G (mismatch is a static error); `snapTo` is the explicit re-alignment. Not a type (ADR-05/36). The value is a G, "none", or **vacuous conformance** (an empty table conforms vacuously to every alignment; it passes the check and combinations inherit the partner's. ADR-45) | §4.5 |
 | filter `filter`（フィルタ） | Thins by predicate. Takes both premise predicates (`on:`) and value-expression predicates (lambdas) | §4.6 |
 | stride `stride(n, from:)`（ストライド） | Thins the **input points** to "every nth" (input-relative; no axis argument — what gets counted is decided by the preceding stage = ADR-38). n is an integer ≥ 1. Consumes no windows; ignores boundaries; continuous. Origin `from:` required (the first input point at or after `from:` is step 0) | §4.7 · ADR-31/38 |
+| stride `take(n, from:)`（ストライド） | Passes **only the first n input points** (cut-off; the COUNT counterpart). Counting after exclusion falls out of composition order. After the nth point, a legitimate empty (no annotation). Windowed input is a guided static error | §4.7 · ADR-49 |
 | stride `strideBy(w, from:)`（ストライド） | Steps by width (a physical magnitude across multiple axes; e.g. 1 sol). Origin `from:` required | §4.7 · ADR-31 |
 | window-membership predicate `coincides(S, w, d)`（窓所属述語） | Whether the `w` window containing point `d` holds a point of S (boolean = bounded existential quantification). Interval membership, so alignment is not required (only the tz name is checked); settled by the witness rule (true = a point in a non-annotated interval; false = the window lies within the effective coverage). The receiving vessel for F68 | §4.9 · ADR-38 |
 | sugar definition (base form B)（糖衣定義（基底 B）） | <code>name(args) = s => s &#124;> core-chain</code>. Binds the preceding stage with `s =>` | §4.8 |
@@ -138,7 +139,8 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | `axis:` | The axis default in the preamble (folding; settled by ADR-29) | §3.3 |
 | `phase:` | The phase origin of `span`/`split` | §3.7 |
 | `anchor:` | `cycle`'s label phase (which actual day carries the head label) | §3.6 |
-| `from:` | The origin for the stride family (stride/strideBy). Always required (supply from windows was retired by ADR-31) | §4.7 |
+| `from:` | The origin for the stride family (stride/take/strideBy). Always required (supply from windows was retired by ADR-31) | §4.7 |
+| effective partition（実効パーティション） | A segmentBy-built window sequence for which the I5 check (exhaustive, non-overlapping) holds over the effective coverage. In acceptance contexts (within's w; split's parent and by:) it is treated as a partition window — the generalization of "partitionhood is established by the check, not by the generating word". split additionally restricts to rule-marker-borne ones (no coverage annotations) | ADR-08 addendum · ADR-48 |
 | `edges:` / `empties:` | `segmentBy`'s gap policy | §4.2 |
 | `roll:` | The roll-convention default in the preamble (folding; being explicit is recommended) | §3.3 |
 | `covering:` | The validity range = the two-sided claim "complete inside, unknown outside". Does not touch the values (inclusion of every element is statically checked). Open-ended `2021..`/`..` (completeness claim, with governance), interval lists, and binding-postfix (coverage claim) are allowed. **Omission = the sequence's ends (narrowest) and `..` = complete everywhere (widest) are polar opposites** (an empty table has no ends, so omission is impossible = explicit covering required. ADR-45) | §3.8 · §4.10 · ADR-26/37/45 |

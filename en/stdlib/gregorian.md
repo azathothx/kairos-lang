@@ -1,5 +1,5 @@
 ---
-source_sha: 78cb1318cf11
+source_sha: bced15a9f59c
 ---
 
 # Standard premise: Gregorian
@@ -21,6 +21,7 @@ this page's charge.
 ```text
 premise Gregorian {
   day     = chronos grid 1d                                 # atom (carve the continuous base Chronos into civil days)
+  hour    = chronos grid 1h                                 # elapsed one-hour tile (not civil time. ADR-50)
   weekday = day cycle [Mon, Tue, Wed, Thu, Fri, Sat, Sun] anchor: 2000-01-03
 
   epochYear    = 1970                                       # auxiliary value functions (the epoch year; the language default of ADR-31)
@@ -91,6 +92,7 @@ it overridden with `anchor:` (ADR-31).
 | Word | Kind | Description |
 |---|---|---|
 | `day` | Window (atom) | The calendar's atom: the continuous base Chronos uniformly partitioned (`grid`) at width one day. |
+| `hour` | Window (tile) | An **elapsed** one-hour tile (`grid 1h`, epoch-aligned). **Unlike day, this is not civil time** — the "Nth hour of the day" reading (`ordinalIn(hour, day, d)`) matches wall-clock hour + 1 only in time zones whose epoch offset difference is preserved. Pitfalls in §2.1. ADR-50. |
 | `weekday` | Parallel labels | Attaches weekday labels to each `day` cyclically (`cycle`). A label, not a window. Details in §4. |
 | `isLeap` | Value expression | The leap-year test (the Gregorian rule). The argument is a calendar year (a value). |
 | `daysInMonth` | Value expression | Returns the day count from a month ordinal. Views leap as a **value** (§3). |
@@ -124,6 +126,39 @@ F101 = the symmetric completion of the §4.9 sugar family):
 everyDay |> filter(d => dayNo(d) > daysInMonthOf(d) - 3)
 #=> 2026-02-26 2026-02-27 2026-02-28
 ```
+
+### 2.1 Pitfalls of `hour` (ADR-50)
+
+"Nth-hour-of-the-day" bands (90-minute slots inside business hours, etc.) can be written with the
+standard `hour`:
+
+```kairos
+# eval: 2026-01-05..2026-01-06
+@JP
+everyInstant |> strideBy(1h30m, from: 2026-01-05T09:00)
+  |> filter(d => ordinalIn(hour, day, d) >= 10 and ordinalIn(hour, day, d) <= 17)
+#=> 2026-01-05T09:00 2026-01-05T10:30 2026-01-05T12:00 2026-01-05T13:30 2026-01-05T15:00 2026-01-05T16:30
+```
+
+Three cautions.
+
+1. **On DST transition days the ordinal drifts from the wall clock** (the side no check protects;
+   the most common trap). In whole-hour DST zones (America/New_York etc.) boundary alignment holds
+   and the check passes, but the transition day has a 23/25-tile day, and the equation
+   `ordinalIn(hour, day, d)` = wall-clock hour + 1 breaks (fall-back day: wall 23:30 = ordinal
+   25). **Wall-clock bands belong to the declaration side** — write them with `isOpen` (ADR-41)
+   or a wall-clock-anchored `strideBy(1d, from: …T09:00)` (the F76 lesson).
+2. **Zones whose epoch difference broke are rejected by the alignment check.** `hour`'s phase is
+   the resident tz's civil epoch (1970-01-01T00:00) — in zones whose offset later moved by a
+   non-integral number of hours (Asia/Kathmandu = the 1986 change; Asia/Singapore = the 1981
+   change, breaking despite a whole-hour offset today; Australia/Lord_Howe = half-hour DST,
+   flipping seasonally), `ordinalIn(hour, day, d)` is an **explicit error** (no silently
+   fractional ordinals. ADR-50). Asia/Kolkata at a constant +05:30 works correctly — the breaking
+   predicate is **the epoch difference**, not whether the offset is a whole hour.
+3. **Fully materializing `hour` is expensive** (F80). Generate ticks with `strideBy(1h, from:)`,
+   not `hour |> first`. For sub-minute needs, derive in one line
+   (`premise M = Gregorian with { minuteW = chronos grid 1m }`) — minute/second are not in the
+   standard (the same one line suffices; standing cost is not worth it).
 
 ## 3. The dependency direction, and "leap is a value, not a window"
 

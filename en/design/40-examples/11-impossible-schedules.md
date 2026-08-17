@@ -1,5 +1,5 @@
 ---
-source_sha: 9b9fa7b21f6f
+source_sha: 6b205612ee2a
 ---
 
 # 11 — Schedules long said to be unwritable: collecting the world's limitation cases, then measuring them
@@ -474,6 +474,17 @@ Four records from the measurements:
 
 One verdict update: **03 §3.5 Easter, "value computes / lifting needs completion" → "writable"**
 (the measurement in (g); the proof that F28 is resolved).
+
+**(Postscript, same day, 2026-08-17)**: three of the four records above **went the whole way —
+ruling → candidate design → four-perspective verification → ADR → implementation — within the
+day**: F109 → **ADR-48** (split's widened acceptance, restricted to rule markers; the split form
+of 4-4-5, with the g(i) 53-week branch, measured extensionally identical to the canonical form of
+§(m)) · first-N → **ADR-49 `take(n, from:)`** (catalog 29 moves from "out of scope" to
+**"vocabulary"** — the first case of a named receptacle turning into an adopted word within one
+day of demand evidence; class C shrinks to two items) · the hour window → **ADR-50**
+(standardization plus the new ordinalIn alignment check — including the episode of verification
+refuting the first calibration by measurement). Only point-vs-date-literal comparison stays under
+watch. 555 tests.
 
 ## 11.6 Summary — as 1.0 positioning material
 

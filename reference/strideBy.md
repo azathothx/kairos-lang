@@ -34,4 +34,4 @@ everyInstant |> strideBy(36h, from: 2026-01-01)
 
 ## 関連
 
-[`stride`](stride.md)・[`everyInstant`](everyInstant.md)・幅リテラル（spec §5.5・ADR-11/12/28）。
+[`stride`](stride.md)・[`take`](take.md)・[`everyInstant`](everyInstant.md)・幅リテラル（spec §5.5・ADR-11/12/28）。

@@ -1,5 +1,5 @@
 ---
-source_sha: 5c686ba6fe10
+source_sha: 305a95f57ba6
 ---
 
 # <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Descriptor Reference
@@ -37,6 +37,7 @@ actual result of running the example.
 | Point transform | [`rebase`](rebase.md) | date-label-preserving re-anchoring (cross-tz same date) |
 | Filter | [`filter`](filter.md) | thin by predicate (premise predicate / value-expression predicate) |
 | Stride | [`stride`](stride.md) | "every n" points of the input (boundary-ignoring, continuous) |
+| Stride | [`take`](take.md) | only the first n input points (cut-off; the COUNT counterpart) |
 | Stride | [`strideBy`](strideBy.md) | step by width, "every w" |
 | Combinator | [<code>&#124;</code> `&` `\`](combinators.md) | union, intersection, difference, and the cascade |
 | Projection | [`ordinalIn`](ordinalIn.md) | the ordinal of the unit window within the frame window (1-based) |

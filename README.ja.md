@@ -40,7 +40,7 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 | [`reference/`](reference/) | **記述語リファレンス**（演算子・窓生成語ごとの解説。例は実装で実行検証） |
 | [`stdlib/`](stdlib/) | 標準 premise の解説（`Gregorian`・`Fiscal`・`ISOWeek`・`Kyureki`——透明な標準ライブラリ。例は実行検証） |
 | [`impl/`](impl/) | リファレンス実装（TypeScript・実行時依存ゼロ。プロトタイプ） |
-| [`design/`](design/) | 設計記録（ADR-01〜47・ドメインモデル・構文ドラフト・表現力検証・綻びログ） |
+| [`design/`](design/) | 設計記録（ADR-01〜50・ドメインモデル・構文ドラフト・表現力検証・綻びログ） |
 
 設計の履歴を遡るときは [`design/INDEX.md`](design/INDEX.md) から。
 

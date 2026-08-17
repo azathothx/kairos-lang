@@ -26,6 +26,7 @@ Kairos の記述語（演算子・窓生成語・リテラル）を 1 語 1 フ�
 | 点変換 | [`rebase`](rebase.md) | 日付ラベル保存の再錨（クロス tz の同日付） |
 | フィルタ | [`filter`](filter.md) | 述語で間引く（premise 述語／値式述語） |
 | ストライド | [`stride`](stride.md) | 入力の点を「n ごと」（境界無視・連続） |
+| ストライド | [`take`](take.md) | 入力の点の先頭 n 点だけ（打ち切り・COUNT 相当） |
 | ストライド | [`strideBy`](strideBy.md) | 幅で刻む「w ごと」 |
 | 結合子 | [<code>&#124;</code> `&` `\`](combinators.md) | 和・積・差とカスケード |
 | 射影 | [`ordinalIn`](ordinalIn.md) | 枠窓内で単位窓が第何番目か（1 起点） |

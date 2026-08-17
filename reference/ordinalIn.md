@@ -36,6 +36,10 @@ everyDay |> filter(d => (ordinalIn(day, month, d) - 1) mod 7 == 0)
 
 - **1 起点**（「第 N」の慣習）。0 起点の通し序数は [`epochOrdinal`](epochOrdinal.md)。
 - `u` は `w` の下位窓であること（`ordinalIn(month, day, d)` は不正）。
+- **u が経過幅グリッド（標準 `hour` など）のときは整合検査が走る**（ADR-50）: d の属する w 窓の
+  開始が u の目盛り上にないと明示エラー——紀元差が単位幅の整数倍でない tz（Kathmandu・Singapore・
+  Lord_Howe）で「黙って半端な序数」を出さないための柵。壁時計の帯が欲しいなら `isOpen`／
+  `strideBy(1d, from: 時刻)` が正準（stdlib/gregorian.md §2.1）。
 - 点の暦座標（`yearNo`/`monthNo`/`dayNo`）は `epochOrdinal`＋`ordinalIn`＋既存値関数の**糖衣**で
   導ける——新規語ではない（ADR-30）。
 

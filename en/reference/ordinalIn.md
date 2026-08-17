@@ -1,5 +1,5 @@
 ---
-source_sha: e3f55532071d
+source_sha: 0242e380781b
 ---
 
 # `ordinalIn` — the ordinal of the unit window within a frame window
@@ -48,6 +48,12 @@ everyDay |> filter(d => (ordinalIn(day, month, d) - 1) mod 7 == 0)
 - **1-based** (the convention of "the Nth"). The 0-based running ordinal is
   [`epochOrdinal`](epochOrdinal.md).
 - `u` must be a subordinate window of `w` (`ordinalIn(month, day, d)` is invalid).
+- **When `u` is an elapsed-width grid (the standard `hour`, etc.), an alignment check runs**
+  (ADR-50): if the start of the `w` window containing `d` does not sit on `u`'s lattice, this is
+  an explicit error — the fence against **silently returning a fractional ordinal** in time zones
+  whose offset drifted from the epoch by a non-integral number of hours (Kathmandu, Singapore,
+  Lord Howe). For wall-clock bands, `isOpen` / `strideBy(1d, from: time)` are canonical
+  (stdlib/gregorian.md §2.1).
 - A point's calendar coordinates (`yearNo`/`monthNo`/`dayNo`) are derivable as **sugar** over
   `epochOrdinal` + `ordinalIn` + existing value functions — no new words (ADR-30).
 

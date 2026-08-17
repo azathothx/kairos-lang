@@ -4,6 +4,7 @@
 
 premise Gregorian {
   day     = chronos grid 1d                                 # 原子（連続基底 Chronos を市民日で分割）
+  hour    = chronos grid 1h                                 # 経過 1 時間のタイル（市民時ではない。ADR-50）
   weekday = day cycle [Mon, Tue, Wed, Thu, Fri, Sat, Sun] anchor: 2000-01-03
 
   epochYear    = 1970

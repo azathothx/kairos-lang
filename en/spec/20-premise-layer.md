@@ -1,5 +1,5 @@
 ---
-source_sha: b8f943679bbd
+source_sha: b3f5232003c5
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -170,7 +170,7 @@ that `month` into `year` (`month` is the basic grouping). Only `year`'s dependen
 |---|---|---|
 | `grid(w)` | Uniform partition | Tiles the continuous axis into equal widths `w`. Makes the calendar's atoms. `w` follows the **civil-time width convention** (`1d` = 1 civil day, not a fixed `86400s`; a civil day is 23–25 hours on DST transition days. Leap seconds are out of scope = chronos is a uniform idealized axis without leap seconds (each UTC day = 86,400 seconds). ADR-11/12/33). Phase defaults: civil-time widths align to the start instant of each civil day in the in-scope `tz:` (midnight on ordinary days. ADR-31 revised); elapsed-time widths align to the epoch; overridable with `anchor:` (ADR-31) |
 | `span(f)` | Variable aggregation (bottom-up) | Bundles a sequence of finer units into contiguous windows. `f = n => count` binds the ordinal `n` (epoch-origin) of the window being generated and returns the number of units to bundle. The count may be variable (`month`'s day counts) or constant (`year`'s 12) |
-| `split(g) by: u` | Variable division (top-down) | Divides a parent window into contiguous subwindows. `g = y => [widths…]` binds the parent's ordinal `y` and returns the list of subwindow widths. `by: u` makes the width unit explicit. That the widths sum to the parent is checkable under I5. Used for dependent windows |
+| `split(g) by: u` | Variable division (top-down) | Divides a parent window into contiguous subwindows. `g = y => [widths…]` binds the parent's **running window-sequence ordinal** `y` (the F60 coordinate) and returns the list of subwindow widths. `by: u` makes the width unit explicit. Parent and `u` accept, beyond partition windows, **effective partitions from rule markers** (segmentBy-built window sequences without coverage annotations) — data-borne (covering-carrying) parents, `empties: drop` parents, and cycles are rejected (ADR-48). Two per-instance checks: **boundary alignment** (both parent ends on `u` window boundaries — misaligned pairs 〈calendar year × week〉 are rejected here) and the **I5 sum** (widths sum = `u` count inside the parent; mismatch is an **error**). Used for dependent windows |
 | `cycle(labels) anchor:` | Parallel labels | Attaches repeating labels to the target partition windows. Produces labels, not windows. The period length is arbitrary (7, 10, 12, 60, …) and so is the target window (not just `day`'s weekdays — `month` and `year` work too; the sexagenary cycle is `year cycle […]`). `anchor:` is an instant meaning "the target window it belongs to takes the first label". The binding name reads, in value expressions, as a point → label value function (`filter(d => weekday(d) == Mon)`; resolution is two steps: point → containing window → label. ADR-27) |
 
 ### Leap is a value, not a window (the pivot that fixes the dependency direction)

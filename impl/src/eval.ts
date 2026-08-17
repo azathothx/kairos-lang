@@ -521,7 +521,7 @@ interface BizFine {
 // ---- 評価器 ----
 
 const CORE_STAGES = new Set(['within', 'segmentBy', 'first', 'nth', 'last', 'roll', 'shift',
-  'snapTo', 'rebase', 'filter', 'stride', 'strideBy']);
+  'snapTo', 'rebase', 'filter', 'stride', 'strideBy', 'take']);
 const CORE_WORDS = new Set([...CORE_STAGES, 'everyDay', 'everyInstant', 'chronos',
   'grid', 'span', 'split', 'cycle', 'ordinalIn', 'epochOrdinal', 'coincides', 'external']);
 
@@ -1691,6 +1691,19 @@ export class Evaluator {
         if (ui < 0) this.outOrErr(d, this.winAnnOfV(uV), 'ordinalIn: 点が単位窓の外');
         this.winCovOrOut(w[wi], this.winAnnOfV(wV), 'ordinalIn（枠窓）');
         this.winCovOrOut(u[ui], this.winAnnOfV(uV), 'ordinalIn（単位窓）');
+        // 整合検査（ADR-50・ADR-36 判断 7 の免除の精密化）: 経過幅グリッドの単位窓 × 枠窓では
+        // 枠窓の開始が単位の目盛り上にあること（per-instance・tz 履歴依存＝データ相対の層）。
+        // 外れると「半端な序数」が黙って出る（紀元差が単位幅の整数倍でない tz——Kathmandu 1986・
+        // Singapore 1981・Lord_Howe の半時 DST）——黙らせず明示エラーにする
+        const ug = this.winGrainOf(uV);
+        if (ug && ug.kind === 'elapsed' && ug.step > 0) {
+          const rem = ((w[wi].start - ug.phase) % ug.step + ug.step) % ug.step;
+          if (rem !== 0) {
+            this.err(`ordinalIn: 枠窓の開始 ${this.rt.fmt(w[wi].start)} が単位グリッドの目盛り上に`
+              + 'ない（経過幅タイルと市民窓の不整合——紀元差が単位幅の整数倍でない tz。壁時計の帯は'
+              + ' isOpen／strideBy(1d, from: 時刻) が正準。ADR-50）');
+          }
+        }
         let first = ui;
         while (first > 0 && u[first - 1].start >= w[wi].start) first--;
         return ui - first + 1;   // 1 起点（ADR-30）
@@ -2156,13 +2169,23 @@ export class Evaluator {
         return { k: 'windows', iv, units: units.units, labelFn, grain: units.grain };
       }
       case 'split': {
-        const parent = this.windowsOf(operand);
+        const parent = this.splitWindowsOf(operand, '親');
         const g = this.evalExpr(e.arg, env);
         const byName = e.named.by;
         if (!byName) this.err('split は by: で幅の単位を明示する（§3.6）');
-        const u = this.windowsOf(this.evalExpr(byName, env));
+        const u = this.splitWindowsOf(this.evalExpr(byName, env), 'by:');
+        // 境界整合検査（ADR-48 新設）: 親窓の両端が u の窓境界に一致すること（per-instance・
+        // 実体化の端は免除）。ADR-36 の G 同一検査は本件を覆わない（暦年×isoWeek はどちらも
+        // day グリッドで通ってしまう）——非整列（暦年×週など）はここで弾く
+        const uBounds = new Set<number>();
+        for (const x of u.iv) { uBounds.add(x.start); uBounds.add(x.end); }
         const iv: Iv[] = [];
         parent.iv.forEach((p, y) => {
+          if (p.start > this.rt.epoch && p.end < this.rt.computeEnd
+              && (!uBounds.has(p.start) || !uBounds.has(p.end))) {
+            this.err(`split: 親窓の境界（${this.rt.fmt(p.start)}..${this.rt.fmt(p.end)}）が by: 単位の`
+              + '窓境界に一致しない——非整列の親×単位（暦年×週など）は分割できない（ADR-48）');
+          }
           const widths = this.applyValue(g, [y], env);
           if (!Array.isArray(widths)) this.err('split の g は幅リストを返す');
           // 親窓内の単位窓を幅リストで割る。幅総和＝親は I5 で検査
@@ -2170,9 +2193,12 @@ export class Evaluator {
           const inParent = u.iv.filter(x => x.start >= p.start && x.end <= p.end).length;
           const endIdx = ui + inParent - 1;   // 親窓内の最後の単位
           const total = (widths as V[]).reduce((s: number, w) => s + this.num(w), 0);
-          // 実体化の両端に接する親窓は切れ端でありうる（span の頭の切れ端・末尾の打ち切り）ため検査しない
+          // 実体化の両端に接する親窓は切れ端でありうる（span の頭の切れ端・末尾の打ち切り）ため検査しない。
+          // 強度はエラー（ADR-48 裁定＝「黙って 53 週目を落とさない」を警告でなくエラーで保証）
           if (total !== inParent && p.start > this.rt.epoch && p.end < this.rt.computeEnd) {
-            this.rt.warnings.push(`I5: split の幅総和 ${total} ≠ 親窓内の単位数 ${inParent}`);
+            this.err(`I5: split の幅総和 ${total} ≠ 親窓内の単位数 ${inParent}`
+              + `（親窓 ${this.rt.fmt(p.start)}..${this.rt.fmt(p.end)}。可変長の親は g が親序数で`
+              + '分岐するか segmentBy 正準形へ。ADR-48）');
           }
           for (const w of widths as V[]) {
             const k = this.num(w);
@@ -2248,6 +2274,7 @@ export class Evaluator {
     rebase: new Set(['to']),
     stride: new Set(['from']),
     strideBy: new Set(['from']),
+    take: new Set(['from']),
   };
 
   applyStage(stream: StreamV, stage: Stage, env: Env): StreamV {
@@ -2652,6 +2679,29 @@ export class Evaluator {
         if (start < 0) return { ...stream, pts: [], ann };
         return { ...stream, pts: stream.pts.slice(start).filter((_, i) => i % n === 0), ann };
       }
+      case 'take': {
+        // 先頭 N 選択（ADR-49）: from: 以後の入力点の先頭 n 点だけを通す
+        if (stream.wins.length > 0) {
+          this.err('take: 窓付き入力は取らない——「窓ごとの先頭 N」は within の後の nth（第 N）か'
+            + ' ordinalIn の述語で（take は通し数え。ADR-49）');
+        }
+        const n = this.num(this.evalExpr(positional[0] ?? this.err('take(n) の n が必要'), env));
+        if (!Number.isInteger(n) || n < 1) {
+          this.err(`take: n は 1 以上の整数（${n} は不可。ADR-38 判断 12 と同規約）`);
+        }
+        const fromE = named('from') ?? this.err('take: from: が必須（起点の明示。ADR-31・§4.7）');
+        const anchor = this.point(this.evalExpr(fromE, env));
+        const start = stream.pts.findIndex(p => p >= anchor);
+        const pts = start < 0 ? [] : stream.pts.slice(start, start + n);
+        // 輸送行（ADR-49）: 数えに交差した註釈は交差点から先すべて（stride 行の同型）。
+        // take 固有の縮小——第 n 点が交差より前に確定したら、確定後に始まる註釈は輸送しない
+        // （出力は入力の先頭 n 点にしか依存しない＝n 到達後は正当な空・ADR-37 判断 2）
+        const settled = pts.length === n ? pts[n - 1] : Infinity;
+        const relevant = stream.ann.filter(a => a.from <= settled);
+        const tails = relevant.filter(a => a.to > anchor)
+          .map(a => ({ ...a, from: Math.max(a.from, anchor), to: Infinity }));
+        return { ...stream, pts, ann: annUnion(relevant, tails) };
+      }
       case 'strideBy': {
         const wV = this.evalExpr(positional[0] ?? this.err('strideBy(w) の幅が必要'), env);
         if (!isObj(wV) || wV.k !== 'width') this.err('strideBy は幅リテラルを取る');
@@ -2769,6 +2819,30 @@ export class Evaluator {
   private windowsOf(v: V): WindowsV {
     if (isObj(v) && v.k === 'windows') return v;
     this.err(`窓（パーティション）ではない: ${kindOf(v)}`);
+  }
+
+  /** split の親・by: の受理（ADR-48）: パーティション窓に加え、規則マーカー由来の実効パーティション
+   *  （覆域註釈のない segmentBy 製窓列＝within が受けるものの部分集合）を受ける。
+   *  データ由来（covering 付き）マーカーの窓列は受理しない——覆域編集で g(i) の序数が動く
+   *  （関数 g には labels: の同長性検査に相当する防波堤が無い）。empties: drop の親（非連続）も不可。 */
+  private splitWindowsOf(v: V, role: string): WindowsV {
+    if (isObj(v) && v.k === 'windows') return v;
+    if (isObj(v) && v.k === 'stream' && v.wins.length > 0) {
+      const top = v.wins[v.wins.length - 1];
+      if (top.ann.length > 0) {
+        this.err(`split(${role}): データ由来（covering 付き）マーカーの窓列は受理しない——覆域の`
+          + '編集で g の引く序数が黙って動く（規則マーカーの窓列か segmentBy 正準形へ。ADR-48）');
+      }
+      for (let i = 1; i < top.iv.length; i++) {
+        if (top.iv[i].start !== top.iv[i - 1].end) {
+          this.err(`split(${role}): 窓列が連続でない（empties: drop の親は受理しない——空窓の除去が`
+            + '序数を詰める。keep/error へ。ADR-48）');
+        }
+      }
+      return { k: 'windows', iv: top.iv, units: v.pts.slice(), labelFn: top.labelFn, grain: top.grain ?? null };
+    }
+    this.err(`窓（パーティション）ではない: ${kindOf(v)}${isObj(v) && v.k === 'cycle'
+      ? '（cycle は並列ラベル束——分割対象の窓列ではない。ADR-48）' : ''}`);
   }
 
   /** 窓相当（windows・cycle・窓つきストリーム）から区間列を得る */

@@ -1,5 +1,5 @@
 ---
-source_sha: d890f41a117c
+source_sha: 63d181f4a220
 ---
 
 # `stride` — thin the input points to every nth
@@ -77,6 +77,7 @@ everyDay |> filter(d => (ordinalIn(day, month, d) - 1) mod 7 == 0)
 
 ## Related
 
+[`take`](take.md) (count and **cut off** — the first n points) ·
 [`strideBy`](strideBy.md) (count by points / step by width — the pair) ·
 [`nth`](nth.md) (window-relative "the Nth") ·
-[`ordinalIn`](ordinalIn.md) (the reduction target of the window-reset variant) · ADR-11/31/38.
+[`ordinalIn`](ordinalIn.md) (the reduction target of the window-reset variant) · ADR-11/31/38/49.

@@ -1,5 +1,5 @@
 ---
-source_sha: 22b7cb31c9eb
+source_sha: a9b2878a6d00
 ---
 
 # Kairos Language Specification — 1. Introduction
@@ -62,7 +62,7 @@ What Kairos deliberately does **not** do, and where each concern goes instead:
 |---|---|
 | Firing, retries, execution management | The host runtime (firing layer) — the language stops at defining the set of instants (§1.4; the general division of labor with a diagram is §7.8) |
 | **Feedback** on execution state ("every 5 hours since the last completion" as one infinite stream) | Decompose into a **pure next-fire computation from an injected instant** — expressible with current vocabulary (§7.7; only the feedback loop itself is out of scope) |
-| Count-based termination (RRULE's COUNT=10) | Bound by evaluation range / `covering` (there is no "first N of a stream" selector — awaiting demand) |
+| ~~Count-based termination (RRULE's COUNT=10)~~ | **Resolved (ADR-49)**: `take(n, from:)` carries first-N selection (§4.7. It had been "awaiting demand"; real-demand evidence 〈40-examples/11〉 led to its introduction — counting after exclusion falls out of composition order, so COUNT's trap 〈counting before exclusion and shrinking〉 is structurally avoided) |
 | Guaranteeing the **authenticity** of calendar data | Provenance governance (`source:` / `asof:`) carries the evidence; the judgment is external (ADR-15) |
 | Branching on runtime conditions (execution history, load) | Out of scope (push it to the firing layer, which injects it as an instant or as data) |
 
@@ -113,5 +113,5 @@ definitions; expressing business days, calendars, windows, and roll conventions.
 7. Representative examples
 
 **Conventions**: naming is final for every word — no placeholders remain (batch naming confirmation F51 and the `rephase` ruling of 2026-07-26; §5.4).
-The rationale for each design decision lives in the design records `20-adr/` (ADR-01 through 47) and
+The rationale for each design decision lives in the design records `20-adr/` (ADR-01 through 50) and
 `10-domain-model.md`; this specification presents only the folded conclusions.

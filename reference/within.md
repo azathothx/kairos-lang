@@ -42,8 +42,10 @@ everyDay |> within(quarter) |> within(month) |> nth(2, of: month)
 - 窓なしの選択子は型エラー（I4）。`everyDay |> first` は書けない。
 - `within(week)` は前文の `wkst:` 宣言が必須（週の切れ目は WKST 依存。未宣言は静的エラー。
   stdlib/gregorian.md §4.5）。
-- マーカーで切る窓（決算期・月相）は `within` では書けない——[`segmentBy`](segmentBy.md) を使う。
-  引数の種類が根本的に違うため一本化していない（ADR-08）。
+- マーカーで切る窓（決算期・月相）は `within` では**作れない**——作るのは [`segmentBy`](segmentBy.md)。
+  引数の種類が根本的に違うため一本化していない（ADR-08——ただし**受理**は性質で決まる: できた
+  窓列が実効パーティションなら `within(その名前)` で束ねられるし、規則マーカー由来なら
+  [`split`](split.md) の親にもなれる。ADR-08 追記・ADR-48）。
 
 ## 関連
 

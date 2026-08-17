@@ -1,5 +1,5 @@
 ---
-source_sha: c9d8bd1d330f
+source_sha: 77bbc1944a78
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -58,9 +58,11 @@ source_sha: c9d8bd1d330f
   is expressed by left-associative, order-sensitive application of union and difference (no
   dedicated symbol).
 - Strides (a family separate from the selectors): `stride(n, from:)` input counting (every n
-  **input points**; no axis argument; n is an integer ≥ 1 = ADR-38) / `strideBy(w, from:)` width
-  stepping (a physical quantity over multiple axes). The origin `from:` is mandatory (ADR-31; the
-  counting origin is the first input point at or after `from:`); no reset is defaulted.
+  **input points**; no axis argument; n is an integer ≥ 1 = ADR-38) / `take(n, from:)` first-N
+  selection (only the first n input points; windowed input is a static error = ADR-49) /
+  `strideBy(w, from:)` width stepping (a physical quantity over multiple axes). The origin
+  `from:` is mandatory (ADR-31; the counting origin is the first input point at or after
+  `from:`); no reset is defaulted.
 - Window-membership predicate (projection family; §4.9): `coincides(S, w, d)` = whether a point of
   S lies in the w window containing point d (a boolean; witness rule and tz-name check = ADR-38).
 
@@ -153,6 +155,10 @@ characters), `shiftPhase` (the stem confusion remains), `offsetBoundary`/`moveBo
 The word `boundary` is reserved for a possible future operator handling variable-`k` pairs (§3.7,
 out of scope). **With this, every word bears its official name — no placeholders remain** (the
 history is CHANGELOG addendum 11).
+Addendum (2026-08-17, ADR-49/50): the later **`take`** (the stride family's third word) was
+settled after a naming comparison (`first(n, from:)` collides with the window selector `first` —
+rejected). The premise public word **`hour`** (ADR-50) sits outside the vocabulary table (public
+words are settled in one batch at 1.0).
 
 ## 5.5 Lexis (ADR-28)
 
