@@ -22,7 +22,7 @@ const CURRENT_DOCS = [
   ...mdFiles('en/spec/'), // 英語版ミラー（日本語が正・spec/reference/stdlib 全章＋40-examples README）
   ...mdFiles('en/reference/'),
   ...mdFiles('en/stdlib/'),
-  ...mdFiles('en/design/40-examples/'), // カタログのみ英訳（研究本体は日本語・2026-08-06 設計者裁定）
+  ...mdFiles('en/design/40-examples/'), // カタログ＋需要順の研究英訳（11→10→05→09→06・2026-08-17 設計者裁定。旧: カタログのみ＝2026-08-06）
 ];
 
 describe('文書の整合性（現在形の文書 vs 実態）', () => {

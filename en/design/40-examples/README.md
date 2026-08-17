@@ -7,8 +7,10 @@ source_sha: b663cf466cb3
 > Translated from the canonical Japanese catalog
 > [design/40-examples/README.md](../../../design/40-examples/README.md). The `source_sha` above
 > records the source revision; a consistency check flags this page when the Japanese side moves.
-> **The studies themselves are Japanese-only** — this page is the English index of what was
-> verified and where the machine-checked evidence lives.
+> **The studies are being translated in order of expected demand** (11 → 10 → 05 → 09 → 06;
+> ruling of 2026-08-17) — study [11](11-impossible-schedules.md) is available in English; the
+> rest are Japanese-only for now, and this page is the English index of what was verified and
+> where the machine-checked evidence lives.
 
 This is the working layer where we verified that Kairos can express **the known schedules users
 actually want to write**, by writing them out one by one. It was part of RC (release-candidate)
@@ -58,7 +60,7 @@ the write-ups are executed directly as doctests by the reference implementation.
 | [08-backup-schedules.md](../../../design/40-examples/08-backup-schedules.md) | Multi-generation backups (daily incremental / weekly differential / monthly full, higher-tier suppression, decreasing start times = finite case-splits + combinators; 2 doctests) |
 | [09-dst-widths.md](../../../design/40-examples/09-dst-widths.md) | DST and the width rules (`1d` = civil day vs `24h` = elapsed time, operationally verified; gap/overlap resolution of derived points; named times are strict, derived times follow conventions; 4 doctests and an accident-type → rule table) |
 | [10-alternative-calendars.md](../../../design/40-examples/10-alternative-calendars.md) | Alternate calendars in arithmetic form (survey of how Outlook / the OS implement them = baked-in tables, arithmetic, degradation to expanded point lists at API boundaries; the tabular Hijri calendar verified as a **zero-data rule premise** with 3 doctests; structural contrast of the two styles, a three-step treatment of the Hebrew calendar, and a head-on answer to “what can Outlook do that Kairos cannot”) |
-| [11-impossible-schedules.md](../../../design/40-examples/11-impossible-schedules.md) | Schedules long said to be “unwritable” (32 limitation cases collected from the wild — cron, RRULE, calendar APIs and business SaaS, with sources; 17 representative cases measured in the current vocabulary as doctests; a three-way classification — vocabulary / data / out of scope with named receptacles; the Easter verdict upgraded to “writable”, F109) |
+| [11-impossible-schedules.md](11-impossible-schedules.md) (English) | Schedules long said to be “unwritable” (32 limitation cases collected from the wild — cron, RRULE, calendar APIs and business SaaS, with sources; 17 representative cases measured in the current vocabulary as doctests; a three-way classification — vocabulary / data / out of scope with named receptacles; the Easter verdict upgraded to “writable”, F109) |
 | [90-findings.md](../../../design/40-examples/90-findings.md) | The consolidated tear log (F1–F109) and its mapping onto completion mechanisms |
 | [95-reference-data.md](../../../design/40-examples/95-reference-data.md) | Primary data from the NAOJ 2026 ephemeris (solar terms, moon phases, equinoxes) and comparison results |
 
