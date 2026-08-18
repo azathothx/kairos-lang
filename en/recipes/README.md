@@ -4,6 +4,10 @@ source_sha: afac0419542f
 
 # Recipes — practical forms of the schedules long said to be unwritable
 
+> Translated from the canonical Japanese page [recipes/README.md](../../recipes/README.md).
+> The `source_sha` above records the source revision; a consistency check flags this page when the
+> Japanese original changes.
+
 Schedule requirements that cron, Quartz, and iCalendar RRULE have long been said to be unable to
 express, presented as **one page per requirement**. Each page runs "what happens today (with
 sources) → the Kairos expression (execution-verified) → try it in your browser" — the answer

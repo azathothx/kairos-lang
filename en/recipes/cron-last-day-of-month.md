@@ -1,5 +1,5 @@
 ---
-source_sha: 3bf2bad99958
+source_sha: 9450dc4bbfa1
 ---
 
 # Cron: run on the last day of the month — and the last business day
@@ -63,7 +63,7 @@ A self-contained form (the holiday table inline) is
 - Same family: the 31st of every month (writing the two *different intents* for missing months as
   two different expressions), the Nth business day, every N business days —
   [study 11, measured section](../design/40-examples/11-impossible-schedules.md)
-- Vocabulary: [`within`](../reference/combinators.md) · [`last`](../reference/last.md) ·
+- Vocabulary: [`within`](../reference/within.md) · [`last`](../reference/last.md) ·
   [`roll`](../reference/roll.md) · [`shift`](../reference/shift.md)
 - Bringing in holiday data and governing its freshness (`covering:`/`asof:`):
   [spec §4.10](../spec/30-body-layer.md)

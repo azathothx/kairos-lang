@@ -1,5 +1,5 @@
 ---
-source_sha: bf001fc9a1ff
+source_sha: 9db48170d861
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -73,6 +73,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | window（窓） | A sub-stream bundled by period. Two kinds: partition-type and interval-sequence-type | §2.6 (I5) · §4.2 |
 | partition-type window（パーティション型窓） | A window that partitions the axis without remainder. Exhaustiveness and non-overlap are checkable (I5) | §4.2 |
 | interval-sequence window（区間列型窓） | A window cut by markers. Exhaustiveness is not guaranteed; the gap policy is made explicit | §4.2 |
+| effective partition（実効パーティション） | A segmentBy-built window sequence for which the I5 check (exhaustive, non-overlapping) holds over the effective coverage. In acceptance contexts (within's w; split's parent and by:) it is treated as a partition window — the generalization of "partitionhood is established by the check, not by the generating word". split additionally restricts to rule-marker-borne ones (no coverage annotations) | ADR-08 addendum · ADR-48 |
 | window-generating words（窓生成語） | The words with which a primitive definition carves the base into windows. `grid`/`span`/`split`/`cycle` | §3.6 |
 | `chronos` (bare name)（裸名） | The lexical name referring to the continuous base Chronos (`day = chronos grid 1d`). Only `grid` accepts it. A separate concept from the operation axis `axis:` (ADR-29) | §3.6 · §1.3 |
 | `grid(w)` | Uniformly divides the continuous axis at width `w` (the atoms of a calendar). Example: `day = chronos grid 1d`. The phase is the default alignment (civil-time widths = the opening instant of each civil day 〈tz midnight on ordinary days〉; elapsed-time widths = the epoch), overridable with `anchor:` (ADR-31) | §3.6 |
@@ -140,7 +141,6 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | `phase:` | The phase origin of `span`/`split` | §3.7 |
 | `anchor:` | `cycle`'s label phase (which actual day carries the head label) | §3.6 |
 | `from:` | The origin for the stride family (stride/take/strideBy). Always required (supply from windows was retired by ADR-31) | §4.7 |
-| effective partition（実効パーティション） | A segmentBy-built window sequence for which the I5 check (exhaustive, non-overlapping) holds over the effective coverage. In acceptance contexts (within's w; split's parent and by:) it is treated as a partition window — the generalization of "partitionhood is established by the check, not by the generating word". split additionally restricts to rule-marker-borne ones (no coverage annotations) | ADR-08 addendum · ADR-48 |
 | `edges:` / `empties:` | `segmentBy`'s gap policy | §4.2 |
 | `roll:` | The roll-convention default in the preamble (folding; being explicit is recommended) | §3.3 |
 | `covering:` | The validity range = the two-sided claim "complete inside, unknown outside". Does not touch the values (inclusion of every element is statically checked). Open-ended `2021..`/`..` (completeness claim, with governance), interval lists, and binding-postfix (coverage claim) are allowed. **Omission = the sequence's ends (narrowest) and `..` = complete everywhere (widest) are polar opposites** (an empty table has no ends, so omission is impossible = explicit covering required. ADR-45) | §3.8 · §4.10 · ADR-26/37/45 |

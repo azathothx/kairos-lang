@@ -52,6 +52,6 @@ monthEnd |> roll(Preceding, on: bizDay) |> shift(-3, unit: bizDay)   # 月末の
 
 - 似た型: 毎月 31 日（無い月をどうするかの**二義**を式で書き分ける）・第 N 営業日・N 営業日ごと
   ——[調査研究 11 の実測節](../design/40-examples/11-impossible-schedules.md)
-- 語彙: [`within`](../reference/combinators.md)・[`last`](../reference/last.md)・
+- 語彙: [`within`](../reference/within.md)・[`last`](../reference/last.md)・
   [`roll`](../reference/roll.md)・[`shift`](../reference/shift.md)
 - 祝日データの持ち込みと鮮度の統治（`covering:`/`asof:`）: [言語仕様 §4.10](../spec/30-body-layer.md)

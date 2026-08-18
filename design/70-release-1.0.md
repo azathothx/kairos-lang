@@ -59,7 +59,11 @@ external の実運用を見て宣言する**（比較 3 案〈全信号の自然
 
 1. ~~`shiftBoundary` の正式名への一括置換~~ → **前倒し完了（2026-07-26・`rephase` に裁定＝条件 3・
    全コーパス置換済み・CHANGELOG 追補 11）**
-2. spec/README の RC5→1.0 表記更新・spec/CHANGELOG に「RC5→1.0」節
+2. spec/README の RC5→1.0 表記更新・spec/CHANGELOG に「RC5→1.0」節。**対象は spec だけでなく
+   「RC5」を名乗る全入口**——README 英日・llms.txt・en/spec/README・Playground の RC 注記・検定側
+   （教本 3 冊/README の「RC5 準拠」表記）を同時更新し、doc-consistency に**「RC5」残存検査**を
+   足して宣言コミットに同梱する（テスト数 4 入口一致と同型の網＝第 9 回レビュー提案・更新漏れを
+   構造的に防ぐ）
 3. 英語版の追従（**全章訳済み 2026-07-24＝前倒し完了・rephase 置換も英日同時済み**——1.0 時に
    残るのは最終改稿の追従・`source_sha` 更新のみ。ドリフトは doc-consistency 検査が自動検出）
 4. git タグ付け・公開同期（publish.sh＝設計者の手動実行）・GitHub Release。**公開ページを改名・

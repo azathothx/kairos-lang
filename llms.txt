@@ -61,7 +61,8 @@ same paths without the `en/` segment (a hash check keeps the mirror in step).
   arithmetic, the 4-4-5 fiscal calendar, nearest weekday to the 15th — each with a runnable
   Playground link
 - [Expressiveness studies](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/design/40-examples/README.md)
-  (English index; the studies themselves are Japanese): 20+ schedule families — Japanese holidays,
+  (English index; the studies are Japanese except no. 11, which is fully mirrored in English):
+  20+ schedule families — Japanese holidays,
   sexagenary cycle, rokuyō, 24 solar terms, lunisolar calendar, Easter, ISO week numbers,
   business hours, injected-origin schedules, DST and the civil/elapsed width rules
 - [Runnable examples](https://github.com/azathothx/kairos-lang/tree/main/impl/examples):

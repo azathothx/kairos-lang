@@ -129,3 +129,9 @@ everyDay |> filter(d => sekkiMonth(d) == 寅)
 
 [`within`](within.md)・[`snapTo`](snapTo.md)（マーカーの粒度合わせ）・[`cycle`](cycle.md)（周期ラベル）・
 [テーブルリテラル](table-literal.md)（マーカーのデータ持ち込み）・ADR-07/08/15・I5。
+
+規則マーカー由来の segmentBy 窓列（覆域註釈なし）は**実効パーティション**として `within` の w・
+[`split`](split.md) の親・by: にも受理される（ADR-48。用語は spec §6.3）——4-4-5 会計暦の
+「期」のような規則的な区切りは、segmentBy 正準形と split 形のどちらでも書ける
+（実例: [レシピ「4-4-5 会計暦」](../recipes/4-4-5-calendar.md)・split 側の外延一致は
+split ページの weekPart doctest）。

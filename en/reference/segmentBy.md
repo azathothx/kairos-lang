@@ -1,5 +1,5 @@
 ---
-source_sha: 6cb4936ffe36
+source_sha: 1bf0917ee743
 ---
 
 # `segmentBy` — interval-sequence windows (cut at markers)
@@ -171,3 +171,10 @@ is for computations involving index expressions and conditions
 [`within`](within.md) · [`snapTo`](snapTo.md) (granularity-matching the markers) ·
 [`cycle`](cycle.md) (periodic labels) ·
 [table literals](table-literal.md) (bringing marker data in) · ADR-07/08/15 · I5.
+
+A segmentBy window sequence borne by rule markers (no coverage annotations) is accepted as an
+**effective partition** for `within`'s w and for [`split`](split.md)'s parent and by: (ADR-48;
+the term is in spec §6.3) — regular period cuts like the 4-4-5 fiscal calendar's "periods" can be
+written in either the segmentBy canonical form or the split form (worked example: the
+[recipe "4-4-5 fiscal calendar"](../recipes/4-4-5-calendar.md); the extensional match on the
+split side is the weekPart doctest on the split page).

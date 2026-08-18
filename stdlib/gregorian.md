@@ -131,8 +131,9 @@ everyInstant |> strideBy(1h30m, from: 2026-01-05T09:00)
    恒常 +05:30 の Asia/Kolkata は紀元差ゼロで正しく動く——破れの述語は「オフセットの整数時性」
    ではなく**紀元差**である。
 3. **hour の全実体化は高価**（F80）。tick の生成は `hour |> first` でなく `strideBy(1h, from:)`
-   へ。分未満が要るときは派生 1 行（`premise M = Gregorian with { minuteW = chronos grid 1m }`）
-   ——minute/second は標準に入れない（同じ 1 行で足り・常設の価値が薄い）。
+   へ。時未満の粒度（分・秒）が要るときは同型の派生 1 行（`premise M = Gregorian with
+   { minuteW = chronos grid 1m }`・秒なら `grid 1s`）——minute/second は標準に入れない
+   （同じ 1 行で足り・常設の価値が薄い）。
 
 ## 3. 依存方向と「閏は窓でなく値」
 

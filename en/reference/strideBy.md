@@ -1,5 +1,5 @@
 ---
-source_sha: 5a683bff1f81
+source_sha: eaa72f8b2112
 ---
 
 # `strideBy` — step by width, "every w"
@@ -16,8 +16,9 @@ name settled (spec §5.4)
 Marks points at an **equal spacing of width `w`** from the origin `from:`. Where
 [`stride`](stride.md) takes "every `n` points of the input" (**counting in points**), `strideBy`
 takes "every physical quantity `w`" (**stepping by width**) — the operator for cycles that do not
-ride the calendar's rhythm (one Martian sol, every 90 minutes, every 36 hours); the two are split
-into separate operators because the argument kinds differ (spec §4.7 · ADR-38).
+ride the calendar's rhythm (one Martian sol, every 90 minutes, every 36 hours); together with
+[`take`](take.md) they form the stride family's three operators, split apart because the argument
+kinds differ (spec §4.7 · ADR-38/49).
 
 The origin `from:` is mandatory (ADR-31; the rule shared with `stride` across the family).
 

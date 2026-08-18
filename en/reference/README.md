@@ -1,5 +1,5 @@
 ---
-source_sha: 305a95f57ba6
+source_sha: ac1e7c143327
 ---
 
 # <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Descriptor Reference
@@ -17,7 +17,9 @@ Every code example on these pages is execution-verified. The meaning of `# eval:
 examples is specified at the bottom of this page under
 [Conventions for runnable examples (doctest)](#conventions-for-runnable-examples-doctest) — for
 reading purposes it suffices to know that `# eval:` is the evaluation range and `#=>` is the
-actual result of running the example.
+actual result of running the example. To look things up **by requirement** rather than by word,
+see the [recipes](../recipes/README.md) (last business day of the month, Easter, 4-4-5, and more —
+one page per requirement).
 
 ## Index
 

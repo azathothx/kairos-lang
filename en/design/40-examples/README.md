@@ -1,5 +1,5 @@
 ---
-source_sha: b663cf466cb3
+source_sha: e1e91fff7696
 ---
 
 # 40-examples — Expressiveness studies (a sample book of known schedules)
@@ -44,7 +44,7 @@ the write-ups are executed directly as doctests by the reference implementation.
 | 02 Sexagenary cycle, rokuyō, … | Expected-value comparison | Year cycle in `examples.test.ts` (§7.6); cycles in general in `cycle-labels.test.ts`; rokuyō/lunisolar in the `stdlib/kyureki` doctests (NAOJ new-moon data) |
 | 03 Astronomical calendars | Expected-value comparison + **primary-data comparison** (`95-reference-data.md` = NAOJ ephemeris) | Solar terms, seasonal markers, lunar new year in stdlib guides and later studies' doctests |
 | 04 Projection tear-out | Exploration record (settled form = an ADR) | Settled projections in `projections.test.ts` and the doctests of each reference page |
-| 05–09, 11 | **Doctests (living tests)** — fenced blocks with `# eval:` are scanned and executed by `impl/test/doctest.test.ts` | The write-ups are themselves tests (tithi, business hours, injected origins, backup generations, DST and width rules, and 17 measured runs of “impossible” schedules) |
+| 05–11 | **Doctests (living tests)** — fenced blocks with `# eval:` are scanned and executed by `impl/test/doctest.test.ts` | The write-ups are themselves tests (tithi, business hours, injected origins, backup generations, DST and width rules, alternative calendars in arithmetic form, and 17 measured runs of “impossible” schedules) |
 
 ## Files
 

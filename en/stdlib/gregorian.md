@@ -1,5 +1,5 @@
 ---
-source_sha: bced15a9f59c
+source_sha: 210c748e9cb7
 ---
 
 # Standard premise: Gregorian
@@ -156,9 +156,10 @@ Three cautions.
    fractional ordinals. ADR-50). Asia/Kolkata at a constant +05:30 works correctly — the breaking
    predicate is **the epoch difference**, not whether the offset is a whole hour.
 3. **Fully materializing `hour` is expensive** (F80). Generate ticks with `strideBy(1h, from:)`,
-   not `hour |> first`. For sub-minute needs, derive in one line
-   (`premise M = Gregorian with { minuteW = chronos grid 1m }`) — minute/second are not in the
-   standard (the same one line suffices; standing cost is not worth it).
+   not `hour |> first`. For sub-hour granularity (minutes, seconds), derive the same one line
+   (`premise M = Gregorian with { minuteW = chronos grid 1m }`; `grid 1s` for seconds) —
+   minute/second are not in the standard (the same one line suffices; standing cost is not
+   worth it).
 
 ## 3. The dependency direction, and "leap is a value, not a window"
 

@@ -1,5 +1,5 @@
 ---
-source_sha: 418ee2a077e7
+source_sha: 002c96a20680
 ---
 
 # 11 — Schedules long said to be unwritable: collecting the world's limitation cases, then measuring them
@@ -77,7 +77,7 @@ receptacle named.
 | 26 | Shift rotations (4-on-4-off; DuPont 28-day) | aligned to neither week nor month, structurally beyond RRULE; shift SaaS ships [pattern strings + **expanded .ics** export](https://www.rotaplanner.app/shift-patterns/) | vocabulary (an 8-day `cycle`; → (j)) |
 | 27 | 4-4-5 accounting calendar (53rd-week catch-up included) | a calendar without "months", so month-based vocabulary is useless; [accounting SaaS implement it as a dedicated feature](https://help.anaplan.com/set-the-weeks-4-4-5-4-5-4-or-5-4-4-calendar-150f3b73-8be1-4d95-92fd-24daa46ae869) | vocabulary (a derived premise; **the 53rd week falls out of the structure**; → (m)) |
 | 28 | Garbage-day holiday cascade (everything after a holiday slides one day that week) | holiday data × conditionals × chained shifts — triple out of RRULE; [per-municipality code generating expanded ICS](https://github.com/fromtheboonies/TrashCal) is the norm | vocabulary + data (one step is `roll`/case-split; **unbounded recursion is out of scope = F8**, fixed-depth expansion is the receptacle) |
-| 29 | "n sessions total even after cancellations" (refill to keep COUNT) | COUNT counts **before** exclusion; [not possible in rrule.js either](https://github.com/jkbrzt/rrule/issues/456) | **out of scope** (no "first N" selector — demand-gated; this survey found the first real demand → §11.5) |
+| 29 | "n sessions total even after cancellations" (refill to keep COUNT) | COUNT counts **before** exclusion; [not possible in rrule.js either](https://github.com/jkbrzt/rrule/issues/456) | vocabulary (`take(n, from:)` = ADR-49. The initial verdict was **out of scope** — naming the receptacle produced the demand evidence that led to adoption → §11.5) |
 | 30 | Feedback on execution state (5 hours after the last run finished) | outside cron/RRULE too (it is execution, not definition) | **out of scope → decompose** (next-fire from an injected instant = spec §7.7; doctests in study 07) |
 | 31 | One fixed time "correct for every participant" under mixed DST | ["The answer is: there is no answer"](https://zachholman.com/talk/utc-is-enough-for-everyone-right) — products **silently** let the organizer's TZ win | the requirement itself is ambiguous; Kairos's receptacle = **explicit premise** (the language makes you say whose wall clock; blog #15, spec §3.6) |
 | 32 | Definitions that cross system boundaries **as rules** | Outlook's internal rules degrade to expanded points at the RRULE/Graph boundary; [Exchange speaks a different format entirely](https://www.nylas.com/blog/calendar-events-rrules/) | yes (definitions are text; the CLI/doctests are the interchange form; structural contrast in 10 §10.1) |
@@ -416,7 +416,8 @@ Only 5/10 (Sunday) disappears; the neighboring weekends stay. The "pause 1–3 a
 
 The collected "can't"s split three ways.
 
-**(A) Writable with vocabulary** — 22 of the 32 catalog items. The failures were rooted in the
+**(A) Writable with vocabulary** — 23 of the 32 catalog items (initially 22 — catalog 29 moved
+here via ADR-49 `take`, see §11.5). The failures were rooted in the
 **structure** of the existing formats (field products, monthly resets, one-series-one-time,
 closed pattern sets), and they vanish under the vocabulary design (closure, combinators,
 windows/selectors, the premise layer). All 17 measurements above live here — **zero language
@@ -433,16 +434,17 @@ February). The difference from the existing formats is not "writable or not" but
 language says it is data** — covering/asof/runway ride along with the answer (ADR-26/37; blog #5
 "Holiday tables rot silently"; #14).
 
-**(C) Deliberately out of scope** — declined, with the receptacle in writing. Only three of the
-collected items land here:
+**(C) Deliberately out of scope** — declined, with the receptacle in writing. The initial survey
+landed three items here; "first N" has since moved to the vocabulary via ADR-49 (§11.5) —
+**two remain**:
 
 | Out of scope | Receptacle | What this survey added |
 |---|---|---|
 | Execution feedback ("5 hours after the last completion") | decompose into next-fire from an injected instant (spec §7.7; study 07) | cron/RRULE can't either — corroborates the "this is not definition" boundary |
 | **Unbounded recursion** of substitution/shifts (the slid day is itself a holiday, ad infinitum) | fixed-depth expansion (F8; 01 §1.4) | the garbage-cascade cases (a real two-step slide report exists) — practice needs 1–2 steps |
-| "First N" selection (COUNT-style; refill after exclusion) | bounding via evaluation range / covering (spec §1.2) | **first real demand evidence** (rrule.js #456; the lessons business) → §11.5 |
+| ~~"First N" selection (COUNT-style; refill after exclusion)~~ | ~~bounding via evaluation range / covering~~ → **moved to the vocabulary as ADR-49 `take(n, from:)`** | **first real demand evidence** (rrule.js #456; the lessons business) → §11.5 |
 
-What the three have in common: the receptacle **names the decomposition instead of approximating
+What these have in common: the receptacle **names the decomposition instead of approximating
 silently**. Since so many of the collected failures stem from **silent defaults** — "silently
 becomes OR", "silently skips", "the organizer's TZ silently wins" (catalog 3, 22, 31) — the
 out-of-scope side refusing to be silent is the closing contrast of this page.
@@ -492,7 +494,8 @@ watch. 555 tests.
 ## 11.6 Summary — as 1.0 positioning material
 
 - **17 measurements of "things said to be unwritable" — all in the current vocabulary, zero
-  language changes.** The 32 collected items classify as A 22, B 7, C 3 — everything out of
+  language changes.** The 32 collected items classify as A 23, B 7, C 2 (initially A 22, C 3 —
+  catalog 29 moved with §11.5's ADR-49 `take`) — everything out of
   scope has its receptacle in writing.
 - Measurements usable as headline material: last business day of month (a 325k-view failure in
   one line); Easter (the RFC's flagship impossibility in 8 lines of zero-data arithmetic); 4-4-5
