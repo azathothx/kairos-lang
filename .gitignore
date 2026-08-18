@@ -1,1 +1,4 @@
 dist/
+
+# ルート node_modules（ツール依存の置き場ではない・混入防止 2026-08-18）
+/node_modules/

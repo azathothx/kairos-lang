@@ -75,6 +75,8 @@
 以下の ```kairos ブロックは doctest（`impl/test/doctest.test.ts`）が実行検証する。前提は
 断りなければ `@JP`（Gregorian・Asia/Tokyo・wkst: Mon——doctest の標準前提。2026 年の確定
 祝日をデータに持つカレンダー実体つきで、`bizDay`・`holidays2026` はそこから来る。ADR-35）。
+需要上位 4 本（(a) 月末営業日・(e) 15W・(g) イースター・(m) 4-4-5）は検索者向けの実用形
+＝[レシピ集](../../recipes/README.md)にも再構成してある（Playground の自己完結リンクつき）。
 
 ### (a) 月末最終営業日——cron 最頻出の挫折点（カタログ 1・2）
 

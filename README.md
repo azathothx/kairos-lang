@@ -147,12 +147,13 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 **Release candidate (RC5, declared 2026-07-08; addenda through no. 12, 2026-08-17).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (560 tests),
+is validated against 20 well-known schedule families and by a reference implementation (564 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
 |---|---|
 | [`spec/`](en/spec/) | **Language specification** (reviewable snapshot; start here — [日本語](spec/)) |
+| [`recipes/`](en/recipes/) | **Recipes** — the schedules cron/Quartz/RRULE can't express, one page per requirement with Playground links ([日本語](recipes/)) |
 | [`reference/`](en/reference/) | **Descriptor reference** — one page per operator; examples are doctested ([日本語](reference/)) |
 | [`stdlib/`](en/stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek` ([日本語](stdlib/) — includes the Japanese-only `Kyureki`) |
 | [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype — Japanese) |

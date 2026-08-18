@@ -19,10 +19,12 @@ const CURRENT_DOCS = [
   ...mdFiles('spec/'),
   ...mdFiles('reference/'),
   ...mdFiles('stdlib/'),
+  ...mdFiles('recipes/'), // 検索受け皿のレシピ層（2026-08-18 新設・1 クエリ 1 ページ・doctest 対象）
   ...mdFiles('en/spec/'), // 英語版ミラー（日本語が正・spec/reference/stdlib 全章＋40-examples README）
   ...mdFiles('en/reference/'),
   ...mdFiles('en/stdlib/'),
   ...mdFiles('en/design/40-examples/'), // カタログ＋需要順の研究英訳（11→10→05→09→06・2026-08-17 設計者裁定。旧: カタログのみ＝2026-08-06）
+  ...mdFiles('en/recipes/'),
 ];
 
 // 公開される design 文書（kramdown 検査の対象＝2026-08-17 設計者指摘: 11 の表で \| が再発——
@@ -248,7 +250,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     // 日本語側が更新されたらここが割れる——英訳の追従漏れを黙らせない。
     const stale: string[] = [];
     for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'),
-                     ...mdFiles('en/design/40-examples/')]) {
+                     ...mdFiles('en/design/40-examples/'), ...mdFiles('en/recipes/')]) {
       const m = /^---\n[\s\S]*?source_sha: ([0-9a-f]{12})[\s\S]*?\n---\n/.exec(read(p));
       if (!m) continue;   // ハッシュ宣言のないページ（README 等）は対象外
       const ja = p.replace('en/', '');
@@ -271,7 +273,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     const fences = (src: string) => [...src.matchAll(/```kairos\n([\s\S]*?)```/g)].map(m => m[1]);
     const stale: string[] = [];
     for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'),
-                     ...mdFiles('en/design/40-examples/')]) {
+                     ...mdFiles('en/design/40-examples/'), ...mdFiles('en/recipes/')]) {
       const en = fences(read(p));
       const ja = fences(read(p.replace('en/', '')));
       if (en.length !== ja.length) { stale.push(`${p}: kairos フェンス数 ${en.length} ≠ 日本語側 ${ja.length}`); continue; }
@@ -297,7 +299,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
       [/^## See also/, '## Related が正'],
     ];
     const stale: string[] = [];
-    for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'), 'README.md', 'llms.txt']) {
+    for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'),
+                     ...mdFiles('en/recipes/'), 'README.md', 'llms.txt']) {
       for (const [i, line] of read(p).split('\n').entries()) {
         for (const [re, hint] of banned) {
           if (re.test(line)) stale.push(`${p}:${i + 1}: ${hint}: ${line.trim().slice(0, 60)}`);

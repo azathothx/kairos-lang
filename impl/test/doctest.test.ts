@@ -32,7 +32,7 @@ function parseResolveDirectives(b: string): Map<string, ExternalData> | undefine
   return table;
 }
 
-for (const sub of ['reference', 'stdlib', 'design/40-examples']) {
+for (const sub of ['reference', 'stdlib', 'design/40-examples', 'recipes']) {
   const dir = new URL(`../../${sub}/`, import.meta.url);
   const files = readdirSync(dir).filter(f => f.endsWith('.md')).sort();
 

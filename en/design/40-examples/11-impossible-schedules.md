@@ -1,5 +1,5 @@
 ---
-source_sha: 7863c5e14e27
+source_sha: 418ee2a077e7
 ---
 
 # 11 — Schedules long said to be unwritable: collecting the world's limitation cases, then measuring them
@@ -93,6 +93,9 @@ The ```kairos blocks below are executed by the doctest harness (`impl/test/docte
 Unless noted, the premise is `@JP` (Gregorian, Asia/Tokyo, wkst: Mon — the standard doctest
 premise, which carries a calendar entity with Japan's confirmed 2026 holidays; `bizDay` and
 `holidays2026` come from it. ADR-35).
+The four highest-demand cases ((a) last business day, (e) 15W, (g) Easter, (m) 4-4-5) are also
+re-arranged as searcher-facing practical pages in the [recipes](../../../en/recipes/README.md)
+(with self-contained Playground links).
 
 ### (a) Last business day of the month — cron's most frequent failure (catalog 1, 2)
 
