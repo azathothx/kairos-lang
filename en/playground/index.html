@@ -1,0 +1,51 @@
+---
+title: Playground
+# .html ページは jekyll-default-layout（Markdown のみ対象）の自動適用外——明記しないと
+# head ごと欠けた素の断片で配信される（日本語版 playground/index.html と同じ罠・2026-08-03 実測）
+layout: default
+---
+
+<h1>Kairos Playground</h1>
+
+<p>Evaluate Kairos expressions in the browser (the reference implementation runs as is —
+nothing is sent to any server). The language is at the RC (release candidate) stage —
+see the <a href="../spec/">language spec</a> and the
+<a href="../reference/">descriptor reference</a>; the
+<a href="https://github.com/azathothx/kairos-lang-exam">workbooks and sample questions</a>
+are in Japanese.</p>
+
+<div id="kairos-playground">
+  <div style="margin-bottom:8px">
+    <label>Examples:
+      <select id="pg-example" style="max-width:100%">
+        <option value="">— choose —</option>
+        <option value="payday">Payday (25th of each month; previous business day on holidays)</option>
+        <option value="monthend3">3 business days before month-end</option>
+        <option value="cascade">Deriving Japan's substitute &amp; sandwiched holidays</option>
+        <option value="friday13">Friday the 13th (intersection)</option>
+        <option value="empty">Empty table &amp; coverage summary (operational signals)</option>
+      </select>
+    </label>
+  </div>
+  <textarea id="pg-src" rows="14" spellcheck="false"
+    style="width:100%;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;box-sizing:border-box"></textarea>
+  <div style="margin:8px 0;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+    <label>from <input id="pg-from" type="date" value="2026-01-01"></label>
+    <label>to <input id="pg-to" type="date" value="2027-01-01"></label>
+    <label>tz <input id="pg-tz" type="text" value="Asia/Tokyo" size="14"></label>
+    <button id="pg-run" type="button" style="padding:4px 20px;font-weight:bold">Run (Ctrl+Enter)</button>
+    <button id="pg-share" type="button" style="padding:4px 12px">Pin to URL</button>
+  </div>
+  <pre id="pg-out" style="min-height:8em;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow-x:auto;white-space:pre">Results appear here.</pre>
+</div>
+
+<p style="font-size:0.85em;color:#57606a">The evaluation range is the half-open interval
+<code>[from, to)</code> — <code>from</code> is included, <code>to</code> is excluded. In the
+output, <code># ⚠</code> marks annotations of out-of-range provenance and
+<code># coverage summary</code> reports the data runway
+(<a href="../spec/30-body-layer.html">spec §4.10</a>). "Pin to URL" produces a shareable link
+carrying the expression and range. Messages produced by the evaluator itself — syntax errors and
+annotation texts — appear in Japanese, the implementation's canonical output language; the
+<a href="../spec/">English spec</a> defines their exact semantics.</p>
+
+<script type="module" src="app.js"></script>

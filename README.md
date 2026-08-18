@@ -119,7 +119,7 @@ Full explanation with sequence diagrams and runnable doctests:
 
 ## Quick start (reference implementation)
 
-**Try it in your browser first**: the [Playground](https://kairos-lang.org/playground/) runs the
+**Try it in your browser first**: the [Playground](https://kairos-lang.org/en/playground/) runs the
 reference implementation as-is — no install, nothing leaves your browser.
 
 Runs TypeScript directly with Node.js 24+; zero runtime dependencies.
@@ -135,15 +135,19 @@ node src/cli.ts list examples/rokuyo.kairos      --from 2026-01-01 --to 2027-01-
 node src/cli.ts next -n 3 examples/payday.kairos   # next 3 firings from today (--json for machines)
 ```
 
+`--lang en` switches the human-readable framing (headings, coverage summary, usage) to English;
+evaluator messages stay in Japanese — the implementation's canonical output — and `--json` is
+language-neutral.
+
 `jp-holidays.kairos` derives Japan's substitute holidays and citizens' holidays from the statutory
 holiday table alone. `rokuyo.kairos` derives the rokuyō cycle (大安 and friends) from the lunisolar
 calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 ## Status and documentation
 
-**Release candidate (RC5, declared 2026-07-08; addenda through no. 11, 2026-07-26).** Semantics, the operator family, grammar (EBNF), and lexis are
+**Release candidate (RC5, declared 2026-07-08; addenda through no. 12, 2026-08-17).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (507 tests),
+is validated against 20 well-known schedule families and by a reference implementation (560 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
@@ -152,7 +156,7 @@ including cross-checks against the official ephemeris of the National Astronomic
 | [`reference/`](en/reference/) | **Descriptor reference** — one page per operator; examples are doctested ([日本語](reference/)) |
 | [`stdlib/`](en/stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek` ([日本語](stdlib/) — includes the Japanese-only `Kyureki`) |
 | [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype — Japanese) |
-| [`design/`](design/) | Design records: 46 ADRs, domain model, expressiveness studies (Japanese) |
+| [`design/`](design/) | Design records: 50 ADRs, domain model, expressiveness studies (Japanese) |
 
 ## License
 

@@ -73,6 +73,15 @@ describe('cmdList（単体）', () => {
   it('renderHuman は旧 CLI と同じ行列を出す', () => {
     expect(renderHuman(rep)).toEqual(GOLDEN_LIST);
   });
+
+  it('renderHuman(rep, "en") は枠組みだけ英語・註釈文は日本語のまま（--lang の線引き）', () => {
+    expect(renderHuman(rep, 'en')).toEqual([
+      ...PAYDAYS_2026,
+      '# ⚠ 範囲外 2026-01-01..2026-01-02（holidays2026 covering 2026-01-01..2026-12-31）',
+      '# coverage summary',
+      '#   holidays2026 covering 2026-01-01..2026-12-31 runway 0 days',
+    ]);
+  });
 });
 
 describe('cmdNext（単体）', () => {
@@ -265,6 +274,39 @@ describe('CLI 実走（サブプロセス）', () => {
     const r = cli('--version');
     expect(r.status).toBe(0);
     expect(r.stdout.trim()).toBe(VERSION);
+  });
+
+  describe('--lang en（表示層の英語化・エラーと註釈は日本語が正のまま）', () => {
+    it('list --lang en: 見出し・残走路行が英語形になる', () => {
+      const r = cli('list', '--lang', 'en', '--from', '2026-01-01', '--to', '2027-01-01',
+        'examples/payday.kairos');
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('# coverage summary');
+      expect(r.stdout).toContain('runway 0 days');
+      expect(r.stdout).not.toContain('被覆サマリ');
+      // 註釈文は評価器の日本語のまま
+      expect(r.stdout).toMatch(/# ⚠ 範囲外/);
+    });
+
+    it('next --lang en の要求件数未達は英語の内訳・終了コード 2 は不変', () => {
+      const r = cli('next', '--lang', 'en', '-n', '99', '--horizon', '1', '--from', '2026-11-01',
+        'examples/payday.kairos');
+      expect(r.status).toBe(2);
+      expect(r.stderr).toMatch(/only 12 firing\(s\) within the 1-year horizon \(requested 99\)/);
+    });
+
+    it('引数エラー時の使い方も --lang en なら英語版が出る', () => {
+      const r = cli('next', '--oops', '--lang', 'en', 'examples/payday.kairos');
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/Usage \(kairos/);
+      expect(r.stderr).not.toMatch(/使い方/);
+    });
+
+    it('--lang の不正値は明示エラー・終了コード 1', () => {
+      const r = cli('list', '--lang', 'fr', 'examples/payday.kairos');
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/--lang は ja または en: fr/);
+    });
   });
 
   describe('--supply（実走）', () => {

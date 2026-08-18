@@ -39,6 +39,9 @@ node src/cli.ts next --json examples/payday.kairos           # 機械可読（�
   昇順・実在日などの**供給契約はそのまま評価器の検査**（ADR-46 の 12 種）に掛かる——被覆サマリの
   `asof`/残走路も供給値から出る。`--supply` 無しで `external` を解決しようとすると供給エラー
   （ADR-46 の既定）。
+- **`--lang en`** — 人間表示の**枠組みだけ**英語化（見出し・被覆サマリ・残走路・USAGE・警告ラベル）。
+  評価器メッセージ（エラー・註釈文）は**日本語が正**のまま・`--json` は言語中立——線引きは
+  英語版 Playground（`/en/playground/`）と同一。
 - **終了コード**: 0＝成功・1＝エラー・2＝`next` が地平線内に要求件数未達（部分結果は出力し、
   stderr に不足の内訳）。`--version` は実装版を出して 0 終了。
 - `external` の解決子は持たない（解決時は供給エラー＝ADR-46 の既定どおり）。警告は常に stderr。
@@ -226,7 +229,8 @@ instants ms・doctest `# resolve:` ディレクティブ——external.test.ts 3
   ブロック内の複数行右辺・「文頭の結合子は引き続き構文エラー」の退行なし。
 - `test/cli.test.ts` — CLI サブコマンド。list/next・`--json` の CliReport（無損失直列化・points の
   市民日開始一致）・旧形式互換の黄金出力・next の倍々探索窓と確定再評価・被覆の切れ目をまたぐ答えへの
-  註釈併走・終了コード契約（0/1/2）をサブプロセス実走で検査。
+  註釈併走・終了コード契約（0/1/2）・`--lang en`（枠組み英語化・註釈は日本語のまま・USAGE の言語
+  選択・不正値拒否）をサブプロセス実走で検査。
 - `test/doc-consistency.test.ts` — 文書の整合性（機械検査）。ADR 範囲表記 vs 実ファイル数・改名済み
   旧名の残存・仮称印・stdlib の .kairos↔解説 md の label: 同期。
 - `test/doctest.test.ts` — [`../reference/`](../reference/) と [`../stdlib/`](../stdlib/) の実行例

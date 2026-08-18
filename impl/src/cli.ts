@@ -162,43 +162,89 @@ export function cmdNext(source: string, o: CmdOpts & { n: number; horizonYears: 
   }
 }
 
+/** 表示言語（--lang en で定型出力の枠組みだけ英語化。評価器メッセージ＝エラー・註釈文は
+ * 日本語が正のまま・--json は言語中立——線引きは en/playground と同一） */
+export type CliLang = 'ja' | 'en';
+const CLI_STRINGS = {
+  ja: {
+    exprHead: (i: number, n: number) => `# 式 ${i}（${n} 件）`,
+    coverageHead: '# 被覆サマリ',
+    concluded: '（完結主張）',
+    runway: (d: number | null) => `残走路 ${d === null ? '∞' : `${d} 日`}`,
+    warning: (w: string) => `警告: ${w}`,
+    horizonShort: (rep: CliReport) =>
+      `⚠ 地平線 ${rep.horizonYears} 年以内の発火は ${rep.found} 件（要求 ${rep.requested} 件）`,
+  },
+  en: {
+    exprHead: (i: number, n: number) => `# expression ${i} (${n} point${n === 1 ? '' : 's'})`,
+    coverageHead: '# coverage summary',
+    concluded: '(concluded)',
+    runway: (d: number | null) => `runway ${d === null ? '∞' : `${d} day${d === 1 ? '' : 's'}`}`,
+    warning: (w: string) => `warning: ${w}`,
+    horizonShort: (rep: CliReport) =>
+      `⚠ only ${rep.found} firing(s) within the ${rep.horizonYears}-year horizon (requested ${rep.requested})`,
+  },
+} as const;
+
 /** 人間向け表示（stdout 行列）。--json と同じ CliReport から出す */
-export function renderHuman(rep: CliReport): string[] {
+export function renderHuman(rep: CliReport, lang: CliLang = 'ja'): string[] {
+  const T = CLI_STRINGS[lang];
   const out: string[] = [];
   rep.results.forEach((res, i) => {
-    if (rep.results.length > 1) out.push(`# 式 ${i + 1}（${res.dates.length} 件）`);
+    if (rep.results.length > 1) out.push(T.exprHead(i + 1, res.dates.length));
     for (const d of res.dates) out.push(d);
     // 区間註釈（ADR-37 判断 5/7 (a)）: 結果の後に表示——対処は呼び手の責務（判定は外部）
     for (const a of res.annotations) out.push(`# ⚠ ${formatAnnotation(a)}`);
   });
   // 被覆サマリ（ADR-37 判断 7 (b)）: クリップしない・完結主張も常時表示
   if (rep.coverage.length > 0) {
-    out.push('# 被覆サマリ');
+    out.push(T.coverageHead);
     for (const c of rep.coverage) {
       out.push(`#   ${c.source} covering ${c.covering}${c.asof ? ` asof ${c.asof}` : ''}`
-        + `${c.concluded ? '（完結主張）' : ''}`
-        + ` 残走路 ${c.runwayDays === null ? '∞' : `${c.runwayDays} 日`}`);
+        + `${c.concluded ? T.concluded : ''}`
+        + ` ${T.runway(c.runwayDays)}`);
     }
   }
   return out;
 }
 
-const USAGE = `使い方（kairos ＝ node src/cli.ts）:
-  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] <file.kairos>
+const USAGE_JA = `使い方（kairos ＝ node src/cli.ts）:
+  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
       範囲 [from, to) の全発火・区間註釈・被覆サマリ（既定: 実行 tz の今日から 1 年）
-  kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--supply data.json] [--json] <file.kairos>
+  kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
       from 以降の次の N 発火（既定: n=1・from=今日・地平線 10 年。本体式 1 つのファイル向け）
   --supply: external の解決値を静的束で渡す——{束縛名: {dates|instants, covering, asof [, labels]}}
+  --lang en: 定型出力の枠組みを英語表示（エラー・註釈文は日本語が正のまま・--json は言語中立）
 サブコマンド省略時は list・--version で実装版。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達`;
+
+const USAGE_EN = `Usage (kairos = node src/cli.ts):
+  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
+      All firings in [from, to) plus interval annotations and the coverage summary
+      (default: one year from today in the execution tz)
+  kairos next [-n count] [--from YYYY-MM-DD] [--horizon years] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
+      The next N firings at or after from (default: n=1, from=today, horizon 10 years;
+      intended for files with a single body expression)
+  --supply: static bundle resolving external() — {binding: {dates|instants, covering, asof [, labels]}}
+  --lang en: English framing for the human-readable output. Evaluator messages (errors and
+      annotation texts) stay in Japanese — the implementation's canonical output language;
+      --json output is language-neutral.
+Without a subcommand, list is assumed. --version prints the implementation version.
+Exit codes: 0=success, 1=error, 2=next found fewer firings than requested within the horizon`;
+
+/** USAGE の言語選択——パース失敗経路でも使えるよう argv の素朴な走査で決める */
+const pickUsage = (argv: string[]) =>
+  argv.includes('--lang') && argv[argv.indexOf('--lang') + 1] === 'en' ? USAGE_EN : USAGE_JA;
 
 const OPTS = {
   list: {
     from: { type: 'string' }, to: { type: 'string' },
     tz: { type: 'string' }, supply: { type: 'string' }, json: { type: 'boolean' },
+    lang: { type: 'string' },
   },
   next: {
     n: { type: 'string', short: 'n' }, from: { type: 'string' }, horizon: { type: 'string' },
     tz: { type: 'string' }, supply: { type: 'string' }, json: { type: 'boolean' },
+    lang: { type: 'string' },
   },
 } as const;
 
@@ -221,12 +267,18 @@ export function main(argv: string[]): number {
   } else if (argv.length > 0 && !argv[0].startsWith('-')) {
     cmd = 'list';                     // 旧形式: kairos <file.kairos> --from … --to …
   } else {
-    console.error(USAGE);
+    console.error(pickUsage(argv));
     return 1;
   }
   try {
     const { values, positionals } = parseArgs(
       { args: rest, options: OPTS[cmd], allowPositionals: true, strict: true });
+    const langValue = (values as { lang?: string }).lang ?? 'ja';
+    if (langValue !== 'ja' && langValue !== 'en') {
+      throw new KairosError(`--lang は ja または en: ${langValue}`);
+    }
+    const lang: CliLang = langValue;
+    const T = CLI_STRINGS[lang];
     if (positionals.length !== 1) throw new KairosError('ファイルを 1 つ指定する');
     const source = readFileSync(positionals[0], 'utf8');
     const tz = values.tz as string | undefined;
@@ -254,17 +306,17 @@ export function main(argv: string[]): number {
     }
 
     if (values.json) console.log(JSON.stringify(rep, null, 2));
-    else for (const line of renderHuman(rep)) console.log(line);
-    for (const w of rep.warnings) console.error(`警告: ${w}`);
+    else for (const line of renderHuman(rep, lang)) console.log(line);
+    for (const w of rep.warnings) console.error(T.warning(w));
     if (rep.command === 'next' && rep.found! < rep.requested!) {
-      console.error(`⚠ 地平線 ${rep.horizonYears} 年以内の発火は ${rep.found} 件（要求 ${rep.requested} 件）`);
+      console.error(T.horizonShort(rep));
       return 2;
     }
     return 0;
   } catch (e) {
     console.error(String(e instanceof Error ? e.message : e));
     if (e instanceof Error && 'code' in e && String(e.code).startsWith('ERR_PARSE_ARGS')) {
-      console.error(USAGE);           // 引数の誤り（未知フラグ等）には使い方を添える
+      console.error(pickUsage(argv));  // 引数の誤り（未知フラグ等）には使い方を添える
     }
     return 1;
   }
