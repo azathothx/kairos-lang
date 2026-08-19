@@ -415,6 +415,12 @@ export class Evaluator {
     /** 導出中のカレンダー実体（自己・相互循環の検出。ADR-35 判断 8——ADR-41 の導出鎖
      *  isOpen → bizOpen → C.nonWorking 越しの自己・相互参照もこの集合で捕まる） */
     derivingEntities = new Set();
+    /** 解決中の束縛（引数なし束縛の自己・相互循環の検出＝§4.8 の依存解析。F110） */
+    resolvingDefs = [];
+    /** 適用評価中のラムダ本体（糖衣定義の再帰適用の検出＝§4.8「展開は有限」。F110。
+     *  鍵は本体 Expr の参照同一性——lambda 値は解決ごとに再生成されるが本体 AST は同一。
+     *  正当な再適用（f(a) | f(b)）は逐次・ネスト f(g(s)) は先に引数を評価するため再入しない） */
+    applyingBodies = new Map();
     /** 細粒度導出（ADR-41）のメモ——実体名＋文脈キー（defCache と同じ面。ADR-41 帰結） */
     fineCache = new Map();
     /** external のスナップショット（ADR-46 判断 5）: 一評価一解決。キー＝定義側 premise#束縛#解決後 source
@@ -712,6 +718,12 @@ export class Evaluator {
             const hit = this.defCache.get(key);
             if (hit !== undefined)
                 return hit;
+            // 束縛の循環検出（§4.8 の依存解析・F110）: premise 公開語（evalDef）と同じ網を本体層にも
+            const defId = name;
+            if (this.resolvingDefs.includes(defId)) {
+                this.err(`束縛の循環参照は静的エラー: ${[...this.resolvingDefs.slice(this.resolvingDefs.indexOf(defId)), defId].join(' → ')}（§4.8 の依存解析）`);
+            }
+            this.resolvingDefs.push(defId);
             // top-level 束縛は external 不可（source: 統治が premise に要る。ADR-46）——premise 定義の
             // 評価中に参照されても文脈を継がない（合法位置のすり抜け防止）
             const prevCtx = this.externalCtx;
@@ -722,6 +734,7 @@ export class Evaluator {
             }
             finally {
                 this.externalCtx = prevCtx;
+                this.resolvingDefs.pop();
             }
             if (isObj(v) && v.k === 'table' && !v.src)
                 v = { ...v, src: name }; // 出自の焼印（ADR-37 判断 2）
@@ -814,6 +827,12 @@ export class Evaluator {
         const hit = this.defCache.get(key);
         if (hit !== undefined)
             return hit;
+        // 束縛の循環検出（§4.8 の依存解析・F110）: 右辺評価中に自分（または相互参照先）へ戻ったら静的エラー
+        const defId = `${root.name}.${name}`;
+        if (this.resolvingDefs.includes(defId)) {
+            this.err(`束縛の循環参照は静的エラー: ${[...this.resolvingDefs.slice(this.resolvingDefs.indexOf(defId)), defId].join(' → ')}（§4.8 の依存解析）`);
+        }
+        this.resolvingDefs.push(defId);
         const prevCtx = this.externalCtx;
         this.externalCtx = { root, name };
         let v;
@@ -822,6 +841,7 @@ export class Evaluator {
         }
         finally {
             this.externalCtx = prevCtx;
+            this.resolvingDefs.pop();
         }
         if (isObj(v) && v.k === 'table' && !v.src)
             v = { ...v, src: `${root.name}.${name}` }; // 出自の焼印
@@ -1839,9 +1859,21 @@ export class Evaluator {
     applyValue(callee, args, env, calleeName) {
         if (isObj(callee)) {
             if (callee.k === 'lambda') {
-                const locals = new Map();
-                callee.params.forEach((p, i) => locals.set(p, args[i]));
-                return this.evalExpr(callee.body, childEnv(callee.env, locals));
+                // 糖衣定義の再帰適用の検出（§4.8「展開＝有限の機械的差し込み」・F110）: 本体評価中に
+                // 同じ本体の適用が再入したら静的エラー（自己再帰も相互再帰もここで止まる）
+                if (this.applyingBodies.has(callee.body)) {
+                    const path = [...this.applyingBodies.values(), calleeName ?? '(無名ラムダ)'].join(' → ');
+                    this.err(`糖衣定義の循環参照は静的エラー: ${path}——糖衣の展開は有限（再帰は書けない。§4.8 の依存解析）`);
+                }
+                this.applyingBodies.set(callee.body, calleeName ?? '(無名ラムダ)');
+                try {
+                    const locals = new Map();
+                    callee.params.forEach((p, i) => locals.set(p, args[i]));
+                    return this.evalExpr(callee.body, childEnv(callee.env, locals));
+                }
+                finally {
+                    this.applyingBodies.delete(callee.body);
+                }
             }
             if (callee.k === 'cycle') {
                 if (isValueV(args[0])) { // ADR-42 判断 5/7 (b): 値引数は窓束縛のみ

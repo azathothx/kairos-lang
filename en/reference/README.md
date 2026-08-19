@@ -1,5 +1,5 @@
 ---
-source_sha: ac1e7c143327
+source_sha: f0b4bd4ca893
 ---
 
 # <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Descriptor Reference
@@ -51,6 +51,7 @@ one page per requirement).
 | Window-generating word | [`cycle`](cycle.md) | parallel repeating labels (labels, not windows) |
 | Derivation | [`with`](with.md) | override an existing premise's public words |
 | Derivation | [`rephase`](rephase.md) | sugar shifting window cut points by a unit (re-phase; formerly the placeholder shiftBoundary) |
+| Sugar definition | [sugar definitions](sugar-definition.md) | naming transformations and templates — stream/value arguments (§4.8) |
 | Literal | [table literal](table-literal.md) | stream constant of an instant sequence (covering:/labels:) |
 | Supply | [`external`](external.md) | external supply declaration (a table literal resolved at run time. ADR-46) |
 | Calendar entity | [`nonWorking`](nonWorking.md) | the entity's reserved public word and the `bizDay` standard derivation (ADR-35) |

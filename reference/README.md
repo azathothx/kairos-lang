@@ -39,6 +39,7 @@ Kairos の記述語（演算子・窓生成語・リテラル）を 1 語 1 フ�
 | 窓生成語 | [`cycle`](cycle.md) | 並列反復ラベル（窓でなくラベル） |
 | 派生 | [`with`](with.md) | 既存 premise の公開語を上書き |
 | 派生 | [`rephase`](rephase.md) | 窓の切れ目を単位でずらす糖衣（再位相・旧仮称 shiftBoundary） |
+| 糖衣定義 | [糖衣定義](sugar-definition.md) | 変換の名前付けとテンプレート——ストリーム・値を引数に取る（§4.8） |
 | リテラル | [テーブルリテラル](table-literal.md) | 時点列のストリーム定数（covering:/labels:） |
 | 供給 | [`external`](external.md) | 外部供給宣言（実行時に解決されるテーブルリテラル。ADR-46） |
 | カレンダー実体 | [`nonWorking`](nonWorking.md) | 実体の予約公開語と `bizDay` 標準導出（ADR-35） |

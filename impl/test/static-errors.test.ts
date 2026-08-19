@@ -24,6 +24,29 @@ describe('統治の静的エラー', () => {
     expect(() => run(PRELUDE + `\nfilter = everyDay\n`, Y2026)).toThrow(/core 語/);
   });
 
+  it('糖衣定義の自己再帰は静的エラー（§4.8 の依存解析＝F110。旧: JS の生 stack overflow）', () => {
+    expect(() => run(PRELUDE + `\nf = s => f(s)\nf(everyDay)\n`, Y2026))
+      .toThrow(/糖衣定義の循環参照は静的エラー: f → f/);
+  });
+
+  it('糖衣定義の相互再帰は経路つき静的エラー（F110）', () => {
+    expect(() => run(PRELUDE + `\nf = s => g(s)\ng = s => f(s)\nf(everyDay)\n`, Y2026))
+      .toThrow(/糖衣定義の循環参照は静的エラー: f → g → f/);
+  });
+
+  it('引数なし束縛の循環参照も経路つき静的エラー（F110）', () => {
+    expect(() => run(PRELUDE + `\nx = y\ny = x\nx\n`, Y2026))
+      .toThrow(/束縛の循環参照は静的エラー: x → y → x/);
+  });
+
+  it('糖衣定義の正当な形は無傷——多引数（ストリーム＋値）・再適用・ネスト適用（F110 回帰）', () => {
+    const r = run(PRELUDE + `\nf = (s, n) => s |> within(month) |> nth(n)\nf(everyDay, 15)\n`, Y2026);
+    expect(r.results[0].dates.slice(0, 2)).toEqual(['2026-01-15', '2026-02-15']);
+    expect(() => run(PRELUDE
+      + `\nf = s => s |> within(month) |> first\ng = s => s |> filter(d => weekday(d) == Sun)\nf(everyDay) | f(g(everyDay))\n`,
+      Y2026)).not.toThrow();
+  });
+
   it('窓なしの選択子は型エラー（I4）', () => {
     expect(() => run(PRELUDE + `\neveryDay |> first\n`, Y2026)).toThrow(/I4/);
   });

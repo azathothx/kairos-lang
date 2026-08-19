@@ -1,5 +1,5 @@
 ---
-source_sha: 77bbc1944a78
+source_sha: f711b3c83048
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -112,8 +112,10 @@ source_sha: 77bbc1944a78
 - `name(params) = s => s |> core-chain` (base form B) / the point-free shorthand that omits `s =>`
   when the leading stage is plain (form A; eta reduction).
 - No declaration marker (sugar-hood is detected automatically by dependency analysis; redefining a
-  core word is a static error). Premises are not baked in — resolution is deferred. Expansion =
-  mechanical insertion of the right-hand side (one-way, into core).
+  core word and **circular definitions** 〈self- or mutual recursion — a consequence of expansion
+  finiteness〉 are static errors). Premises are not baked in — resolution is deferred. Expansion =
+  mechanical insertion of the right-hand side (one-way, into core). Full account with runnable
+  examples: `../reference/sugar-definition.md`.
 
 ## 5.4 Naming status
 
