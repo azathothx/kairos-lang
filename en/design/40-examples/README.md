@@ -1,5 +1,5 @@
 ---
-source_sha: e1e91fff7696
+source_sha: 53ff060a16f7
 ---
 
 # 40-examples — Expressiveness studies (a sample book of known schedules)
@@ -61,7 +61,7 @@ the write-ups are executed directly as doctests by the reference implementation.
 | [09-dst-widths.md](../../../design/40-examples/09-dst-widths.md) | DST and the width rules (`1d` = civil day vs `24h` = elapsed time, operationally verified; gap/overlap resolution of derived points; named times are strict, derived times follow conventions; 4 doctests and an accident-type → rule table) |
 | [10-alternative-calendars.md](../../../design/40-examples/10-alternative-calendars.md) | Alternate calendars in arithmetic form (survey of how Outlook / the OS implement them = baked-in tables, arithmetic, degradation to expanded point lists at API boundaries; the tabular Hijri calendar verified as a **zero-data rule premise** with 3 doctests; structural contrast of the two styles, a three-step treatment of the Hebrew calendar, and a head-on answer to “what can Outlook do that Kairos cannot”) |
 | [11-impossible-schedules.md](11-impossible-schedules.md) (English) | Schedules long said to be “unwritable” (32 limitation cases collected from the wild — cron, RRULE, calendar APIs and business SaaS, with sources; 17 representative cases measured in the current vocabulary as doctests; a three-way classification — vocabulary / data / out of scope with named receptacles; the Easter verdict upgraded to “writable”, F109) |
-| [90-findings.md](../../../design/40-examples/90-findings.md) | The consolidated tear log (F1–F109) and its mapping onto completion mechanisms |
+| [90-findings.md](../../../design/40-examples/90-findings.md) | The consolidated tear log (F1–F110) and its mapping onto completion mechanisms |
 | [95-reference-data.md](../../../design/40-examples/95-reference-data.md) | Primary data from the NAOJ 2026 ephemeris (solar terms, moon phases, equinoxes) and comparison results |
 
 ## The verdict matrix (all elements)

@@ -58,7 +58,7 @@ Kairos が「利用者が実際に書きたい既知のスケジュール」を�
 | [09-dst-widths.md](09-dst-widths.md) | DST と幅の規約（`1d`＝市民日 vs `24h`＝経過時間の運用検証・導出点の隙間/重複解決・名指しは厳格/導出は規約。doctest 4 例・事故の型→規約の対応表） |
 | [10-alternative-calendars.md](10-alternative-calendars.md) | 代替暦の算術形（Outlook/OS の実装様式調査＝焼き込みテーブル・算術・境界で展開点列化／タブラー・ヒジュラ暦を**データゼロの規則 premise** で実行検証＝doctest 3 例／方式の構造対比・ヘブライ暦の三段整理・「Outlook にできて Kairos にできないこと」の正面回答） |
 | [11-impossible-schedules.md](11-impossible-schedules.md) | 「書けない」と言われてきたスケジュール（cron・RRULE・API/業務系の限界実例 32 項目を Web 収集＝出典付き／代表 17 本を現行語彙で実測＝doctest／三分類〈語彙・データ・射程外＝受け皿明文化〉／イースター判定の「書ける」更新・F109） |
-| [90-findings.md](90-findings.md) | 綻びログの集約（F1〜F109）と補完機構への写像 |
+| [90-findings.md](90-findings.md) | 綻びログの集約（F1〜F110）と補完機構への写像 |
 | [95-reference-data.md](95-reference-data.md) | NAOJ 令和8年暦要項の一次データ（節気・朔弦望・春分秋分）と照合結果 |
 
 ## 仕分けマトリクス（全要素）
