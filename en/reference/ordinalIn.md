@@ -1,5 +1,5 @@
 ---
-source_sha: 0242e380781b
+source_sha: a866384d1eda
 ---
 
 # `ordinalIn` — the ordinal of the unit window within a frame window
@@ -52,7 +52,8 @@ everyDay |> filter(d => (ordinalIn(day, month, d) - 1) mod 7 == 0)
   (ADR-50): if the start of the `w` window containing `d` does not sit on `u`'s lattice, this is
   an explicit error — the fence against **silently returning a fractional ordinal** in time zones
   whose offset drifted from the epoch by a non-integral number of hours (Kathmandu, Singapore,
-  Lord Howe). For wall-clock bands, `isOpen` / `strideBy(1d, from: time)` are canonical
+  Lord Howe). For wall-clock bands, `isOpen` is canonical; for wall-clock **instants**,
+  [`at`](at.md) (the sugar over `strideBy(1d, from: Thh:mm)` · ADR-51) is canonical
   (stdlib/gregorian.md §2.1).
 - A point's calendar coordinates (`yearNo`/`monthNo`/`dayNo`) are derivable as **sugar** over
   `epochOrdinal` + `ordinalIn` + existing value functions — no new words (ADR-30).

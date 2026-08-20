@@ -60,4 +60,4 @@ everyDay |> filter(d => (ordinalIn(day, month, d) - 1) mod 7 == 0)
 
 ## 関連
 
-[`take`](take.md)（数えて**打ち切る**——先頭 n 点）・[`strideBy`](strideBy.md)（点で数える／幅で刻む、の対）・[`nth`](nth.md)（窓相対の「第 N」）・[`ordinalIn`](ordinalIn.md)（窓リセット版の還元先）・ADR-11/31/38/49。
+[`take`](take.md)（数えて**打ち切る**——先頭 n 点）・[`takeLast`](takeLast.md)（末尾 n 点）・[`strideBy`](strideBy.md)（点で数える／幅で刻む、の対）・[`nth`](nth.md)（窓相対の「第 N」）・[`ordinalIn`](ordinalIn.md)（窓リセット版の還元先）・ADR-11/31/38/49。

@@ -1,5 +1,5 @@
 ---
-source_sha: eaa72f8b2112
+source_sha: bf896ad554e0
 ---
 
 # `strideBy` — step by width, "every w"
@@ -17,10 +17,15 @@ Marks points at an **equal spacing of width `w`** from the origin `from:`. Where
 [`stride`](stride.md) takes "every `n` points of the input" (**counting in points**), `strideBy`
 takes "every physical quantity `w`" (**stepping by width**) — the operator for cycles that do not
 ride the calendar's rhythm (one Martian sol, every 90 minutes, every 36 hours); together with
-[`take`](take.md) they form the stride family's three operators, split apart because the argument
-kinds differ (spec §4.7 · ADR-38/49).
+[`take`](take.md) and [`takeLast`](takeLast.md) they form the stride family's four operators,
+split apart because the argument kinds differ (spec §4.7 · ADR-38/49/52).
 
 The origin `from:` is mandatory (ADR-31; the rule shared with `stride` across the family).
+**`from:` is forward-only** — nothing is generated before the origin (an evaluation range before
+the anchor is silently empty). To lay a wall-clock tick over any period, pass a **standalone time
+literal** `Thh:mm` as `from:` — anchoring at the epoch anchor day 1970-01-01 structurally removes
+the gap (civil 1d width only; ADR-51). If you write a dated anchor, pick a date before the
+evaluation range.
 
 ## Examples
 

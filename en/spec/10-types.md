@@ -1,5 +1,5 @@
 ---
-source_sha: 986a66e0e92e
+source_sha: 0447d6fa9a3a
 ---
 
 # Kairos Language Specification — 2. Types and Layers
@@ -35,13 +35,16 @@ type is the extension, the premise type is its **intension**. There are primitiv
 definitions (§3.6/§3.7); derivation is a `premise → premise` closure, staying closed within the
 premise type. Primitive and derived share the same type.
 
-### The value type (numbers, booleans, enums, lists, strings, instants)
+### The value type (numbers, booleans, enums, lists, strings, instants, standalone times)
 
 Values that are not time streams: numbers, booleans, enums (`Mon`, `Preceding`, etc.), lists
 (`[…]`, indexing, and the membership predicate `in`), strings (`"Asia/Tokyo"`; the values of TZs
 and provenance, ADR-32), and **instants** (the value of a date literal; the point a lambda binds
 has the same makeup. A bare value binding `d0 = 2026-05-15` is also legal = ADR-43/F97 — this
-removes the duplication of writing the same date twice, in `anchor:`/`from:` and in a table). Used
+removes the duplication of writing the same date twice, in `anchor:`/`from:` and in a table), and
+**standalone times** (`T07:00` = a wall-clock time with no date part; a restricted value that
+materializes into an instant only in the `strideBy(1d, from:)` position — the argument of the
+stdlib sugar `at`. ADR-51 · §5.5). Used
 in the rules of calendar-system definitions (leap-year tests, etc.; §3.6) and in body-layer
 arguments (the `n` of `shift(n)`). The third type, alongside the time-stream type and the premise
 type. A list whose elements are instants is promoted to a time-stream constant (table literals,

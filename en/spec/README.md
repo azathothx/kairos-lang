@@ -4,11 +4,11 @@
 > that follow it (each page records its source revision as `source_sha`, and a consistency check
 > flags stale translations) ([日本語版はこちら](../../spec/README.md)).
 
-**Status: Release candidate (RC5, declared 2026-07-08; addenda through no. 12, 2026-08-17).**
+**Status: Release candidate (RC5, declared 2026-07-08; addenda through no. 13, 2026-08-21).**
 Semantics, the operator family, the grammar (EBNF, §5.6), and the lexis are frozen. **Naming is final
 for every word** — the last placeholder `shiftBoundary` was settled as **`rephase`** on 2026-07-26
 (see §5.4). Expressiveness is validated against 20 well-known schedule families
-(`design/40-examples/`) and by the reference implementation (`impl/`, 571 tests). All remaining
+(`design/40-examples/`) and by the reference implementation (`impl/`, 603 tests). All remaining
 homework items are catalogued in `design/90-open-questions.md`, and none of them changes the semantics.
 
 For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese).

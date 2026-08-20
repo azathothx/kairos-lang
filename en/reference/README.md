@@ -1,5 +1,5 @@
 ---
-source_sha: f0b4bd4ca893
+source_sha: f3eb4e7ba878
 ---
 
 # <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Descriptor Reference
@@ -40,6 +40,7 @@ one page per requirement).
 | Filter | [`filter`](filter.md) | thin by predicate (premise predicate / value-expression predicate) |
 | Stride | [`stride`](stride.md) | "every n" points of the input (boundary-ignoring, continuous) |
 | Stride | [`take`](take.md) | only the first n input points (cut-off; the COUNT counterpart) |
+| Stride | [`takeLast`](takeLast.md) | only the last n input points (recent N; `until:` anchor) |
 | Stride | [`strideBy`](strideBy.md) | step by width, "every w" |
 | Combinator | [<code>&#124;</code> `&` `\`](combinators.md) | union, intersection, difference, and the cascade |
 | Projection | [`ordinalIn`](ordinalIn.md) | the ordinal of the unit window within the frame window (1-based) |
@@ -52,6 +53,7 @@ one page per requirement).
 | Derivation | [`with`](with.md) | override an existing premise's public words |
 | Derivation | [`rephase`](rephase.md) | sugar shifting window cut points by a unit (re-phase; formerly the placeholder shiftBoundary) |
 | Sugar definition | [sugar definitions](sugar-definition.md) | naming transformations and templates — stream/value arguments (§4.8) |
+| Sugar (stdlib) | [`at`](at.md) | attaching a wall-clock time to a day set (`at(T17:00)` · ADR-51) |
 | Literal | [table literal](table-literal.md) | stream constant of an instant sequence (covering:/labels:) |
 | Supply | [`external`](external.md) | external supply declaration (a table literal resolved at run time. ADR-46) |
 | Calendar entity | [`nonWorking`](nonWorking.md) | the entity's reserved public word and the `bizDay` standard derivation (ADR-35) |

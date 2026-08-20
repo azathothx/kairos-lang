@@ -1,5 +1,5 @@
 ---
-source_sha: 16e90dc4ee8f
+source_sha: 0c168454e5d1
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -254,17 +254,18 @@ everyDay |> filter(d => weekday(d) == Mon)           # keep Mondays only (label 
 A stateful online transform, a family apart from selectors. Where a selector consumes a window and
 picks "the Nth" window-relative (each window → one point, resetting per window), a stride consumes
 no window and counts through (continuous across boundaries, never resetting). "Every N business
-days, ignoring month boundaries" and "five sessions total" cannot be written with selectors — that
-is the stride's reason to exist. It splits into three operators by argument kind and how the count
-is used.
+days, ignoring month boundaries", "five sessions total" and "the last three firings" cannot be
+written with selectors — that is the stride's reason to exist. It splits into four operators by
+argument kind and how the count is used.
 
 | Operator | Argument | What it counts | Example |
 |---|---|---|---|
 | `stride(n, from:)` input count, thin | integer ≥ 1 (violation is a static error) | **points of the input stream** (no axis argument; ADR-38, F70) | <code>filter(on: bizDay) &#124;> stride(3, from: …)</code> = every 3 business days |
 | `take(n, from:)` input count, **cut off** | integer ≥ 1 (violation is a static error) | points of the input stream (only the first n pass. ADR-49) | <code>(lessons \ cancelled) &#124;> take(5, from: …)</code> = five sessions total |
+| `takeLast(n, until:)` input counting, **cut off at the tail** | an integer ≥ 1 (violations are static errors) | the input stream's points (passes only the last n points at or before `until:`. ADR-52) | <code>tensha &#124;> takeLast(3, until: …)</code> = the last 3 firings |
 | `strideBy(w, from:)` width step | a width = a physical quantity across multiple axes | width (an absolute amount) | `strideBy(24h39m35.244s, from: …)` = every 1 sol |
 
-`stride` and `take` are **input-relative** — what they count is decided upstream ("every 3
+`stride`, `take` and `takeLast` are **input-relative** — what they count is decided upstream ("every 3
 business days" puts `filter(on: bizDay)` first). The counting origin is "the **first input
 point** at or after `from:`" (that point is step 0 = it survives; `from:` is not required to be a
 point of the input). The form "count along an axis, apply to another stream" is composed as
@@ -280,8 +281,9 @@ per-window "first N" is `within` followed by `nth` (§4.3) or an `ordinalIn` pre
 (take counts through). Time-boxing belongs to the separation of definition and evaluation range,
 not to take.
 
-The origin (the phase anchor) is **always made explicit with `from:`** (absence is a static error;
-common to the stride/take/strideBy family). The former "supplied from the upstream window's origin" was
+The anchor (the phase anchor) is **always made explicit** (absence is a static error; common to
+the family — `from:` as the origin for stride/take/strideBy, `until:` as the terminus for
+takeLast (the dual of `from:`; mixing them up gets a dedicated diagnostic. ADR-52)). The former "supplied from the upstream window's origin" was
 abolished: with multiple windows it is ambiguous and evaluation-range-dependent (in tension with
 I7) (ADR-31, F49). **No reset by default** (boundary-ignoring, continuous). The per-window
 recounting variant is written by reduction to `ordinalIn` (§4.9, ADR-27).

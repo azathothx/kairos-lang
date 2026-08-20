@@ -1,5 +1,5 @@
 ---
-source_sha: a9b2878a6d00
+source_sha: 8c731142ac01
 ---
 
 # Kairos Language Specification — 1. Introduction
@@ -113,5 +113,5 @@ definitions; expressing business days, calendars, windows, and roll conventions.
 7. Representative examples
 
 **Conventions**: naming is final for every word — no placeholders remain (batch naming confirmation F51 and the `rephase` ruling of 2026-07-26; §5.4).
-The rationale for each design decision lives in the design records `20-adr/` (ADR-01 through 50) and
+The rationale for each design decision lives in the design records `20-adr/` (ADR-01 through 52) and
 `10-domain-model.md`; this specification presents only the folded conclusions.

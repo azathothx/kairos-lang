@@ -28,6 +28,7 @@ Kairos の記述語（演算子・窓生成語・リテラル）を 1 語 1 フ�
 | フィルタ | [`filter`](filter.md) | 述語で間引く（premise 述語／値式述語） |
 | ストライド | [`stride`](stride.md) | 入力の点を「n ごと」（境界無視・連続） |
 | ストライド | [`take`](take.md) | 入力の点の先頭 n 点だけ（打ち切り・COUNT 相当） |
+| ストライド | [`takeLast`](takeLast.md) | 入力の点の末尾 n 点だけ（直近 N・until: 錨） |
 | ストライド | [`strideBy`](strideBy.md) | 幅で刻む「w ごと」 |
 | 結合子 | [<code>&#124;</code> `&` `\`](combinators.md) | 和・積・差とカスケード |
 | 射影 | [`ordinalIn`](ordinalIn.md) | 枠窓内で単位窓が第何番目か（1 起点） |
@@ -40,6 +41,7 @@ Kairos の記述語（演算子・窓生成語・リテラル）を 1 語 1 フ�
 | 派生 | [`with`](with.md) | 既存 premise の公開語を上書き |
 | 派生 | [`rephase`](rephase.md) | 窓の切れ目を単位でずらす糖衣（再位相・旧仮称 shiftBoundary） |
 | 糖衣定義 | [糖衣定義](sugar-definition.md) | 変換の名前付けとテンプレート——ストリーム・値を引数に取る（§4.8） |
+| 糖衣（stdlib） | [`at`](at.md) | 日集合への壁時計時刻の付与（`at(T17:00)`・ADR-51） |
 | リテラル | [テーブルリテラル](table-literal.md) | 時点列のストリーム定数（covering:/labels:） |
 | 供給 | [`external`](external.md) | 外部供給宣言（実行時に解決されるテーブルリテラル。ADR-46） |
 | カレンダー実体 | [`nonWorking`](nonWorking.md) | 実体の予約公開語と `bizDay` 標準導出（ADR-35） |

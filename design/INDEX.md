@@ -12,7 +12,7 @@
    `../reference/` — **記述語リファレンス**（1 語 1 ファイルの解説。実行例は impl の doctest で検証）。
 1. [00-overview.md](00-overview.md) — 目的・スコープ・既存方式との関係・設計の背骨。まずこれで全体像。
 2. [10-domain-model.md](10-domain-model.md) — premise 定義・ドメインモデル・不変条件 I1〜I8。現在の姿（上書き型）。
-3. [20-adr/](20-adr/README.md) — 設計判断の履歴（ADR-01〜50）。なぜそうなったかを遡るとき。相互に参照し合う。
+3. [20-adr/](20-adr/README.md) — 設計判断の履歴（ADR-01〜52）。なぜそうなったかを遡るとき。相互に参照し合う。
 4. [30-syntax/00-syntax-draft.md](30-syntax/00-syntax-draft.md) — 構文の作業中ドラフト。設計を進める層（区切りで spec/ に反映）。
 5. [40-examples/](40-examples/README.md) — 表現力検証（既知スケジュールのサンプル集＝綻び出しの作業層）。判定マトリクスと綻びログ。
 6. [60-reviews/](60-reviews/README.md) — 外部レビューの受領と処置の記録。
@@ -71,6 +71,8 @@
 - [ADR-48](20-adr/adr-48-split-parent.md) split の親受理の拡張——実効パーティション規則（F109・規則マーカー限定の段階導入・境界整合検査の新設・総和検査のエラー昇格）
 - [ADR-49](20-adr/adr-49-take.md) 先頭 N 選択 take(n, from:)——COUNT 相当（除外後に数えるが合成順で出る・輸送行に take 固有の縮小・窓付き入力は誘導つき静的エラー）
 - [ADR-50](20-adr/adr-50-hour-window.md) hour 窓の標準化と ordinalIn の整合検査（経過タイル・破れの述語は「紀元差」・黙って半端な序数を出さない）
+- [ADR-51](20-adr/adr-51-at-time-of-day.md) 単独時刻リテラル Thh:mm と標準糖衣 at——日集合への壁時計時刻の付与（壁時計正準形の最短化・epoch 錨 1970-01-01・DST は F81 継承・T 接頭形限定）
+- [ADR-52](20-adr/adr-52-takelast.md) 末尾 N 選択 takeLast(n, until:)——直近 N 発火（take の鏡像・until: 明示錨が ADR-49 判断 6 の却下理由を解消・輸送は判断 5 の鏡像・実装地平線ガード 2 面）
 
 ## 運用メモ
 

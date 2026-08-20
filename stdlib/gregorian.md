@@ -34,6 +34,9 @@ premise Gregorian {
   # yearEnd は未定義（需要が立っていないため非対称のまま。必要なら year |> last の一行・会計年度末は
   # Fiscal の within(year) |> last で到達——fiscal.md）
 
+  # 日時刻の付与（ADR-51 糖衣・変換）: 日集合 → その日の壁時計 a 時（a は単独時刻リテラル Thh:mm）
+  at(a) = s => (everyInstant |> strideBy(1d, from: a)) |> filter(t => coincides(s, day, t))
+
   yearNo  = d => yearOf(epochOrdinal(month, d))             # 暦座標糖衣（spec §4.9）: 暦年（2026 など）
   monthNo = d => monthOf(epochOrdinal(month, d)) + 1        # 暦月（1..12）
   dayNo   = d => ordinalIn(day, month, d)                   # 暦日（1..31）
@@ -82,6 +85,7 @@ grid の**位相**は既定で整列する——市民時幅（`d`）は在圏 `
 | `quarter` | 窓 | `year` を 3 か月ずつに割る従属窓（`split by: month`）。`year` の変化に自動追従。 |
 | `week` | 窓 | WKST 位相の 7 日並列窓（月・年に非入れ子）。`weekStart`（wkst ラベル日）で day 列を区切る。`wkst` は利用側前文の宣言を遅延解決（§4.5）。 |
 | `monthStart`/`monthEnd`/`yearStart` | 公開境界語 | 各窓の先頭・末尾点。選択子（`first`/`last`）の再利用で導く。生成子 `monthEnd`（暦日の月末）の正体はこれ。 |
+| `at` | 糖衣（変換） | 日集合への壁時計時刻の付与——<code>bizDay &#124;> within(month) &#124;> last &#124;> at(T17:00)</code>。展開＝壁時計 tick＋`coincides`（ADR-51。単独時刻リテラル専用・DST 切替日も壁時計保存） |
 | `yearNo`/`monthNo`/`dayNo` | 値関数（暦座標） | 点の暦座標を読む射影糖衣（spec §4.9 が予告する `epochOrdinal`＋`ordinalIn`＋補助値関数の合成）。`dayNo(d) == 11` で固定日など。 |
 
 標準ラベルの下では `year(d)` と `yearNo(d)` が同値の二綴りになる（`month(d)`/`monthNo(d)` も同様）。
@@ -122,8 +126,9 @@ everyInstant |> strideBy(1h30m, from: 2026-01-05T09:00)
 1. **DST 切替日は序数が壁時計とずれる**（検査では守れない側・最頻の罠）。整数時 DST の tz
    （America/New_York 等）では境界一致が保たれ検査も通るが、切替日は day が 23/25 タイルになり
    `ordinalIn(hour, day, d)`＝壁時計の時＋1 の等式が割れる（秋戻し日の壁 23:30＝序数 25）。
-   **壁時計概念の帯は宣言側が正準**——`isOpen`（ADR-41）か壁時計 anchor の `strideBy(1d,
-   from: …T09:00)` で書く（F76 の教訓）。
+   **壁時計概念の帯は宣言側が正準**——`isOpen`（ADR-41）で書く。壁時計の**時点**（「その日の
+   9 時」）は `at(T09:00)`（＝壁時計 tick `strideBy(1d, from: Thh:mm)`＋`coincides` の糖衣・
+   ADR-51）が正準（F76 の教訓）。
 2. **紀元差が崩れた tz は整合検査が弾く**。`hour` の位相は在圏 tz の市民紀元（1970-01-01T00:00）
    ——紀元以降にオフセットが 1h の非整数倍動いた tz（Asia/Kathmandu＝1986 改定・Asia/Singapore＝
    1981 改定〈現行整数時なのに破れる〉・Australia/Lord_Howe＝半時 DST で季節反転）では、

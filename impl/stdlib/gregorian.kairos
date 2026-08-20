@@ -26,6 +26,9 @@ premise Gregorian {
   monthEnd   = month |> last
   yearStart  = year  |> first
 
+  # 日時刻の付与（ADR-51 糖衣・変換）: 日集合 → その日の壁時計 a 時（a は単独時刻リテラル Thh:mm）
+  at(a) = s => (everyInstant |> strideBy(1d, from: a)) |> filter(t => coincides(s, day, t))
+
   # 暦座標糖衣（spec §4.9: epochOrdinal＋ordinalIn＋既存値関数の糖衣）
   yearNo  = d => yearOf(epochOrdinal(month, d))             # 暦年（2026 など）
   monthNo = d => monthOf(epochOrdinal(month, d)) + 1        # 暦月（1..12）

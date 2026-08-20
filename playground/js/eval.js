@@ -392,7 +392,7 @@ function snapAnn(ann, w) {
 }
 // ---- 評価器 ----
 const CORE_STAGES = new Set(['within', 'segmentBy', 'first', 'nth', 'last', 'roll', 'shift',
-    'snapTo', 'rebase', 'filter', 'stride', 'strideBy', 'take']);
+    'snapTo', 'rebase', 'filter', 'stride', 'strideBy', 'take', 'takeLast']);
 const CORE_WORDS = new Set([...CORE_STAGES, 'everyDay', 'everyInstant', 'chronos',
     'grid', 'span', 'split', 'cycle', 'ordinalIn', 'epochOrdinal', 'coincides', 'external']);
 /** 実在日の検査（ADR-43 の字句検査の解決値向け再執行——external は字句層を経ないため。ADR-46） */
@@ -1156,6 +1156,18 @@ export class Evaluator {
         }
         return a.ms;
     }
+    /** 単独時刻リテラルの錨打ち（ADR-51）: epoch 錨日 1970-01-01（在圏 tz）＋日内時刻。
+     *  現行 tzdb 全ゾーンで 1969-12-30〜1970-01-04 に DST 遷移は無い（悉皆確認済み）が、
+     *  錨打ちは anchorDate と同じ厳格規約を通す（万一の非一意は黙らせない） */
+    anchorTimeOfDay(todMs, env) {
+        const tz = this.tzObjOf(env);
+        const a = tz.anchor(Date.UTC(1970, 0, 1) + todMs);
+        if (a.kind !== 'unique') {
+            this.err(`単独時刻リテラルの錨打ちが一意でない（tz "${tz.name}" の 1970-01-01 に DST 遷移）——`
+                + '日付つきの日時リテラルで錨を明示する（ADR-51）');
+        }
+        return a.ms;
+    }
     /** 市民日グリッド（1d・既定整列・在圏 tz）——テーブル・day 原子の整列の既定形 */
     dayGrain(env) {
         return { kind: 'civil', step: 1, phase: 0, off: 0, tz: this.tzNameOf(env) };
@@ -1456,6 +1468,7 @@ export class Evaluator {
                 return this.evalDef(inst, e.name, def, env); // 修飾参照は base 値にピン（機構 A）
             }
             case 'date': return { k: 'point', ms: this.anchorDate(e.v, env) }; // 錨打ちは在圏 tz（ADR-33）
+            case 'time': return { k: 'time', todMs: e.tod }; // 単独時刻リテラル（ADR-51）
             case 'width': return { k: 'width', w: e.v };
             case 'lambda': return { k: 'lambda', params: e.params, body: e.body, env };
             case 'list': return this.evalList(e, env);
@@ -1674,6 +1687,8 @@ export class Evaluator {
     eq(l, r) {
         if (isObj(l) && l.k === 'point' && isObj(r) && r.k === 'point')
             return l.ms === r.ms;
+        if (isObj(l) && l.k === 'time' && isObj(r) && r.k === 'time')
+            return l.todMs === r.todMs; // ADR-51（忘れると恒偽）
         return l === r;
     }
     evalCall(e, env) {
@@ -1708,7 +1723,7 @@ export class Evaluator {
                     if (rem !== 0) {
                         this.err(`ordinalIn: 枠窓の開始 ${this.rt.fmt(w[wi].start)} が単位グリッドの目盛り上に`
                             + 'ない（経過幅タイルと市民窓の不整合——紀元差が単位幅の整数倍でない tz。壁時計の帯は'
-                            + ' isOpen／strideBy(1d, from: 時刻) が正準。ADR-50）');
+                            + ' isOpen・壁時計の時点は at(Thh:mm) が正準。ADR-50/51）');
                     }
                 }
                 let first = ui;
@@ -2326,6 +2341,7 @@ export class Evaluator {
         stride: new Set(['from']),
         strideBy: new Set(['from']),
         take: new Set(['from']),
+        takeLast: new Set(['until']),
     };
     applyStage(stream, stage, env) {
         const named = (key) => stage.args.find(a => a.name === key)?.value;
@@ -2334,6 +2350,13 @@ export class Evaluator {
             const known = Evaluator.STAGE_NAMED[stage.name];
             for (const a of stage.args) {
                 if (a.name && !known.has(a.name)) {
+                    // 錨の取り違えは専用診断（ADR-52——一族の from:/until: 双対の教示）
+                    if (stage.name === 'takeLast' && a.name === 'from') {
+                        this.err('takeLast の錨は until:（末尾は終端から数える）——先頭からは take(n, from:)（ADR-52）');
+                    }
+                    if (stage.name === 'take' && a.name === 'until') {
+                        this.err('take の錨は from:（先頭は起点から数える）——末尾からは takeLast(n, until:)（ADR-52）');
+                    }
                     this.err(`${stage.name}: 未知の名前付き引数 ${a.name}:（黙って捨てない——ADR-39）`);
                 }
             }
@@ -2811,14 +2834,64 @@ export class Evaluator {
                 const relevant = stream.ann.filter(a => a.from <= settled);
                 const tails = relevant.filter(a => a.to > anchor)
                     .map(a => ({ ...a, from: Math.max(a.from, anchor), to: Infinity }));
-                return { ...stream, pts, ann: annUnion(relevant, tails) };
+                // 出力は静的有限（≤ n）＝ADR-39 の有限性分類（ADR-52 の検証で判明した素通しを修正）
+                return { ...stream, pts, ann: annUnion(relevant, tails), endless: false };
+            }
+            case 'takeLast': {
+                // 末尾 N 選択（ADR-52）: until: 以前（until: の点を含む）の入力点の末尾 n 点だけを通す（take の鏡像）
+                if (stream.wins.length > 0) {
+                    this.err('takeLast: 窓付き入力は取らない——「窓ごとの最後の 1」は within の後の last で・'
+                        + '「最後の N」は窓境界点からの shift(-k, unit: 軸) の和で（takeLast は通し数え。ADR-52）');
+                }
+                const n = this.num(this.evalExpr(positional[0] ?? this.err('takeLast(n) の n が必要'), env));
+                if (!Number.isInteger(n) || n < 1) {
+                    this.err(`takeLast: n は 1 以上の整数（${n} は不可。ADR-38 判断 12 と同規約）`);
+                }
+                const untilE = named('until') ?? this.err('takeLast: until: が必須（終端の明示。ADR-31 の対称・§4.7）');
+                const until = this.point(this.evalExpr(untilE, env));
+                // 実装地平線ガード①（ADR-37 判断 8）: endless 入力で until: が実体化域を越えると
+                // 「実体化済みの末尾」の取り違えで誤った点が表示窓に出得る——警告して実体化末尾から数える
+                if (stream.endless && until >= this.rt.computeEnd) {
+                    this.rt.warnings.push(`horizon-clip: takeLast until ${this.rt.fmt(until)}`
+                        + '（計算範囲 to+400日 の実体化地平線——実体化済みの末尾から数える。言語の地平線ではない。ADR-37 判断 8）');
+                }
+                const end = ptUpperBound(stream.pts, until);
+                const pts = stream.pts.slice(Math.max(0, end - n), end);
+                // 実装地平線ガード②（F107 同族）: 生成子由来で n 個に満たない＝実体化下限で切れている
+                // （テーブル由来の n 未満は正当——covering の頭は註釈の経路が受け持つ）
+                if (stream.endless && pts.length < n) {
+                    this.rt.warnings.push(`horizon-clip: takeLast ${this.rt.fmt(until)}`
+                        + `（実体化下限で切れ——n=${n} 個中 ${pts.length} 個のみ。紀元は tz 相対・言語の地平線ではない。ADR-37 判断 8・F107）`);
+                }
+                // 輸送行（ADR-52＝ADR-49 判断 5 の鏡像）: 逆向き数えに交差した註釈は交差点から過去側すべて。
+                // 縮小——逆向き数えが交差せず第 n 点（過去端）が確定した場合に限り、それより過去で完結する
+                // 註釈区間は輸送しない（出力は [第 n 点, until] の入力にしか依存しない。交差があれば当該
+                // 区間の head 拡幅 (-∞, …) が過去側を覆うため、この filter は過小近似にならない）
+                const settledL = pts.length === n ? pts[0] : -Infinity;
+                const relevantL = stream.ann.filter(a => a.to >= settledL);
+                const heads = relevantL.filter(a => a.from <= until)
+                    .map(a => ({ ...a, from: -Infinity, to: Math.min(a.to, until) }));
+                return { ...stream, pts, ann: annUnion(relevantL, heads), endless: false };
             }
             case 'strideBy': {
                 const wV = this.evalExpr(positional[0] ?? this.err('strideBy(w) の幅が必要'), env);
                 if (!isObj(wV) || wV.k !== 'width')
                     this.err('strideBy は幅リテラルを取る');
                 const fromE = named('from') ?? this.err('strideBy: from: が必須（起点の明示。ADR-31・§4.7）');
-                const anchor = this.point(this.evalExpr(fromE, env));
+                const fromV = this.evalExpr(fromE, env);
+                let anchor;
+                if (isObj(fromV) && fromV.k === 'time') {
+                    // 単独時刻リテラル（ADR-51）: 市民 1d の壁時計 tick 専用——epoch 錨日で錨打ち。
+                    // 他の幅は位相が黙って epoch 日に固定される罠になるため静的エラー（錨の明示を要求）
+                    if (!(wV.w.kind === 'civil' && wV.w.days === 1)) {
+                        this.err('strideBy: 単独時刻リテラルの from: は市民日幅 1d 専用（壁時計 tick）——'
+                            + '他の幅は日付つきの日時リテラルで錨を明示する（ADR-51）');
+                    }
+                    anchor = this.anchorTimeOfDay(fromV.todMs, env);
+                }
+                else {
+                    anchor = this.point(fromV);
+                }
                 const mod = (a, b) => ((a % b) + b) % b;
                 const pts = [];
                 let align;
@@ -2999,6 +3072,10 @@ export class Evaluator {
     point(v) {
         if (isObj(v) && v.k === 'point')
             return v.ms;
+        if (isObj(v) && v.k === 'time') {
+            this.err('単独時刻リテラルは strideBy(1d, from:)（壁時計 tick）の位置でのみ使える——'
+                + 'ここでは日付つきの日時リテラルで錨を明示する（ADR-51）');
+        }
         this.err(`時点ではない: ${kindOf(v)}`);
     }
     err(msg) {

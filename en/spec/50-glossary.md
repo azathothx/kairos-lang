@@ -1,5 +1,5 @@
 ---
-source_sha: 9db48170d861
+source_sha: d28f1df08423
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -21,7 +21,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 |---|---|---|
 | Kairos | This language. A schedule definition language that, from the continuous base Chronos, weaves the set of meaningful instants at which things should fire (kairos) | §1.1 |
 | Chronos | The single absolute continuous time axis, independent of TZ = the base. A uniform idealized scale without leap seconds (each UTC day = 86,400 s). Every calendar system and granularity is a projection onto it; it is never relativized. The lexical name is `chronos` (ADR-29/33) | §1.3 · §2.2 |
-| TZ (`tz:`) | A TZ is a **versioned mapping** from chronos to civil coordinates (wall-clock labels). `tz:` is the premise context value that gives its name (I6; declaration leans mandatory; enforced at point of use). Values: IANA region identifiers, fixed offsets (strict unique form `"±HH:MM"` only = ADR-43), and `"UTC"`. Time literals that fall into a gap or overlap are errors (ADR-33) | §3.2 · §3.3 · §3.6 · §5.5 |
+| TZ (`tz:`) | A TZ is a **versioned mapping** from chronos to civil coordinates (wall-clock labels). `tz:` is the premise context value that gives its name (I6; declaration leans mandatory; enforced at point of use). Values: IANA region identifiers, fixed offsets (strict unique form `"±HH:MM"` only = ADR-43), and `"UTC"`. Timed date literals that fall into a gap or overlap are errors (ADR-33) | §3.2 · §3.3 · §3.6 · §5.5 |
 | kairos | A "meaningful instant at which something should fire", chosen on the base Chronos. The language's output (each point of a time stream) | §1.1 |
 | premise layer（premise 層） | The layer that builds and supplies calendar systems and calendars (DDL-like, declarative, multi-line) | §2.1 · §3 |
 | body layer（本体層） | The layer that weaves schedules with the supplied vocabulary (DML-like, pipe-styled, one-line oriented) | §2.1 · §4 |
@@ -113,7 +113,8 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | filter `filter`（フィルタ） | Thins by predicate. Takes both premise predicates (`on:`) and value-expression predicates (lambdas) | §4.6 |
 | stride `stride(n, from:)`（ストライド） | Thins the **input points** to "every nth" (input-relative; no axis argument — what gets counted is decided by the preceding stage = ADR-38). n is an integer ≥ 1. Consumes no windows; ignores boundaries; continuous. Origin `from:` required (the first input point at or after `from:` is step 0) | §4.7 · ADR-31/38 |
 | stride `take(n, from:)`（ストライド） | Passes **only the first n input points** (cut-off; the COUNT counterpart). Counting after exclusion falls out of composition order. After the nth point, a legitimate empty (no annotation). Windowed input is a guided static error | §4.7 · ADR-49 |
-| stride `strideBy(w, from:)`（ストライド） | Steps by width (a physical magnitude across multiple axes; e.g. 1 sol). Origin `from:` required | §4.7 · ADR-31 |
+| stride `takeLast(n, until:)`（ストライド） | Passes **only the last n input points** (recent N; the mirror of take). Counts backward from `until:` (inclusive; point inclusion). Deterministic with no annotation while until ≤ the covering tail; windowed input is a guided static error | §4.7 · ADR-52 |
+| stride `strideBy(w, from:)`（ストライド） | Steps by width (a physical magnitude across multiple axes; e.g. 1 sol). Origin `from:` required (forward-only — passing a standalone time literal yields the wall-clock tick from the epoch anchor day = ADR-51) | §4.7 · ADR-31 |
 | window-membership predicate `coincides(S, w, d)`（窓所属述語） | Whether the `w` window containing point `d` holds a point of S (boolean = bounded existential quantification). Interval membership, so alignment is not required (only the tz name is checked); settled by the witness rule (true = a point in a non-annotated interval; false = the window lies within the effective coverage). The receiving vessel for F68 | §4.9 · ADR-38 |
 | sugar definition (base form B)（糖衣定義（基底 B）） | <code>name(args) = s => s &#124;> core-chain</code>. Binds the preceding stage with `s =>` | §4.8 |
 | sugar definition (shorthand A)（糖衣定義（略記 A）） | When the preceding stage is straightforward, omit `s =>` — point-free (eta reduction) | §4.8 |
@@ -141,6 +142,9 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | `phase:` | The phase origin of `span`/`split` | §3.7 |
 | `anchor:` | `cycle`'s label phase (which actual day carries the head label) | §3.6 |
 | `from:` | The origin for the stride family (stride/take/strideBy). Always required (supply from windows was retired by ADR-31) | §4.7 |
+| `until:` | The terminus for `takeLast` (the dual of `from:`; always required). Step 0 = the last input point at or before `until:`. Mixing the anchors up gets a dedicated diagnostic | §4.7 · ADR-52 |
+| `at` (stdlib sugar) | Attaches a wall-clock time to a day set — expands to the wall-clock tick (`strideBy(1d, from: Thh:mm)`) + `coincides`. Preserves the wall clock across DST transitions (the shortest form of the F76 remedy) | stdlib §2 · ADR-51 |
+| standalone time literal | `Thh:mm(:ss)?` — the lexeme for a wall-clock time with no date part (T-prefixed form only). Anchored on the epoch anchor day 1970-01-01 in the resident tz | §5.5 · ADR-51 |
 | `edges:` / `empties:` | `segmentBy`'s gap policy | §4.2 |
 | `roll:` | The roll-convention default in the preamble (folding; being explicit is recommended) | §3.3 |
 | `covering:` | The validity range = the two-sided claim "complete inside, unknown outside". Does not touch the values (inclusion of every element is statically checked). Open-ended `2021..`/`..` (completeness claim, with governance), interval lists, and binding-postfix (coverage claim) are allowed. **Omission = the sequence's ends (narrowest) and `..` = complete everywhere (widest) are polar opposites** (an empty table has no ends, so omission is impossible = explicit covering required. ADR-45) | §3.8 · §4.10 · ADR-26/37/45 |

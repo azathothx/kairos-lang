@@ -1,5 +1,5 @@
 ---
-source_sha: f711b3c83048
+source_sha: 4f4386eb3433
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -60,9 +60,12 @@ source_sha: f711b3c83048
 - Strides (a family separate from the selectors): `stride(n, from:)` input counting (every n
   **input points**; no axis argument; n is an integer ≥ 1 = ADR-38) / `take(n, from:)` first-N
   selection (only the first n input points; windowed input is a static error = ADR-49) /
-  `strideBy(w, from:)` width stepping (a physical quantity over multiple axes). The origin
-  `from:` is mandatory (ADR-31; the counting origin is the first input point at or after
-  `from:`); no reset is defaulted.
+  `takeLast(n, until:)` last-N selection (only the last n input points at or before `until:`
+  〈inclusive〉; windowed input is a static error = ADR-52) / `strideBy(w, from:)` width stepping
+  (a physical quantity over multiple axes). The anchor is mandatory (ADR-31 — the origin `from:`
+  for stride/take/strideBy 〈the counting origin is the first input point at or after `from:`〉,
+  the terminus `until:` for takeLast 〈step 0 is the last input point at or before `until:`〉);
+  no reset is defaulted.
 - Window-membership predicate (projection family; §4.9): `coincides(S, w, d)` = whether a point of
   S lies in the w window containing point d (a boolean; witness rule and tz-name check = ADR-38).
 
@@ -161,6 +164,11 @@ Addendum (2026-08-17, ADR-49/50): the later **`take`** (the stride family's thir
 settled after a naming comparison (`first(n, from:)` collides with the window selector `first` —
 rejected). The premise public word **`hour`** (ADR-50) sits outside the vocabulary table (public
 words are settled in one batch at 1.0).
+Addendum (2026-08-21, ADR-51/52): **`takeLast`** (the stride family's fourth word; anchor
+`until:`) was settled after a naming comparison (`take(n, until:)` = meaning inverted by one
+named arg on the same word; `last(n,…)` = selector collision; `recent` = a ring of built-in
+"now" — all rejected). The stdlib sugar **`at`** (ADR-51) is on the public-word side
+(`dailyAt` = generator misreading; `atTime` = doubly expressed with the T prefix — rejected).
 
 ## 5.5 Lexis (ADR-28)
 
@@ -174,6 +182,14 @@ words are settled in one batch at 1.0).
   error** = leap seconds are out of scope. ADR-33). A timed literal that falls into a DST gap or
   overlap of the in-scope tz is an error (the "exists and is unique" requirement. ADR-33 —
   relative to tz data, hence not necessarily static).
+- **Standalone time literals** (ADR-51): `Thh:mm(:ss(.f+)?)?` — a wall-clock time with no date
+  part. The value is a time of day; it materializes into an instant **only in the
+  `strideBy(1d, from:)` position** (anchored on the epoch anchor day 1970-01-01 in the resident
+  tz = the origin of the wall-clock tick; the stdlib sugar `at` is the main consumer. Other point
+  positions and other widths are guided static errors — never silently pinned to the epoch day).
+  The time digits obey the same ranges as date literals. **T-prefixed form only** — a bare
+  `hh:mm` would collide with legal ternary expressions (`cond ? 10:30`), so it is not a lexeme.
+  Malformed forms after `T\d\d:` are guided lexical errors (never silently read as identifiers).
 - **String literals**: from `"` to the next `"` (no newlines inside; no escape sequences = strings
   containing quotes are a future extension. ADR-32). Used as the member values of `tz:` and
   `source:`. The value domain of `tz:` is IANA tzdb region identifiers, fixed-offset notation, and
@@ -188,6 +204,11 @@ words are settled in one batch at 1.0).
 - **Numbers**: integers and decimals. **Identifiers and enumeration labels**: Unicode letters are
   allowed (kanji labels such as `甲` and `子` are fine). The reserved symbols
   (`|> . | & \ = => < > [ ] ( ) { } : , ? @ #`) and whitespace cannot appear in identifiers.
+  Label equality is **textual**: an identifier label and a string literal with the same text
+  (`立春` and `"立春"`) are equal. However, **only an identifier declaration in label position
+  introduces the name into the vocabulary** — referencing a string-declared label with a bare
+  identifier is an "unresolved name". Declare labels in identifier form (the native role of
+  string literals is the value of `tz:` and `source:` — ADR-32).
 - **Comments**: from `#` to the end of the line.
 - **Statement separation and continuation** (ADR-44): statements (bindings, premise members, body
   expressions) are separated by newlines — except that (1) a newline while parentheses or brackets
@@ -269,7 +290,7 @@ additive       = multiplicative , { ( "+" | "-" ) , multiplicative } ;
 multiplicative = unary , { ( "*" | "/" | "mod" | "div" ) , unary } ;
 unary          = [ "-" ] , postfix ;
 postfix        = atom , { "[" , value-expr , "]" | "(" , args , ")" } ;
-atom           = number | date-literal | width-literal | string-literal | name | qualified
+atom           = number | date-literal | time-literal | width-literal | string-literal | name | qualified
                | list-literal | "(" , value-expr , ")" ;
 lambda         = ( name | "_" | "(" , params , ")" ) , "=>" , ( value-expr | stream-expr ) ;
 
@@ -296,6 +317,7 @@ covering-edge  = date-literal | digit4 ;                 (* year-only shorthand 
 (* ---- Lexis (§5.5) ---- *)
 date-literal   = digit4 , "-" , digit2 , "-" , digit2 ,
                  [ "T" , digit2 , ":" , digit2 , [ ":" , digit2 , [ "." , digits ] ] ] ;
+time-literal   = "T" , digit2 , ":" , digit2 , [ ":" , digit2 , [ "." , digits ] ] ;  (* standalone time. ADR-51 *)
 width-literal  = civil-width | elapsed-width ;
 civil-width    = digits , "d" ;
 elapsed-width  = [ digits , "h" ] , [ digits , "m" ] , [ digits , [ "." , digits ] , "s" ] ;

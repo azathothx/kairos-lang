@@ -452,6 +452,7 @@ class Parser {
     }
     if (t.kind === 'number') { this.next(); return { t: 'num', v: t.num! }; }
     if (t.kind === 'date') { this.next(); return { t: 'date', v: t.date! }; }
+    if (t.kind === 'time') { this.next(); return { t: 'time', tod: t.tod! }; }
     if (t.kind === 'width') { this.next(); return { t: 'width', v: t.width! }; }
     if (t.kind === 'string') { this.next(); return { t: 'str', v: t.text }; }
     if (t.text === '[') return this.listLiteral();

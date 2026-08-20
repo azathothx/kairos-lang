@@ -1,5 +1,5 @@
 ---
-source_sha: 210c748e9cb7
+source_sha: 80861803f59b
 ---
 
 # Standard premise: Gregorian
@@ -44,6 +44,9 @@ premise Gregorian {
   yearStart  = year  |> first
   # yearEnd is undefined (kept asymmetric because no demand has arisen; if needed, it is the one
   # line year |> last, and the fiscal year end is reached via Fiscal's within(year) |> last — fiscal.md)
+
+  # Attaching a time of day (ADR-51 sugar, transform): day set → the wall-clock time a on each day
+  at(a) = s => (everyInstant |> strideBy(1d, from: a)) |> filter(t => coincides(s, day, t))
 
   yearNo  = d => yearOf(epochOrdinal(month, d))             # calendar-coordinate sugar (spec §4.9): the calendar year (2026 etc.)
   monthNo = d => monthOf(epochOrdinal(month, d)) + 1        # the calendar month (1..12)
@@ -102,6 +105,7 @@ it overridden with `anchor:` (ADR-31).
 | `quarter` | Window | The dependent window splitting `year` into three-month pieces (`split by: month`). Auto-tracks changes to `year`. |
 | `week` | Window | The 7-day window at WKST phase, parallel to (not nested in) month and year. Segments the day sequence at `weekStart` (the wkst-labeled days). `wkst` lazily resolves the user-side preamble declaration (§4.5). |
 | `monthStart`/`monthEnd`/`yearStart` | Public boundary words | The first and last points of each window, derived by reusing the selectors (`first`/`last`). The generator `monthEnd` (the calendar-day month end) is in reality this. |
+| `at` | Sugar (transform) | Attaches a wall-clock time to a day set — <code>bizDay &#124;> within(month) &#124;> last &#124;> at(T17:00)</code>. Expands to the wall-clock tick + `coincides` (ADR-51; standalone time literals only, wall clock preserved across DST transitions). |
 | `yearNo`/`monthNo`/`dayNo` | Value functions (calendar coordinates) | Projection sugar reading a point's calendar coordinates (the composition of `epochOrdinal` + `ordinalIn` + auxiliary value functions that spec §4.9 announces). Fixed days via `dayNo(d) == 11`, and so on. |
 
 Under the standard labels, `year(d)` and `yearNo(d)` become two equivalent spellings of the same
@@ -146,8 +150,9 @@ Three cautions.
    the most common trap). In whole-hour DST zones (America/New_York etc.) boundary alignment holds
    and the check passes, but the transition day has a 23/25-tile day, and the equation
    `ordinalIn(hour, day, d)` = wall-clock hour + 1 breaks (fall-back day: wall 23:30 = ordinal
-   25). **Wall-clock bands belong to the declaration side** — write them with `isOpen` (ADR-41)
-   or a wall-clock-anchored `strideBy(1d, from: …T09:00)` (the F76 lesson).
+   25). **Wall-clock bands belong to the declaration side** — write them with `isOpen` (ADR-41);
+   wall-clock **instants** ("9:00 on that day") with `at(T09:00)` (the sugar over the wall-clock
+   tick `strideBy(1d, from: Thh:mm)` + `coincides` · ADR-51) (the F76 lesson).
 2. **Zones whose epoch difference broke are rejected by the alignment check.** `hour`'s phase is
    the resident tz's civil epoch (1970-01-01T00:00) — in zones whose offset later moved by a
    non-integral number of hours (Asia/Kathmandu = the 1986 change; Asia/Singapore = the 1981

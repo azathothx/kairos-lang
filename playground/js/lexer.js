@@ -119,6 +119,22 @@ export function lex(src) {
             col += n[0].length;
             continue;
         }
+        // 単独時刻リテラル: Thh:mm(:ss(.f+)?)?（ADR-51——日付部を持たない壁時計時刻）。
+        // T 接頭形限定: 裸 hh:mm は三値演算子の合法式（cond ? 10:30）と衝突するため採らない。
+        // T\d\d: まで見えたらこの字句の領域（malformed は誘導つき字句エラー——黙って識別子に落とさない）
+        if (c === 'T' && /^T\d{2}:/.test(src.slice(i, i + 4))) {
+            const m = /^T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?/.exec(src.slice(i));
+            if (!m)
+                err('単独時刻リテラルの形は Thh:mm（例 T07:00・秒まで書くなら Thh:mm:ss。ADR-51）');
+            if (+m[1] > 23 || +m[2] > 59 || (m[3] !== undefined && +m[3] > 59)) {
+                err(`時刻が範囲外: ${m[0]}（hh は 00..23・mm/ss は 00..59。うるう秒は表現しない＝ADR-33）`);
+            }
+            const tod = (+m[1] * 3600 + +m[2] * 60 + (m[3] ? +m[3] + (m[4] ? +`0.${m[4]}` : 0) : 0)) * 1000;
+            toks.push({ kind: 'time', text: m[0], line, col, tod });
+            i += m[0].length;
+            col += m[0].length;
+            continue;
+        }
         // 識別子（Unicode 文字可）。member-key の calendar-system はハイフンを特例で許す。
         if (isLetter(c)) {
             let j = i;

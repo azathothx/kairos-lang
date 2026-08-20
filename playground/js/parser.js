@@ -502,6 +502,10 @@ class Parser {
             this.next();
             return { t: 'date', v: t.date };
         }
+        if (t.kind === 'time') {
+            this.next();
+            return { t: 'time', tod: t.tod };
+        }
         if (t.kind === 'width') {
             this.next();
             return { t: 'width', v: t.width };

@@ -1,5 +1,5 @@
 ---
-source_sha: de6a00385558
+source_sha: 78e0a1b297e8
 ---
 
 # `coincides` — the window-membership predicate
@@ -32,6 +32,10 @@ means of joining by **membership** is needed. Being a value predicate, it compos
 `not coincides(holidays, day, d) or weekday(d) == Fri`).
 
 ## Example (the canonical form of F68: drop ad-hoc closure "days" from a 9:00 every-business-day notification)
+
+Note that this "tick + coincides" pattern **collapses to one word via the stdlib sugar
+[`at`](at.md)** (`… |> at(T09:00)` — its expansion is exactly this canonical form. ADR-51); what
+follows is the canonical example for understanding the expansion.
 
 The 9 o'clock tick is **wall clock** (stepping by a civil-time width. ADR-38 revised — the old form
 `shift(+9, unit: hour)` has elapsed-time semantics and drifts from the wall clock on DST transition

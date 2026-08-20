@@ -1,5 +1,5 @@
 ---
-source_sha: 5f335759598b
+source_sha: 80e6a0ce6584
 ---
 
 # `take` — cut off after the first n points (the COUNT counterpart)
@@ -54,10 +54,12 @@ the expression — 5/12 and 5/19 refill naturally.
   out-of-coverage annotation (making the tentative ranking observable. A cancellation feed's
   covering tail sits near "now" in practice — the annotation not going away is normal; extending
   the coverage is the correct response).
-- There is no "last N" (counting from the end would depend on the covering; not introduced.
-  ADR-49).
+- "Last N" is [`takeLast`](takeLast.md) (**introduced by ADR-52** — the deferral at ADR-49 time was
+  revised once real demand materialized; an explicit `until:` anchor structurally dissolves the
+  "covering-dependent" objection).
 
 ## Related
 
-[`stride`](stride.md) (thin) · [`strideBy`](strideBy.md) (step by width) · [`nth`](nth.md)
+[`takeLast`](takeLast.md) (cut off at the tail — the dual) · [`stride`](stride.md) (thin) ·
+[`strideBy`](strideBy.md) (step by width) · [`nth`](nth.md)
 (window-relative "the Nth" — the dual) · [`filter`](filter.md) · ADR-31/38/49.

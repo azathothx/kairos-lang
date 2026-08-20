@@ -6,6 +6,7 @@ export type Expr =
   | { t: 'qualified'; ns: string; name: string }          // Gregorian.month
   | { t: 'num'; v: number }
   | { t: 'date'; v: DateVal }
+  | { t: 'time'; tod: number }                            // 単独時刻リテラル Thh:mm（日内 ms。ADR-51）
   | { t: 'width'; v: WidthVal }
   | { t: 'str'; v: string }                               // 文字列リテラル（ADR-32）
   | { t: 'list'; elems: ListElem[]; covering?: CoveringRange[]; labels?: Expr } // table-literal を含む

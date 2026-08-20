@@ -39,9 +39,11 @@ RRULE の `COUNT=5`＋EXDATE 2 件は除外**前**の生成集合を数えるた
 - 第 n 点より後は**正当な空**（註釈なし——ADR-37 判断 2）。逆に covering が第 n 点より**前**で
   尽きると、以後すべてに範囲外註釈が立つ（順位が暫定であることの可観測化。休講データの covering
   の尾は運用上つねに「今」の近傍にある——註釈が消えないのは正常で、覆域を延ばすのが正しい応答）。
-- 「後ろから N 個」は無い（終端起点の数えは covering 依存になるため導入しない。ADR-49）。
+- 「後ろから N 個」は [`takeLast`](takeLast.md)（**ADR-52 で導入**——ADR-49 時点の見送りは実需要の
+  成立を受けて改訂。until: の明示錨が「covering 依存」の却下理由を構造的に解消した）。
 
 ## 関連
 
-[`stride`](stride.md)（間引く）・[`strideBy`](strideBy.md)（幅で刻む）・[`nth`](nth.md)（窓相対の
-「第 N」＝双対）・[`filter`](filter.md)・ADR-31/38/49。
+[`takeLast`](takeLast.md)（末尾で打ち切る＝双対）・[`stride`](stride.md)（間引く）・
+[`strideBy`](strideBy.md)（幅で刻む）・[`nth`](nth.md)（窓相対の「第 N」）・
+[`filter`](filter.md)・ADR-31/38/49/52。
