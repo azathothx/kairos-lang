@@ -202,7 +202,7 @@ everyDay |> f(on: everyDay, off: everyDay)
 const SEASON = (startsClaim: string) => `
 premise T = Gregorian with {
   tz: "Asia/Tokyo"
-  setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-04, 2026-05-05, 2026-06-05,
+  setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-05, 2026-05-05, 2026-06-06,
            2026-07-07, 2026-08-07, 2026-09-07, 2026-10-08, 2026-11-07, 2026-12-07]
     labels: [小寒, 立春, 啓蟄, 清明, 立夏, 芒種, 小暑, 立秋, 白露, 寒露, 立冬, 大雪]
     covering: 2026-01-05..2026-12-07
@@ -238,7 +238,7 @@ describe('窓列の実効被覆域の精密化（F105・頭側は窓列の範囲
     const r = run(JP2 + `
 premise S = Gregorian with {
   tz: "Asia/Tokyo"
-  qs = [2026-01-05, 2026-04-04, 2026-07-07, 2026-10-08] covering: 2026-01-05..2026-12-07
+  qs = [2026-01-05, 2026-04-05, 2026-07-07, 2026-10-08] covering: 2026-01-05..2026-12-07
   quarterL = everyDay |> segmentBy(qs, edges: drop, empties: error, labels: [一, 二, 三, 四])
 }
 @S

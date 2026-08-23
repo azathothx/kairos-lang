@@ -1,5 +1,5 @@
 ---
-source_sha: 1bf0917ee743
+source_sha: b1cf6318f027
 ---
 
 # `segmentBy` — interval-sequence windows (cut at markers)
@@ -102,7 +102,7 @@ markers increase, the anchor stays and the expression does not change by a singl
 ```kairos
 # eval: 2026-02-03..2026-02-06
 @JP
-setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-04] covering: 2026-01-05..2026-04-04
+setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-05] covering: 2026-01-05..2026-04-05
 sekkiMonth = everyDay |> segmentBy(setsu, edges: drop, empties: error,
                                    labels: cycle [寅, 卯, 辰, 巳, 午, 未, 申, 酉, 戌, 亥, 子, 丑]
                                    anchor: 2026-02-04)

@@ -10,7 +10,7 @@ import { run, evalDates } from '../src/index.ts';
 const SEKKI = (labelsArg: string) => `
 premise T = Gregorian with {
   tz: "Asia/Tokyo"
-  setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-04, 2026-05-05, 2026-06-05,
+  setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-05, 2026-05-05, 2026-06-06,
            2026-07-07, 2026-08-07, 2026-09-07, 2026-10-08, 2026-11-07, 2026-12-07]
     covering: 2026-01-05..2026-12-07
   sekkiMonth = everyDay |> segmentBy(setsu, edges: drop, empties: error, ${labelsArg})
@@ -57,7 +57,7 @@ describe('labels: cycle——射影の位相（ADR-47）', () => {
 premise T = Gregorian with {
   tz: "Asia/Tokyo"
   nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-  setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-04, 2026-05-05, 2026-06-05,
+  setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-05, 2026-05-05, 2026-06-06,
            2026-07-07, 2026-08-07, 2026-09-07, 2026-10-08, 2026-11-07, 2026-12-07]
     covering: 2026-01-05..2026-12-07
   sekkiMonth = everyDay |> segmentBy(setsu, edges: drop, empties: error,
@@ -73,7 +73,7 @@ everyDay |> filter(d => sekkiMonth(d) == 1)
     const TWO_YEARS = `
 premise T = Gregorian with {
   tz: "Asia/Tokyo"
-  setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-04, 2026-05-05, 2026-06-05,
+  setsu = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-05, 2026-05-05, 2026-06-06,
            2026-07-07, 2026-08-07, 2026-09-07, 2026-10-08, 2026-11-07, 2026-12-07,
            2027-01-05, 2027-02-04, 2027-03-06, 2027-04-05, 2027-05-05, 2027-06-06,
            2027-07-07, 2027-08-08, 2027-09-08, 2027-10-08, 2027-11-07, 2027-12-07]
@@ -131,7 +131,7 @@ describe('labels: cycle——窓インスタンス参照 W(v)（ADR-42 との整
     const TWO = `
 premise T = Gregorian with {
   tz: "Asia/Tokyo"
-  m = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-04] covering: 2026-01-05..2026-04-04
+  m = [2026-01-05, 2026-02-04, 2026-03-05, 2026-04-05] covering: 2026-01-05..2026-04-05
   half = everyDay |> segmentBy(m, edges: drop, empties: error,
     labels: cycle [甲, 乙] anchor: 2026-01-05)
 }
