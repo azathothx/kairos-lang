@@ -1,5 +1,5 @@
 ---
-source_sha: 0c168454e5d1
+source_sha: 4374a15fe83d
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -342,6 +342,15 @@ definition time; it resolves them against the in-scope premise at the call site.
 `weekday` label resolves from the calling context's calendar system; the sugar itself knows no
 calendar system. The `week` window's `wkst` reference (§3.6) stands on the same rule. The
 complexity is borne by the core it expands into; the sugar stays thin.
+
+**Deferred resolution covers premises only — the caller's value bindings are not visible**
+(ADR-53): a bare name on a binding's right-hand side can resolve to **bindings, premise public
+words, preamble members, and enumeration labels** — and nothing else. It never falls through to
+the caller's lambda variables (the `d` of `filter(d => …)` and the like); that shape is a guided
+static error — a binding's meaning closes over its own definition and does not depend on the
+variable names at its use sites (a point-dependent value is written as a parameterized binding
+`T(x) = …`, used as `T(d)`). Lambda variables bound inside the right-hand side itself
+(the `x` of `thirds = everyDay |> filter(x => …)`) remain legal as before.
 
 **Expansion = mechanical insertion of the right-hand side** — `x |> nextWeekday(Fri)` inserts the
 definition's right-hand side and opens into

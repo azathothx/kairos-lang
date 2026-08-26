@@ -408,8 +408,12 @@ function isExternalCall(x) {
         && x.callee?.t === 'name' && x.callee.name === 'external';
 }
 export class Evaluator {
-    /** premise 公開語のメモ（参照しうる文脈メンバー wkst・tz・calendar-system をキーに含める。I6） */
+    /** premise 公開語のメモ（参照しうる文脈メンバー wkst・tz・calendar-system をキーに含める。I6）。
+     *  tzChecks＝右辺評価中に踏んだ predicateAlign 文脈の tz 名検査の記録（ADR-53＝還流第 16 便 §2:
+     *  ヒット時にも現在の predicateAlign で再実行——検査の順序独立性と値の同一性を両立） */
     defCache = new Map();
+    /** 評価中の束縛の tz 名検査ログ（ネスト束縛は全層へ記録——外側ヒット時は内側評価が走らないため） */
+    tzCheckLogs = [];
     /** 評価中の label: 付与式（再入ガード。自己参照＝定義中の束縛名のラベル射影を検出。ADR-34） */
     labelStack = new Set();
     /** 導出中のカレンダー実体（自己・相互循環の検出。ADR-35 判断 8——ADR-41 の導出鎖
@@ -432,6 +436,10 @@ export class Evaluator {
     /** filter 述語に流れている点列の整列（免除系 tz 検査の評価時近似＝ADR-36 改訂 2/ADR-40。
      *  点はデータを運ばない（ADR-30/33）ため、静的検査の近似として評価文脈で運ぶ） */
     predicateAlign = null;
+    /** 束縛右辺の評価中、遮断した呼び出し側 locals 鎖（誘導文言用。ADR-53＝還流第 16 便 §1）。
+     *  束縛右辺の名前解決は「束縛・premise 語・前文メンバー・列挙」で閉じる——呼び出し側の
+     *  ラムダ変数には落とさない（定義の意味が使用箇所の変数名に依存する捕獲は静的エラー） */
+    severedLocalsEnv = null;
     rt;
     constructor(rt) { this.rt = rt; }
     // ---------- プログラム ----------
@@ -716,8 +724,12 @@ export class Evaluator {
                 + ['wkst', 'tz', 'calendar-system', 'calendar', 'axis', 'roll', 'asof', 'source']
                     .map(k => this.memberStr(env.members, k)).join('#');
             const hit = this.defCache.get(key);
-            if (hit !== undefined)
-                return hit;
+            if (hit !== undefined) {
+                // 記録済みの tz 名検査を現在の predicateAlign で再実行（ADR-53 §2——順序独立の安全ゲート）
+                for (const c of hit.tzChecks)
+                    this.checkTzMembership(this.predicateAlign, c.win, c.ctx);
+                return hit.v;
+            }
             // 束縛の循環検出（§4.8 の依存解析・F110）: premise 公開語（evalDef）と同じ網を本体層にも
             const defId = name;
             if (this.resolvingDefs.includes(defId)) {
@@ -728,13 +740,22 @@ export class Evaluator {
             // 評価中に参照されても文脈を継がない（合法位置のすり抜け防止）
             const prevCtx = this.externalCtx;
             this.externalCtx = null;
+            // 右辺の名前解決は呼び出し側 locals 鎖を遮断する（ADR-53＝還流第 16 便 §1: 定義の意味が
+            // 使用箇所のラムダ変数名に依存する捕獲と、メモ化の誤共有〈焼き付き〉を根で断つ）
+            const prevSevered = this.severedLocalsEnv;
+            this.severedLocalsEnv = this.severedLocalsEnv ?? env; // 最外の遮断点＝ユーザーのラムダ変数が居る env を保持（ネストで上書きしない）
+            const rhsEnv = { ...env, locals: null, parent: null };
+            const tzLog = [];
+            this.tzCheckLogs.push(tzLog);
             let v;
             try {
-                v = this.evalExpr(b.rhs, env);
+                v = this.evalExpr(b.rhs, rhsEnv);
             }
             finally {
                 this.externalCtx = prevCtx;
+                this.severedLocalsEnv = prevSevered;
                 this.resolvingDefs.pop();
+                this.tzCheckLogs.pop();
             }
             if (isObj(v) && v.k === 'table' && !v.src)
                 v = { ...v, src: name }; // 出自の焼印（ADR-37 判断 2）
@@ -742,7 +763,7 @@ export class Evaluator {
                 v = { ...v, name }; // 診断用の束縛名（ADR-42）
             if (b.covering)
                 v = this.applyClaim(v, b.covering, name, env); // 明示の被覆主張（判断 5）
-            this.defCache.set(key, v);
+            this.defCache.set(key, { v, tzChecks: tzLog });
             return v;
         }
         if (name === 'chronos')
@@ -753,6 +774,11 @@ export class Evaluator {
             return { k: 'instant' };
         if (this.rt.vocab.has(name))
             return name; // 列挙ラベル（意味論で区別。§5.6 注記）
+        // 遮断された呼び出し側ラムダ変数なら誘導つき静的エラー（ADR-53——「未解決」より原因が深い）
+        if (this.severedLocalsEnv && this.lookupLocal(name, this.severedLocalsEnv) !== undefined) {
+            this.err(`束縛の右辺から呼び出し側のラムダ変数は見えない: ${name}——束縛の意味は定義単体で閉じる`
+                + `（点に依存する値は引数付き束縛で: T(x) = … と定義し T(${name}) で使う。ADR-53）`);
+        }
         this.err(`未解決の名前: ${name}（premise 相対解決 §3.4）`);
     }
     /** 名前が束縛（locals・premise 公開語・メンバー・top-level）として解決可能か（軸位置の曖昧性検出用） */
@@ -814,7 +840,9 @@ export class Evaluator {
      *  前文メンバーは定義側優先で上書き重ね（ADR-35 判断 8） */
     evalDef(root, name, def, env) {
         const members = this.overlayMembers(env.members, root);
-        const defEnv = { ...env, premise: root, members };
+        // 右辺の名前解決は呼び出し側 locals 鎖を遮断する（ADR-53＝還流第 16 便 §1。引数付き束縛の
+        // 閉包 env も同じ——右辺は自分の引数・premise・前文メンバーで閉じる）
+        const defEnv = { ...env, premise: root, members, locals: null, parent: null };
         this.checkExternalPositions(root, name, def); // external の合法位置（ADR-46 判断 1）
         if (def.params.length > 0) {
             // 引数付き束縛は lambda 値として返す
@@ -825,8 +853,12 @@ export class Evaluator {
             + ['wkst', 'tz', 'calendar-system', 'calendar', 'axis', 'roll', 'asof', 'source']
                 .map(k => this.memberStr(members, k)).join('#');
         const hit = this.defCache.get(key);
-        if (hit !== undefined)
-            return hit;
+        if (hit !== undefined) {
+            // 記録済みの tz 名検査を現在の predicateAlign で再実行（ADR-53 §2——順序独立の安全ゲート）
+            for (const c of hit.tzChecks)
+                this.checkTzMembership(this.predicateAlign, c.win, c.ctx);
+            return hit.v;
+        }
         // 束縛の循環検出（§4.8 の依存解析・F110）: 右辺評価中に自分（または相互参照先）へ戻ったら静的エラー
         const defId = `${root.name}.${name}`;
         if (this.resolvingDefs.includes(defId)) {
@@ -835,13 +867,19 @@ export class Evaluator {
         this.resolvingDefs.push(defId);
         const prevCtx = this.externalCtx;
         this.externalCtx = { root, name };
+        const prevSevered = this.severedLocalsEnv;
+        this.severedLocalsEnv = this.severedLocalsEnv ?? env; // 最外の遮断点を保持（ネストで上書きしない）
+        const tzLog = [];
+        this.tzCheckLogs.push(tzLog);
         let v;
         try {
             v = this.evalExpr(def.rhs, defEnv);
         }
         finally {
             this.externalCtx = prevCtx;
+            this.severedLocalsEnv = prevSevered;
             this.resolvingDefs.pop();
+            this.tzCheckLogs.pop();
         }
         if (isObj(v) && v.k === 'table' && !v.src)
             v = { ...v, src: `${root.name}.${name}` }; // 出自の焼印
@@ -849,7 +887,7 @@ export class Evaluator {
             v = { ...v, name: `${root.name}.${name}` }; // 診断用の束縛名（ADR-42）
         if (def.covering)
             v = this.applyClaim(v, def.covering, `${root.name}.${name}`, defEnv); // 被覆主張
-        this.defCache.set(key, v);
+        this.defCache.set(key, { v, tzChecks: tzLog });
         return v;
     }
     /** 明示の被覆主張（ADR-37 判断 5）: 成分由来の註釈をこの束縛の主張の補集合で置き換える
@@ -1184,6 +1222,19 @@ export class Evaluator {
      *  tz 名だけは日付座標系そのもの——市民グリッド入力 × 市民の窓要素グリッドの不一致は
      *  「ラベル 1 日ずれの束ね・曜日読み」が黙って通る形なので静的エラー。snapTo は除外（chronos 所属） */
     checkTzMembership(input, win, ctx) {
+        // predicateAlign 文脈の検査要求を、評価中の束縛のキャッシュエントリへ記録する（ADR-53＝還流
+        // 第 16 便 §2）: 検査は値でなく評価器状態（predicateAlign）に依るため、キャッシュヒット時にも
+        // 記録済みの検査だけ再実行する——「最初に評価された文脈の検査 1 回で以降の文脈が素通る」順序
+        // 依存の黙殺を防ぐ。値は align 非依存なのでキャッシュ再利用自体は正しい（キーは変えない——
+        // 解決値のクロージャ同一性が labelStack ガードの前提。ADR-34/42 判断 7 (f)）
+        if (input === this.predicateAlign && this.tzCheckLogs.length > 0) {
+            // 重複排除（同じ検査が点ごとに積まれると、ヒット時再実行が O(N²) を戻す）——ユニークな
+            // (win, ctx) は式中の射影箇所数程度なので線形走査で足りる
+            for (const log of this.tzCheckLogs) {
+                if (!log.some(c => c.ctx === ctx && gridEq(c.win, win)))
+                    log.push({ win, ctx });
+            }
+        }
         if (input && input.kind === 'civil' && input.tz && win && win.kind === 'civil' && win.tz
             && input.tz !== win.tz) {
             this.err(`${ctx}: 入力と窓の tz 名が不一致（入力="${input.tz}"・窓="${win.tz}"）——ラベル 1 日ずれの`
@@ -1233,9 +1284,15 @@ export class Evaluator {
             + ['wkst', 'tz', 'calendar-system', 'calendar', 'axis', 'roll', 'asof', 'source']
                 .map(k => this.memberStr(env.members, k)).join('#');
         const hit = this.defCache.get(cacheKey);
-        if (hit !== undefined)
-            return hit;
+        if (hit !== undefined) {
+            // 記録済みの tz 名検査を現在の predicateAlign で再実行（ADR-53 §2——順序独立の安全ゲート）
+            for (const c of hit.tzChecks)
+                this.checkTzMembership(this.predicateAlign, c.win, c.ctx);
+            return hit.v;
+        }
         this.derivingEntities.add(ent.name);
+        const tzLog = [];
+        this.tzCheckLogs.push(tzLog);
         try {
             const nwV = this.toStream(this.evalDef(ent, 'nonWorking', nw, env));
             // 正体判定: nonWorking は実体 tz の市民日グリッドに整列（「日粒度で読む」の操作的定義）
@@ -1250,11 +1307,12 @@ export class Evaluator {
             // 差 \ は両辺の註釈の和（ADR-35 判断 3 / ADR-37）: 祝日データの尽きた先の退化は、するが観測可能
             const v = { k: 'stream', pts: ptDiff(every.pts, nwV.pts), wins: [], align: every.align,
                 ann: annUnion(every.ann, nwV.ann), endless: true };
-            this.defCache.set(cacheKey, v);
+            this.defCache.set(cacheKey, { v, tzChecks: tzLog });
             return v;
         }
         finally {
             this.derivingEntities.delete(ent.name);
+            this.tzCheckLogs.pop();
         }
     }
     /** 細粒度標準導出（ADR-41）: bizOpen・bizClose・isOpen の共通実体化。評価は実体相対
@@ -2946,8 +3004,18 @@ export class Evaluator {
                             + 'shift(±k, unit: day) |> at(Thh:mm)');
                     }
                 }
-                const defEnv = childEnv(binding.premise ? { ...env, premise: binding.premise } : env, locals);
-                return this.applyTransform(binding.decl.rhs, defEnv, stream);
+                // 糖衣右辺も呼び出し側 locals 鎖を遮断（ADR-53 の同一原則——実引数は遮断前の env で評価済み）
+                const base = { ...(binding.premise ? { ...env, premise: binding.premise } : env),
+                    locals: null, parent: null };
+                const defEnv = childEnv(base, locals);
+                const prevSevered = this.severedLocalsEnv;
+                this.severedLocalsEnv = this.severedLocalsEnv ?? env; // 最外の遮断点＝ユーザーのラムダ変数が居る env を保持（ネストで上書きしない）
+                try {
+                    return this.applyTransform(binding.decl.rhs, defEnv, stream);
+                }
+                finally {
+                    this.severedLocalsEnv = prevSevered;
+                }
             }
         }
     }

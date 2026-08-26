@@ -266,6 +266,12 @@ nextWeekday(d)      = roll(Following, on: (everyDay |> filter(x => weekday(x) ==
 `nextWeekday` の `weekday` ラベルは呼び出し文脈の暦法から解決され、糖衣自身は暦法を知らない。`week` 窓の
 `wkst` 参照（§3.6）も同じ規則で立つ。複雑さは展開先の core が背負い、糖衣は薄い。
 
+**遅延解決の対象は premise だけ——呼び出し側の値束縛は見えない**（ADR-53）: 束縛右辺の裸名が解決できるのは
+**束縛・premise 公開語・前文メンバー・列挙**まで。呼び出し側のラムダ変数（`filter(d => …)` の `d` 等）へは
+落とさず、誘導つき静的エラーになる——束縛の意味は定義単体で閉じ、使用箇所の変数名に依存しない
+（点に依存する値は引数付き束縛 `T(x) = …` で明示し、`T(d)` と書く）。右辺の内側で束縛したラムダ変数
+（`thirds = everyDay |> filter(x => …)` の `x`）は従来どおり合法。
+
 **展開＝右辺の機械的差し込み** — `x |> nextWeekday(Fri)` は定義右辺を差し込んで
 `x |> roll(Following, on: (everyDay |> filter(x => weekday(x) == Fri)))` に開く。全糖衣を展開すれば core だけが
 残る。premise 層のパイプ糖衣（`rephase`。§3.7）も同じ片方向展開で、そちらは `premise → premise` の
