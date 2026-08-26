@@ -85,7 +85,7 @@ grid の**位相**は既定で整列する——市民時幅（`d`）は在圏 `
 | `quarter` | 窓 | `year` を 3 か月ずつに割る従属窓（`split by: month`）。`year` の変化に自動追従。 |
 | `week` | 窓 | WKST 位相の 7 日並列窓（月・年に非入れ子）。`weekStart`（wkst ラベル日）で day 列を区切る。`wkst` は利用側前文の宣言を遅延解決（§4.5）。 |
 | `monthStart`/`monthEnd`/`yearStart` | 公開境界語 | 各窓の先頭・末尾点。選択子（`first`/`last`）の再利用で導く。生成子 `monthEnd`（暦日の月末）の正体はこれ。 |
-| `at` | 糖衣（変換） | 日集合への壁時計時刻の付与——<code>bizDay &#124;> within(month) &#124;> last &#124;> at(T17:00)</code>。展開＝壁時計 tick＋`coincides`（ADR-51。単独時刻リテラル専用・DST 切替日も壁時計保存） |
+| `at` | 糖衣（変換） | 日集合への壁時計時刻の付与——<code>bizDay &#124;> within(month) &#124;> last &#124;> at(T17:00)</code>。展開＝壁時計 tick＋`coincides`（ADR-51。単独時刻リテラル専用〈他の引数・窓付き入力は誘導つき静的エラー＝ADR-51 追記〉・DST 切替日も壁時計保存） |
 | `yearNo`/`monthNo`/`dayNo` | 値関数（暦座標） | 点の暦座標を読む射影糖衣（spec §4.9 が予告する `epochOrdinal`＋`ordinalIn`＋補助値関数の合成）。`dayNo(d) == 11` で固定日など。 |
 
 標準ラベルの下では `year(d)` と `yearNo(d)` が同値の二綴りになる（`month(d)`/`monthNo(d)` も同様）。

@@ -2928,6 +2928,24 @@ export class Evaluator {
                 if (!binding)
                     this.err(`未知の段: ${stage.name}`);
                 const locals = this.bindParams(binding.decl.params, stage.args, env, stage.name);
+                // 標準糖衣 at の名指し検査（ADR-51 追記＝還流第 15 便 (a)(c)）: 展開形は入力 s を
+                // 述語として読み直すため、窓と anchor 引数の逸脱が黙って誤結果になる——展開前に塞ぐ。
+                // 検査は標準語彙の名の防御（calendar-system 側で解決された at）——利用側 premise の
+                // 同名再定義には掛からない
+                if (stage.name === 'at' && binding.premise !== null
+                    && binding.premise === this.calendarSystemOf(env)) {
+                    if (stream.wins.length > 0) {
+                        this.err('at: 窓付き入力は取らない——展開形は入力の窓を引き継がない（通し数えや選択子の'
+                            + '型エラーに化ける）。窓は at の後で切る: … |> at(Thh:mm) |> within(…)（外延同値。ADR-51 追記）');
+                    }
+                    const p0 = binding.decl.params[0];
+                    const a0 = p0 ? locals.get(p0.name) : undefined;
+                    if (!(isObj(a0) && a0.k === 'time')) {
+                        this.err('at: 引数は単独時刻リテラル（Thh:mm）のみ——日付つきの錨は前方専用で anchor より'
+                            + '前の点が黙って空になる（anchor 引数形は不採＝ADR-51 判断 8）。日の調整は日の層で: '
+                            + 'shift(±k, unit: day) |> at(Thh:mm)');
+                    }
+                }
                 const defEnv = childEnv(binding.premise ? { ...env, premise: binding.premise } : env, locals);
                 return this.applyTransform(binding.decl.rhs, defEnv, stream);
             }

@@ -101,3 +101,38 @@ everyDay |> filter(d => dayNo(d) == 15 and t == T07:00)`,
     expect(d).toEqual(['2026-01-05T06:15', '2026-01-06T06:15']);
   });
 });
+
+describe('標準糖衣 at の名指し検査（ADR-51 追記——還流第 15 便 (a)(c)）', () => {
+  it('(a) 窓付き入力は誘導つき静的エラー——展開形が窓を落とし通し数えに化ける形を塞ぐ', () => {
+    expect(() => run(JP + `everyDay |> within(month) |> at(T07:00) |> take(3, from: 2026-01-01)`,
+      { from: '2026-01-01', to: '2026-03-01' })).toThrow(/at: 窓付き入力は取らない/);
+    expect(() => run(JP + `everyDay |> within(month) |> at(T07:00) |> first`,
+      { from: '2026-01-01', to: '2026-03-01' })).toThrow(/at: 窓付き入力は取らない/);
+  });
+
+  it('(a) 正道＝窓は at の後で切る（外延同値の実測——還流第 15 便の一致表）', () => {
+    const d = evalDates(JP + `everyDay |> at(T07:00) |> within(month) |> first`,
+      { from: '2026-01-01', to: '2026-03-01' });
+    expect(d).toEqual(['2026-01-01T07:00', '2026-02-01T07:00']);
+  });
+
+  it('(c) anchor 引数形（日時リテラル・裸日付リテラル）は誘導つき静的エラー——前方専用で錨より前が黙って空になる形を塞ぐ', () => {
+    const T = `
+t = [2026-01-05, 2026-01-12, 2026-01-19, 2026-01-26, 2026-02-02] covering: 2026-01-01..2026-03-01
+`;
+    expect(() => run(JP + T + `t |> at(2026-01-20T07:00)`,
+      { from: '2026-01-01', to: '2026-03-01' })).toThrow(/at: 引数は単独時刻リテラル/);
+    expect(() => run(JP + T + `t |> at(2026-01-20)`,
+      { from: '2026-01-01', to: '2026-03-01' })).toThrow(/at: 引数は単独時刻リテラル/);
+  });
+
+  it('検査は標準語彙の名の防御——利用側 premise の同名再定義には掛からない', () => {
+    const d = evalDates(`
+premise JP2 { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon
+  at(a) = s => s |> shift(+9, unit: hour) }
+@JP2
+marks = [2026-02-04] covering: 2026-01-01..2026-04-01
+marks |> at(1)`, { from: '2026-01-01', to: '2026-04-01' });
+    expect(d).toEqual(['2026-02-04T09:00']);
+  });
+});

@@ -1,5 +1,5 @@
 ---
-source_sha: 4f4386eb3433
+source_sha: 0b64af335b51
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -185,7 +185,9 @@ named arg on the same word; `last(n,…)` = selector collision; `recent` = a rin
 - **Standalone time literals** (ADR-51): `Thh:mm(:ss(.f+)?)?` — a wall-clock time with no date
   part. The value is a time of day; it materializes into an instant **only in the
   `strideBy(1d, from:)` position** (anchored on the epoch anchor day 1970-01-01 in the resident
-  tz = the origin of the wall-clock tick; the stdlib sugar `at` is the main consumer. Other point
+  tz = the origin of the wall-clock tick; the stdlib sugar `at` is the main consumer — and **its
+  argument is restricted to this lexeme** 〈a dated anchor means forward-only omission, windowed
+  input means dropped windows — both guided static errors. ADR-51 addendum〉. Other point
   positions and other widths are guided static errors — never silently pinned to the epoch day).
   The time digits obey the same ranges as date literals. **T-prefixed form only** — a bare
   `hh:mm` would collide with legal ternary expressions (`cond ? 10:30`), so it is not a lexeme.

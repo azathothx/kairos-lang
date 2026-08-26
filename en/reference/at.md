@@ -1,5 +1,5 @@
 ---
-source_sha: 839f2fb0b922
+source_sha: 1d34f0260e85
 ---
 
 # `at` — attaching a wall-clock time to a day set
@@ -58,10 +58,33 @@ previous day" adjusts the day in the day layer before attaching the time:
 
 ## Pitfalls
 
-- **Pass `at` a standalone time literal.** A datetime literal (`at(2026-01-01T17:00)`) also
-  type-checks, but the tick origin is **forward-only**, so days before the anchor become
-  **silently empty** (the reason ADR-51 rejected variant B). Writing only the time makes the gap
-  structurally impossible.
+- **Pass `at` a standalone time literal** — anything else is a guided static error (ADR-51
+  addendum). A datetime literal (`at(2026-01-01T17:00)`) or a bare date literal used to make the
+  tick origin **forward-only**, silently emptying days before the anchor; the check now blocks
+  that shape (defending the reason ADR-51 rejected variant B). Writing only the time makes the
+  gap structurally impossible.
+- **Windowed input is not accepted** — a guided static error (ADR-51 addendum). The expansion
+  re-reads its input as a predicate and does not carry windows through, so "the first 3 days of
+  each month at 7:00" used to silently become a running count. The correct form is to **cut
+  windows after `at`**: `everyDay |> at(T07:00) |> within(month) |> first` (extensionally
+  equivalent).
+- **Points outside coverage that reach `at` are dropped at the `at` stage** (reflux mail 15 (e)).
+  The expansion's inner `filter` catches the out-of-coverage signal raised on those days and
+  "drops with an annotation" (per the ADR-37 decision 6 convention — sugar inherits the meaning
+  of its expansion). The elapsed-arithmetic form preserves the points and only annotates, so
+  **over an evaluation window that crosses a coverage edge the point sequences can differ before
+  and after migration** (e.g. `bizDay |> at(T07:00)` over a year-end window past the coverage edge
+  omits the out-of-coverage days — and the annotations are identical to the old form's, so the
+  change in points cannot be read from them). Evaluations that stay inside coverage agree. The
+  operational defense is keeping coverage current (runway warnings = ADR-37 decision 8), not the
+  shape of the expression.
+- **Feeding `at` output into a counting stage or a `segmentBy` marker classifies even finite
+  input as "infinite"** (reflux mail 15 (b)). The tick-derived endless flag passes through the
+  filter (a convention-conformant conservative approximation) — with `takeLast` the
+  implementation-horizon guard fires a false positive warning, and with `segmentBy(labels:)` the
+  data-label eligibility check becomes a static error. The correct form for both: **build the
+  counting stage / marker in the day layer and attach the time afterwards** (same order as the
+  takeLast item below).
 - **Migrating off the elapsed form removes only the tail-form warnings.** The horizon clips on the
   marker-preparation side (`snapTo(day)` over external instants — a few points at the edges,
   harmless) remain (known behavior; ADR-37 decision 8).

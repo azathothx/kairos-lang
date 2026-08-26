@@ -1,5 +1,5 @@
 ---
-source_sha: 80861803f59b
+source_sha: 51782c6f3ae0
 ---
 
 # Standard premise: Gregorian
@@ -105,7 +105,7 @@ it overridden with `anchor:` (ADR-31).
 | `quarter` | Window | The dependent window splitting `year` into three-month pieces (`split by: month`). Auto-tracks changes to `year`. |
 | `week` | Window | The 7-day window at WKST phase, parallel to (not nested in) month and year. Segments the day sequence at `weekStart` (the wkst-labeled days). `wkst` lazily resolves the user-side preamble declaration (§4.5). |
 | `monthStart`/`monthEnd`/`yearStart` | Public boundary words | The first and last points of each window, derived by reusing the selectors (`first`/`last`). The generator `monthEnd` (the calendar-day month end) is in reality this. |
-| `at` | Sugar (transform) | Attaches a wall-clock time to a day set — <code>bizDay &#124;> within(month) &#124;> last &#124;> at(T17:00)</code>. Expands to the wall-clock tick + `coincides` (ADR-51; standalone time literals only, wall clock preserved across DST transitions). |
+| `at` | Sugar (transform) | Attaches a wall-clock time to a day set — <code>bizDay &#124;> within(month) &#124;> last &#124;> at(T17:00)</code>. Expands to the wall-clock tick + `coincides` (ADR-51; standalone time literals only 〈other arguments and windowed input are guided static errors = ADR-51 addendum〉, wall clock preserved across DST transitions). |
 | `yearNo`/`monthNo`/`dayNo` | Value functions (calendar coordinates) | Projection sugar reading a point's calendar coordinates (the composition of `epochOrdinal` + `ordinalIn` + auxiliary value functions that spec §4.9 announces). Fixed days via `dayNo(d) == 11`, and so on. |
 
 Under the standard labels, `year(d)` and `yearNo(d)` become two equivalent spellings of the same
