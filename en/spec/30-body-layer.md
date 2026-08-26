@@ -1,5 +1,5 @@
 ---
-source_sha: 4374a15fe83d
+source_sha: 40a4169acdb9
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -203,7 +203,7 @@ flowchart TD
 | table (all elements lexically date-only) | civil-day grid (tz = the tz used to anchor the literal; entity and data premises converge to inner fixing) |
 | table (containing timed or non-lexical elements) | none |
 | **empty table** (`[] covering:`, ADR-45) | **vacuous conformance** (conforms vacuously to every alignment, passes the check; preserving stages preserve vacuous conformance) |
-| `filter`, selectors, `within`, `segmentBy`, `stride` | preserves the input's alignment |
+| `filter`, selectors, `within`, `segmentBy`, `stride`, `take`, `takeLast` | preserves the input's alignment |
 | `roll(conv, on: A)`, `shift(n, unit: point-sequence axis A)` | the alignment of axis A |
 | `shift(n, unit: window word U)` | preserved if the input alignment = U's element grid, otherwise none (no check = interval membership) |
 | `snapTo(w)` | claims w's element grid (= the **explicit means of realignment**; for windows from `segmentBy`, the markers' alignment) |
@@ -336,6 +336,10 @@ default sugar). No `sugar` keyword or the like is introduced. Core words (genera
 transforms, combinators, filters, windows, selectors, strides) are built-in reserved words of the
 language; every other named binding is sugar or a public word. A binding that redefines a core
 word (breaking the one-way dependency) is a static error.
+
+**Expansion is finite — definition cycles (self- and mutual recursion) are guided static errors**
+(F110; the formal rule lives in §5.3 — it is the very premise of "expanding all sugar leaves only
+core", so recursion cannot be written).
 
 **Premises are not baked in — resolution is deferred** — sugar does not fix its premises at
 definition time; it resolves them against the in-scope premise at the call site. `nextWeekday`'s
@@ -516,6 +520,7 @@ the governance table of ADR-36):
 | selectors | if the target window intersects an annotation, widened to the **whole window** |
 | stride/strideBy | if the walk intersects, **everything from the first intersection onward** (phase contamination) |
 | take | the stride row's isomorph plus a **reduction**: once the nth point settles before any intersection, annotation intervals beginning after the settlement are not transported (the output depends only on the input's first n points — required for consistency with "after n, a legitimate empty with no annotation". ADR-49) |
+| takeLast | take's **mirror image**: if the backward count intersects an annotation interval, everything on the past side from the intersection point (head-widening (-∞, …]) — plus a **conditional reduction**: only when the backward count settles the nth point (the past end) without intersecting, annotation intervals that complete further in the past are not transported (the output depends only on the input in [nth point, until]. ADR-52 decision 4) |
 | segmentBy | the complement of the marker coverage. `edges:`/`empties:` fire at the **coverage edges** (not the sequence edges) — within the coverage, even the window starting at the final marker is determined up to the coverage edge (= the window sequence's **effective coverage**). Stretches where no window is laid (the head side under `edges: drop`/`error`; gaps under `empties: drop`) are out-of-coverage for the window sequence = annotated (ADR-37 revision 3) |
 | filter | points that demanded an out-of-coverage reference are **dropped**, and the annotation widens to the **preimage of the region (window) the predicate read** (ADR-37 revision 2 = F75; for predicates reading only d's neighborhood, as before: the dependency's annotated intervals ∩ the evaluation region) |
 | generators, within, snapTo | pass the input's annotations through (point transforms, via the image). A calendar-system-pure generator itself produces no annotations |

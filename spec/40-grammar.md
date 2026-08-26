@@ -201,7 +201,9 @@ named-arg      = param-key , ":" , ( lambda | stream-expr | value-expr | cycle-l
 cycle-labels   = "cycle" , ( list-literal | name ) , "anchor" , ":" , date-literal ;
 param-key      = "on" | "unit" | "of" | "from" | "edges" | "empties"
                | "by" | "anchor" | "phase" | "covering" | "label" | "labels"
-               | "kind" | "source" ;                     (* kind:/source: は external（ADR-46） *)
+               | "kind" | "source"                       (* kind:/source: は external（ADR-46） *)
+               | "to" | "until" ;                        (* to: は rebase（ADR-40）・until: は takeLast（ADR-52）——
+                                                            追補 15 で欠落を補綴（第 11 回レビュー B） *)
 
 (* ---- premise 層の窓生成（中置） ---- *)
 gen-expr       = operand , gen-word , gen-arg , { named-arg } ;

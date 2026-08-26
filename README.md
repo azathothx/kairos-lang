@@ -62,7 +62,7 @@ shift flags. Full version with section pointers: [spec §1.2](en/spec/00-intro.m
 | Business days (holiday-aware) | ✗ | △ (exclusion = skip only) | ✗ (static EXDATE) | ✓ | ✓ (calendar entity + derived `bizDay`) |
 | Business-day **arithmetic** (Nth business day) | ✗ | ✗ | ✗ | △ (shift flags only) | ✓ (`roll` / `shift(unit: bizDay)`) |
 | **Deriving** holidays by rule (substitute holidays) | ✗ | ✗ | ✗ | ✗ (enumeration only) | ✓ (cascade) |
-| User-defined calendars (fiscal, ISO week, lunisolar, solar terms) | ✗ | ✗ | △ (RFC 7529, rarely implemented) | ✗ | ✓ (premise layer) |
+| User-defined calendars (fiscal, ISO week, lunisolar, solar terms) | ✗ | ✗ | △ (RFC 7529, rarely implemented) | △ (internal rules only; degrade to expanded lists across the API boundary) | ✓ (premise layer) |
 | Composition / closure (derived dates feed the next rule) | ✗ | ✗ | △ (RDATE/EXDATE only) | ✗ | ✓ (stream → stream) |
 | Cross-timezone composition (Tokyo × NY joint business days) | ✗ | ✗ | ✗ | ✗ | ✓ (`rebase` + alignment checks) |
 | DST semantics | △ (implementation-defined) | △ | ✓ (wall clock) | △ | ✓ (declared; gaps/overlaps are explicit errors) |
@@ -73,9 +73,10 @@ shift flags. Full version with section pointers: [spec §1.2](en/spec/00-intro.m
 What Kairos deliberately does **not** do: firing, retries, and execution management (the host runtime's
 job — the language stops at defining the set of instants); feedback on execution state ("every 5 hours
 since the last completion" as one infinite stream — instead, computing the next fire *from an injected
-instant* is in scope and pure, see [spec §7.7](en/spec/90-examples.md)); count-based termination (RRULE
-`COUNT`); guaranteeing the authenticity of calendar data (provenance `source:` / `asof:` carries the
-evidence; the judgment is external); branching on runtime conditions.
+instant* is in scope and pure, see [spec §7.7](en/spec/90-examples.md)); guaranteeing the authenticity
+of calendar data (provenance `source:` / `asof:` carries the evidence; the judgment is external);
+branching on runtime conditions. (Count-based termination — RRULE `COUNT` — was on this list until
+ADR-49: it is now covered by `take(n, from:)`.)
 
 ## Runtime integration — how a scheduler consumes Kairos
 
@@ -85,14 +86,14 @@ horizon, register timers, repeat:
 
 ```mermaid
 sequenceDiagram
-    participant R as Runtime（firing layer / out of scope）
-    participant K as Kairos（pure evaluation）
+    participant R as Runtime (firing layer / out of scope)
+    participant K as Kairos (pure evaluation)
     loop Rolling horizon
         R->>K: evaluate definition over [from, to)
-        K-->>R: list of instants（+ coverage annotations）
-        R->>R: register timers → fire …（re-evaluate as "to" nears）
+        K-->>R: list of instants (+ coverage annotations)
+        R->>R: register timers → fire … (re-evaluate as "to" nears)
     end
-    Note over R,K: every evaluation is a pure function<br/>overlapping ranges always agree（deterministic, auditable）
+    Note over R,K: every evaluation is a pure function<br/>overlapping ranges always agree (deterministic, auditable)
 ```
 
 - **Determinism** — the same definition, range, and data always yield the same instants; advancing the
@@ -145,9 +146,9 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 ## Status and documentation
 
-**Release candidate (RC5, declared 2026-07-08; addenda through no. 13, 2026-08-21).** Semantics, the operator family, grammar (EBNF), and lexis are
+**Release candidate (RC5, declared 2026-07-08; addenda through no. 15, 2026-08-26).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (617 tests),
+is validated against 20 well-known schedule families and by a reference implementation (618 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
@@ -157,7 +158,7 @@ including cross-checks against the official ephemeris of the National Astronomic
 | [`reference/`](en/reference/) | **Descriptor reference** — one page per operator; examples are doctested ([日本語](reference/)) |
 | [`stdlib/`](en/stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek` ([日本語](stdlib/) — includes the Japanese-only `Kyureki`) |
 | [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype — Japanese) |
-| [`design/`](design/) | Design records: 50 ADRs, domain model, expressiveness studies (Japanese) |
+| [`design/`](design/) | Design records: 53 ADRs, domain model, expressiveness studies incl. the ["impossible schedules" catalog](en/design/40-examples/11-impossible-schedules.md) (Japanese; catalog mirrored in English) |
 
 ## License
 

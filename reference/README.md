@@ -66,11 +66,11 @@ Kairos の記述語（演算子・窓生成語・リテラル）を 1 語 1 フ�
   ms 精度で保たれる——表示の丸めであって値の丸めではない）。
 - `#~>` 行が**註釈・警告の期待値**（最後の本体式の区間註釈＝CLI の `⚠` 行と同じ正準一行形
   `範囲外 FROM..TO（源 covering …[, asof …]）`、警告＝`警告: ` 前置。出現順に照合）。
-- `# resolve: 束縛名 = dates 日付… covering: … asof: …` 行が [`external`](external.md) の解決子
-  固定材（データが文書内に書かれ検証は自己完結。第一段は dates wire のみ）。
   **行が無ければ「註釈ゼロ・警告ゼロ」の主張**——範囲外出自の退化（ADR-37「退化するが観測可能」）は
   実行例にも明示され、黙って通らない（地平線降格で年タイポ級の誤りが警告止まりになっても doctest が
   日付列しか照合せず素通りする盲点の封止）。被覆サマリは常時表示の監視面のため照合対象外。
+- `# resolve: 束縛名 = dates 日付… covering: … asof: …` 行が [`external`](external.md) の解決子
+  固定材（データが文書内に書かれ検証は自己完結。第一段は dates wire のみ）。
 - `@JP` を使うブロックには標準前提が自動で前置される: カレンダー実体
   `premise TSE { …; nonWorking = satSun | holidays2026 }`（2026 年の実際の休日＝振替 5/6・国民の休日
   9/22 を含む 18 日）と `premise JP { calendar-system: Gregorian; calendar: TSE; tz: "Asia/Tokyo";

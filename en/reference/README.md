@@ -1,5 +1,5 @@
 ---
-source_sha: f3eb4e7ba878
+source_sha: d6edb30d43fd
 ---
 
 # <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Descriptor Reference
@@ -85,18 +85,17 @@ so the guarantee carries over. The same conventions extend to the explanatory pa
 - `#~>` lines are the **expected annotations and warnings** (the last body expression's interval
   annotations = the same canonical one-line form as the CLI's `⚠` lines,
   `範囲外 FROM..TO（源 covering …[, asof …]）`; warnings are prefixed `警告: `. Matched in order of
-  appearance). Translator's note: annotation expectation lines (`#~>`) reproduce the reference
-  implementation's canonical one-line output, which is currently Japanese; they are kept verbatim
-  in this English mirror.
+  appearance). **Absence of the lines is a claim of "zero annotations, zero warnings"** — the
+  degeneration of out-of-coverage provenance (ADR-37's "degenerates but is observable") is explicit
+  in runnable examples too and never passes silently (sealing the blind spot where, even when
+  horizon demotion leaves a year-typo-class mistake at a mere warning, a doctest matching only date
+  sequences would let it slide). The coverage summary is a permanently displayed monitoring surface
+  and is therefore not matched. Translator's note: annotation expectation lines (`#~>`) reproduce
+  the reference implementation's canonical one-line output, which is currently Japanese; they are
+  kept verbatim in this English mirror.
 - A `# resolve: bindingName = dates date… covering: … asof: …` line is the resolver fixture for
   [`external`](external.md) (the data is written inside the document, so verification is
   self-contained. The first stage supports the dates wire only).
-  **Absence of the lines is a claim of "zero annotations, zero warnings"** — the degeneration of
-  out-of-coverage provenance (ADR-37's "degenerates but is observable") is explicit in runnable
-  examples too and never passes silently (sealing the blind spot where, even when horizon demotion
-  leaves a year-typo-class mistake at a mere warning, a doctest matching only date sequences would
-  let it slide). The coverage summary is a permanently displayed monitoring surface and is
-  therefore not matched.
 - Blocks that use `@JP` get the standard premises automatically prepended: the calendar entity
   `premise TSE { …; nonWorking = satSun | holidays2026 }` (the actual holidays of 2026 = 18 days,
   including the substitute holiday 5/6 and the citizens' holiday 9/22) and

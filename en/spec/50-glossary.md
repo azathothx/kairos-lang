@@ -1,5 +1,5 @@
 ---
-source_sha: d28f1df08423
+source_sha: 0ab8a1bc8fb5
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -27,7 +27,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | body layer（本体層） | The layer that weaves schedules with the supplied vocabulary (DML-like, pipe-styled, one-line oriented) | §2.1 · §4 |
 | time stream type（時間ストリーム型） | A lazy, infinite, ordered sequence of points on the base. The body layer's first-class value = the **extension** | §2.2 |
 | premise type（premise 型） | The generating rule itself for calendar systems and the like = the **intension**. Comes in primitive/derived variants, with `premise → premise` closure | §2.2 |
-| value type（値型） | Numbers, booleans, enumerations, lists, strings (ADR-32), and instants (ADR-43 = bare value bindings are also legal). The third type, used for leap tests and the `n` of `shift(n)` | §2.2 · §3.5 |
+| value type（値型） | Numbers, booleans, enumerations, lists, strings (ADR-32), instants (ADR-43 = bare value bindings are also legal), and standalone times (ADR-51 = a time of day; materializes into an instant only in the `strideBy(1d, from:)` position). The third type, used for leap tests and the `n` of `shift(n)` | §2.2 · §3.5 · §5.5 |
 | lambda (anonymous function)（ラムダ（無名関数）） | A nameless function passed in place. `args => expression` (the arrow `=>` is distinct from the type notation `->`) | §3.5 |
 | higher-order function（高階関数） | An operator that takes a function as an argument. `filter`, `span`, `split` qualify (`cycle` takes a list) | §3.5 |
 | predicate（述語） | A lambda returning a boolean. `filter` takes both premise predicates (`on:`) and value-expression predicates (lambdas) | §3.5 · §4.6 |

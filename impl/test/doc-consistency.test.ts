@@ -47,11 +47,16 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
   it('「ADR-01〜NN」の範囲表記が design/20-adr/ のファイル数と一致する', () => {
     const adrCount = readdirSync(new URL('design/20-adr/', root))
       .filter(f => /^adr-\d+.*\.md$/.test(f)).length;
-    const targets = [...CURRENT_DOCS, 'design/00-overview.md'];
+    // 英語形（"N ADRs" / "N architecture decision records"）と design/README も対象
+    // （第 11 回レビュー H: 和文パターンのみ対象のすり抜けで英語側 3 箇所が 50/44 のまま残った）
+    const targets = [...CURRENT_DOCS, 'design/00-overview.md', 'design/README.md'];
     const stale: string[] = [];
     for (const p of targets) {
       for (const m of read(p).matchAll(/ADR-01〜(\d+)/g)) {
         if (Number(m[1]) !== adrCount) stale.push(`${p}: ADR-01〜${m[1]}（実態は ${adrCount} 本）`);
+      }
+      for (const m of read(p).matchAll(/(\d+) (?:ADRs|architecture decision records)/g)) {
+        if (Number(m[1]) !== adrCount) stale.push(`${p}: ${m[0]}（実態は ${adrCount} 本）`);
       }
     }
     expect(stale).toEqual([]);
@@ -193,6 +198,23 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     });
     const nums = new Set(found.map(f => f.n));
     expect(nums.size, `テスト数が入口間で不一致: ${found.map(f => `${f.p}=${f.n}`).join('・')}`).toBe(1);
+  });
+
+  it('状態行の追補番号が CHANGELOG の最終追補番号と一致する（4 入口——第 11 回レビュー D の再発防止。テスト数検査と同じ枠）', () => {
+    // 「テスト数は機械検査・追補番号は手動」の間隙で生じるドリフトを封じる。1.0 後は状態行が
+    // 「1.0＋追補 N」へ変わるので、正規表現の「追補」部だけ読み替えて同じ網を使う
+    const latest = Math.max(...[...read('spec/CHANGELOG.md').matchAll(/^## RC\d+ 追補 (\d+)/gm)]
+      .map(m => Number(m[1])));
+    const entries: [string, RegExp][] = [
+      ['spec/README.md', /追補 (\d+)/],
+      ['README.ja.md', /追補 (\d+)/],
+      ['README.md', /addenda through no\. (\d+)/],
+      ['en/spec/README.md', /addenda through no\. (\d+)/],
+    ];
+    const stale = entries
+      .map(([p, re]) => ({ p, n: read(p).match(re)?.[1] }))
+      .filter(f => f.n !== String(latest));
+    expect(stale, `状態行の追補番号が CHANGELOG 最終追補 ${latest} と不一致`).toEqual([]);
   });
 
   it('不可視文字（SOFT HYPHEN・ゼロ幅）が本文に混入していない（2026-07-13 レビュー指摘 I の再発防止）', () => {

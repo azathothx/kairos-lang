@@ -1,5 +1,5 @@
 ---
-source_sha: 0b64af335b51
+source_sha: 9b2807bdd8ea
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -272,7 +272,9 @@ named-arg      = param-key , ":" , ( lambda | stream-expr | value-expr | cycle-l
 cycle-labels   = "cycle" , ( list-literal | name ) , "anchor" , ":" , date-literal ;
 param-key      = "on" | "unit" | "of" | "from" | "edges" | "empties"
                | "by" | "anchor" | "phase" | "covering" | "label" | "labels"
-               | "kind" | "source" ;                     (* kind:/source: are external's (ADR-46) *)
+               | "kind" | "source"                       (* kind:/source: are external's (ADR-46) *)
+               | "to" | "until" ;                        (* to: is rebase's (ADR-40), until: is takeLast's (ADR-52) —
+                                                            omissions patched in addendum 15 (review 11, item B) *)
 
 (* ---- Premise-layer window generation (infix) ---- *)
 gen-expr       = operand , gen-word , gen-arg , { named-arg } ;
