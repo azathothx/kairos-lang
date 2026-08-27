@@ -2998,7 +2998,7 @@ export class Evaluator {
                     }
                     const p0 = binding.decl.params[0];
                     const a0 = p0 ? locals.get(p0.name) : undefined;
-                    if (!(isObj(a0) && a0.k === 'time')) {
+                    if (!(a0 !== undefined && isObj(a0) && a0.k === 'time')) {
                         this.err('at: 引数は単独時刻リテラル（Thh:mm）のみ——日付つきの錨は前方専用で anchor より'
                             + '前の点が黙って空になる（anchor 引数形は不採＝ADR-51 判断 8）。日の調整は日の層で: '
                             + 'shift(±k, unit: day) |> at(Thh:mm)');
