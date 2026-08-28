@@ -116,7 +116,15 @@ coincides/ordinalIn/epochOrdinal/ラベル射影とも範囲外——合成マ�
 premise 単位・一評価一解決・要求駆動〕・位置/tz/source の静的検査・予約語・wire＝dates 字面/
 instants ms・doctest `# resolve:` ディレクティブ——external.test.ts 35 本＋観測等価スイート。
 **プロトタイプ注記**: 評価器は run ごと生成のため解決値 asof のメモ化キー参加は構成で適合——
-常駐評価器に転用する場合は defCache キーへ解決値 asof を含めること〔ADR-46 判断 6〕）。
+常駐評価器に転用する場合は defCache キーへ解決値 asof を含めること〔ADR-46 判断 6〕）・
+**窓列への周期ラベル**（ADR-47。`labels: cycle リスト anchor:`——同長性検査なし・位相の宣言のみ）・
+**split の親受理拡張**（ADR-48。実効パーティション規則・境界整合検査・総和検査のエラー昇格）・
+**先頭/末尾 N 選択**（ADR-49/52。`take(n, from:)`・`takeLast(n, until:)`——窓付き入力の誘導エラー・
+輸送の縮小/鏡像・実装地平線ガード 2 面）・**hour 窓と ordinalIn 整合検査**（ADR-50）・
+**単独時刻リテラルと標準糖衣 at**（ADR-51。`Thh:mm`・strideBy 時刻分岐＝epoch 錨・at の名指し
+検査 2 本〔窓付き入力・引数限定〕）・**束縛右辺の名前解決境界とメモ化の正しさ**（ADR-53＋追記
+1〜3。呼び出し側ラムダ変数の遮断〔4 経路〕・tz 名検査の記録＋ヒット時再実行〔fromPredicate＋
+baseAlign・再実行の外側フレーム再記録〕）。
 
 ## プロトタイプの制約（仕様との既知の乖離）
 
@@ -172,6 +180,14 @@ instants ms・doctest `# resolve:` ディレクティブ——external.test.ts 3
   ただし `epoch:` の**既定以外の値**（別紀元の暦法）は未対応（宣言すると静的エラーで知らせる）。
 
 ## テスト
+
+（28 ファイル・626 本〔doctest 込み〕。下記の個別解説に加え、後発の
+`test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
+`test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
+`test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・
+`test/at-time-of-day.test.ts`〔ADR-51〕・`test/memoization.test.ts`〔ADR-53＝遮断・順序独立・
+間接参照 witness〕・`test/table-postfix.test.ts`〔束縛後置 covering〕がある。）
+
 
 - `test/examples.test.ts` — spec §7 の全代表例。糖衣形と core 展開形の一致、JS Date による独立オラクル照合
   （月末 3 営業日前・第 2 営業日の次の金曜・給料日）、祝日カスケード（2026 年の振替 5/6・国民の休日 9/22 の

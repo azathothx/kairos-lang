@@ -1,5 +1,5 @@
 ---
-source_sha: 002c96a20680
+source_sha: 6ce226bcf705
 ---
 
 # 11 — Schedules long said to be unwritable: collecting the world's limitation cases, then measuring them
@@ -489,7 +489,10 @@ of 4-4-5, with the g(i) 53-week branch, measured extensionally identical to the 
 day of demand evidence; class C shrinks to two items) · the hour window → **ADR-50**
 (standardization plus the new ordinalIn alignment check — including the episode of verification
 refuting the first calibration by measurement). Only point-vs-date-literal comparison stays under
-watch. 555 tests.
+watch. 555 tests
+(note 2026-08-28 = patching review 11 LOW: the difference of 3 from addendum 12's "552" (same day,
+2026-08-17) is a sampling-time difference — this document's 555 includes the same-day follow-up
+commits (ADR-49 additions). Not a contradiction; kept as a record of sampling order).
 
 ## 11.6 Summary — as 1.0 positioning material
 
