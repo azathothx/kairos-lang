@@ -177,8 +177,11 @@ preamble       = ( "@" , name , { member } )            (* 軽量形＋後置畳
                | ( "@" , name , "{" , { statement } , "}" ) ;   (* ブロック形（範囲の明示） *)
 
 (* ---- 束縛（公開語・糖衣・値関数が同じ機構） ---- *)
-binding        = name , [ "(" , params , ")" ] , "=" , rhs ,
-                 [ "covering" , ":" , covering-list ] ;  (* 束縛後置＝合成の明示被覆主張（ADR-37 判断 5）。
+binding        = name , "(" , params , ")" , "=" , rhs
+               | name , "=" , rhs ,
+                 [ "covering" , ":" , covering-list ] ;  (* 束縛後置＝合成の明示被覆主張（ADR-37 判断 5）は
+                                                            引数なし束縛に限る（引数付きへの後置は静的
+                                                            エラー——文法でも分岐を分けた＝追補 16 補綴）。
                                                             rhs がテーブルリテラル単体のときはテーブル属性
                                                             として読む（正規の構文解釈。ADR-45） *)
 params         = param , { "," , param } ;
@@ -246,13 +249,21 @@ covering-edge  = date-literal | digit4 ;                 (* 年だけの略記�
 date-literal   = digit4 , "-" , digit2 , "-" , digit2 ,
                  [ "T" , digit2 , ":" , digit2 , [ ":" , digit2 , [ "." , digits ] ] ] ;
 time-literal   = "T" , digit2 , ":" , digit2 , [ ":" , digit2 , [ "." , digits ] ] ;  (* 単独時刻。ADR-51 *)
-width-literal  = civil-width | elapsed-width ;
-civil-width    = digits , "d" ;
-elapsed-width  = [ digits , "h" ] , [ digits , "m" ] , [ digits , [ "." , digits ] , "s" ] ;
+width-literal  = width-seg , { width-seg } ;             (* 1 セグメント以上——空は導出できない。
+                                                            市民 d と経過 h/m/s の混合は静的エラー
+                                                            （ADR-28＝分類は字句でなく検査の層） *)
+width-seg      = number , ( "d" | "h" | "m" | "s" ) ;
 number         = digits , [ "." , digits ] ;
 string-literal = '"' , { ? " と改行以外の任意文字 ? } , '"' ;   (* エスケープなし。ADR-32 *)
 name           = letter , { letter | digit } ;           (* letter は Unicode 文字（漢字可） *)
 comment        = "#" , { ? 行末までの任意文字 ? } ;
+
+(* 基本字句（追補 16 補綴——従来は未定義の非終端だった） *)
+digit          = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+digit2         = digit , digit ;
+digit4         = digit , digit , digit , digit ;
+digits         = digit , { digit } ;
+letter         = ? Unicode の文字（Letter カテゴリ・漢字可。数字・記号を含まない） ? ;
 ```
 
 注記: 列挙ラベル（`Mon`・`甲`・`Following`）は字句上 `name` と同じで、意味論（在圏 premise の解決）で区別する。

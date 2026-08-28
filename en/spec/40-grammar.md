@@ -1,5 +1,5 @@
 ---
-source_sha: 9b2807bdd8ea
+source_sha: e95b111fd654
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -244,12 +244,14 @@ preamble       = ( "@" , name , { member } )            (* lightweight form + po
                | ( "@" , name , "{" , { statement } , "}" ) ;   (* block form (explicit extent) *)
 
 (* ---- Bindings (public words, sugar, and value functions share one mechanism) ---- *)
-binding        = name , [ "(" , params , ")" ] , "=" , rhs ,
-                 [ "covering" , ":" , covering-list ] ;  (* postfix on a binding = explicit coverage
-                                                            claim for a composition (ADR-37 decision 5).
-                                                            When the rhs is a bare table literal, read
-                                                            as a table attribute (the canonical parse.
-                                                            ADR-45) *)
+binding        = name , "(" , params , ")" , "=" , rhs
+               | name , "=" , rhs ,
+                 [ "covering" , ":" , covering-list ] ;  (* the postfix coverage claim (ADR-37 decision 5)
+                                                            attaches only to parameterless bindings (postfix
+                                                            on a parameterized binding is a static error —
+                                                            the grammar now splits the branches = addendum 16
+                                                            patch). When rhs is a bare table literal it reads
+                                                            as a table attribute (the canonical parse. ADR-45) *)
 params         = param , { "," , param } ;
 param          = name | named-param ;
 named-param    = param-key , ":" , name ;
@@ -322,13 +324,22 @@ covering-edge  = date-literal | digit4 ;                 (* year-only shorthand 
 date-literal   = digit4 , "-" , digit2 , "-" , digit2 ,
                  [ "T" , digit2 , ":" , digit2 , [ ":" , digit2 , [ "." , digits ] ] ] ;
 time-literal   = "T" , digit2 , ":" , digit2 , [ ":" , digit2 , [ "." , digits ] ] ;  (* standalone time. ADR-51 *)
-width-literal  = civil-width | elapsed-width ;
-civil-width    = digits , "d" ;
-elapsed-width  = [ digits , "h" ] , [ digits , "m" ] , [ digits , [ "." , digits ] , "s" ] ;
+width-literal  = width-seg , { width-seg } ;             (* one or more segments — the empty string is
+                                                            not derivable. Mixing civil d with elapsed
+                                                            h/m/s is a static error (ADR-28 = the
+                                                            classification is a check, not lexis) *)
+width-seg      = number , ( "d" | "h" | "m" | "s" ) ;
 number         = digits , [ "." , digits ] ;
 string-literal = '"' , { ? any character except " and newline ? } , '"' ;   (* no escapes. ADR-32 *)
 name           = letter , { letter | digit } ;           (* letter = any Unicode letter (kanji allowed) *)
 comment        = "#" , { ? any character up to end of line ? } ;
+
+(* Basic lexis (addendum 16 patch — these were previously undefined nonterminals) *)
+digit          = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+digit2         = digit , digit ;
+digit4         = digit , digit , digit , digit ;
+digits         = digit , { digit } ;
+letter         = ? a Unicode letter (category Letter; kanji allowed; no digits or symbols) ? ;
 ```
 
 Note: enumeration labels (`Mon`, `甲`, `Following`) are lexically identical to `name` and are
