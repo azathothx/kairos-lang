@@ -546,8 +546,9 @@ export class Evaluator {
    *  tzChecks＝右辺評価中に踏んだ predicateAlign 文脈の tz 名検査の記録（ADR-53＝還流第 16 便 §2:
    *  ヒット時にも現在の predicateAlign で再実行——検査の順序独立性と値の同一性を両立） */
   private defCache = new Map<string, { v: V; tzChecks: TzCheck[] }>();
-  /** 評価中の束縛の tz 名検査ログ（ネスト束縛は全層へ記録——外側ヒット時は内側評価が走らないため） */
-  private tzCheckLogs: TzCheck[][] = [];
+  /** 評価中の束縛の tz 名検査ログ（ネスト束縛は全層へ記録——外側ヒット時は内側評価が走らないため）。
+   *  baseAlign＝束縛評価開始時の predicateAlign（記録条件②の基準。還流第 17 便 §2） */
+  private tzCheckLogs: { log: TzCheck[]; baseAlign: GridTag | null }[] = [];
   /** 評価中の label: 付与式（再入ガード。自己参照＝定義中の束縛名のラベル射影を検出。ADR-34） */
   private labelStack = new Set<LambdaV>();
   /** 導出中のカレンダー実体（自己・相互循環の検出。ADR-35 判断 8——ADR-41 の導出鎖
@@ -848,8 +849,8 @@ export class Evaluator {
       const prevSevered = this.severedLocalsEnv;
       this.severedLocalsEnv = this.severedLocalsEnv ?? env;   // 最外の遮断点＝ユーザーのラムダ変数が居る env を保持（ネストで上書きしない）
       const rhsEnv: Env = { ...env, locals: null, parent: null };
-      const tzLog: TzCheck[] = [];
-      this.tzCheckLogs.push(tzLog);
+      const tzFrame = { log: [] as TzCheck[], baseAlign: this.predicateAlign };
+      this.tzCheckLogs.push(tzFrame);
       let v: V;
       try { v = this.evalExpr(b.rhs, rhsEnv); }
       finally {
@@ -859,7 +860,7 @@ export class Evaluator {
       if (isObj(v) && v.k === 'table' && !v.src) v = { ...v, src: name };   // 出自の焼印（ADR-37 判断 2）
       if (isObj(v) && v.k === 'windows' && !v.name) v = { ...v, name };     // 診断用の束縛名（ADR-42）
       if (b.covering) v = this.applyClaim(v, b.covering, name, env);        // 明示の被覆主張（判断 5）
-      this.defCache.set(key, { v, tzChecks: tzLog });
+      this.defCache.set(key, { v, tzChecks: tzFrame.log });
       return v;
     }
     if (name === 'chronos') return { k: 'chronos' };
@@ -869,7 +870,8 @@ export class Evaluator {
     // 遮断された呼び出し側ラムダ変数なら誘導つき静的エラー（ADR-53——「未解決」より原因が深い）
     if (this.severedLocalsEnv && this.lookupLocal(name, this.severedLocalsEnv) !== undefined) {
       this.err(`束縛の右辺から呼び出し側のラムダ変数は見えない: ${name}——束縛の意味は定義単体で閉じる`
-        + `（点に依存する値は引数付き束縛で: T(x) = … と定義し T(${name}) で使う。ADR-53）`);
+        + `（点に依存する値は引数付き束縛のパラメータで受ける: T(x) = … の右辺では x を使い、`
+        + `呼び出し側で T(${name}) と渡す。ADR-53）`);
     }
     this.err(`未解決の名前: ${name}（premise 相対解決 §3.4）`);
   }
@@ -951,8 +953,8 @@ export class Evaluator {
     this.externalCtx = { root, name };
     const prevSevered = this.severedLocalsEnv;
     this.severedLocalsEnv = this.severedLocalsEnv ?? env;   // 最外の遮断点を保持（ネストで上書きしない）
-    const tzLog: TzCheck[] = [];
-    this.tzCheckLogs.push(tzLog);
+    const tzFrame = { log: [] as TzCheck[], baseAlign: this.predicateAlign };
+    this.tzCheckLogs.push(tzFrame);
     let v: V;
     try { v = this.evalExpr(def.rhs, defEnv); }
     finally {
@@ -962,7 +964,7 @@ export class Evaluator {
     if (isObj(v) && v.k === 'table' && !v.src) v = { ...v, src: `${root.name}.${name}` };  // 出自の焼印
     if (isObj(v) && v.k === 'windows' && !v.name) v = { ...v, name: `${root.name}.${name}` };  // 診断用の束縛名（ADR-42）
     if (def.covering) v = this.applyClaim(v, def.covering, `${root.name}.${name}`, defEnv); // 被覆主張
-    this.defCache.set(key, { v, tzChecks: tzLog });
+    this.defCache.set(key, { v, tzChecks: tzFrame.log });
     return v;
   }
 
@@ -1285,17 +1287,24 @@ export class Evaluator {
   /** 免除系の tz 名検査（ADR-36 改訂 2・ADR-40 判断 6）: 区間所属は幅・位相を問わない（免除は維持）が、
    *  tz 名だけは日付座標系そのもの——市民グリッド入力 × 市民の窓要素グリッドの不一致は
    *  「ラベル 1 日ずれの束ね・曜日読み」が黙って通る形なので静的エラー。snapTo は除外（chronos 所属） */
-  private checkTzMembership(input: GridTag | null | undefined, win: GridTag | null | undefined, ctx: string): void {
+  private checkTzMembership(input: GridTag | null | undefined, win: GridTag | null | undefined, ctx: string,
+                            fromPredicate = false): void {
     // predicateAlign 文脈の検査要求を、評価中の束縛のキャッシュエントリへ記録する（ADR-53＝還流
     // 第 16 便 §2）: 検査は値でなく評価器状態（predicateAlign）に依るため、キャッシュヒット時にも
     // 記録済みの検査だけ再実行する——「最初に評価された文脈の検査 1 回で以降の文脈が素通る」順序
     // 依存の黙殺を防ぐ。値は align 非依存なのでキャッシュ再利用自体は正しい（キーは変えない——
-    // 解決値のクロージャ同一性が labelStack ガードの前提。ADR-34/42 判断 7 (f)）
-    if (input === this.predicateAlign && this.tzCheckLogs.length > 0) {
+    // 解決値のクロージャ同一性が labelStack ガードの前提。ADR-34/42 判断 7 (f)）。
+    // 記録条件の精密化（還流第 17 便 §2）: ①記録するのは predicateAlign を入力に据える呼び出し元
+    // だけ——fromPredicate の明示渡し（参照等値の推測は、値由来の検査〈within・単位窓×枠窓〉が
+    // 偶然同一オブジェクトになる経路で誤記録し、診断の誤帰属と偽陽性を生んだ）②かつ predicateAlign
+    // が束縛評価開始時（frame.baseAlign）のままの検査だけ——右辺内の filter が自分で確定した
+    // align での検査は右辺内で完結し、呼び出し文脈に依存しない（再実行は過剰停止になる）
+    if (fromPredicate) {
       // 重複排除（同じ検査が点ごとに積まれると、ヒット時再実行が O(N²) を戻す）——ユニークな
       // (win, ctx) は式中の射影箇所数程度なので線形走査で足りる
-      for (const log of this.tzCheckLogs) {
-        if (!log.some(c => c.ctx === ctx && gridEq(c.win, win))) log.push({ win, ctx });
+      for (const f of this.tzCheckLogs) {
+        if (this.predicateAlign === f.baseAlign
+            && !f.log.some(c => c.ctx === ctx && gridEq(c.win, win))) f.log.push({ win, ctx });
       }
     }
     if (input && input.kind === 'civil' && input.tz && win && win.kind === 'civil' && win.tz
@@ -1353,8 +1362,8 @@ export class Evaluator {
       return hit.v as StreamV;
     }
     this.derivingEntities.add(ent.name);
-    const tzLog: TzCheck[] = [];
-    this.tzCheckLogs.push(tzLog);
+    const tzFrame = { log: [] as TzCheck[], baseAlign: this.predicateAlign };
+    this.tzCheckLogs.push(tzFrame);
     try {
       const nwV = this.toStream(this.evalDef(ent, 'nonWorking', nw, env) as V);
       // 正体判定: nonWorking は実体 tz の市民日グリッドに整列（「日粒度で読む」の操作的定義）
@@ -1369,7 +1378,7 @@ export class Evaluator {
       // 差 \ は両辺の註釈の和（ADR-35 判断 3 / ADR-37）: 祝日データの尽きた先の退化は、するが観測可能
       const v: StreamV = { k: 'stream', pts: ptDiff(every.pts, nwV.pts), wins: [], align: every.align,
                            ann: annUnion(every.ann, nwV.ann), endless: true };
-      this.defCache.set(cacheKey, { v, tzChecks: tzLog });
+      this.defCache.set(cacheKey, { v, tzChecks: tzFrame.log });
       return v;
     } finally {
       this.derivingEntities.delete(ent.name);
@@ -1781,7 +1790,7 @@ export class Evaluator {
         const d = this.point(dV);
         // 免除系の tz 名検査（ADR-40）: 単位窓×枠窓・述語入力×枠窓
         this.checkTzMembership(this.winGrainOf(uV), this.winGrainOf(wV), 'ordinalIn（単位窓×枠窓）');
-        this.checkTzMembership(this.predicateAlign, this.winGrainOf(wV), 'ordinalIn');
+        this.checkTzMembership(this.predicateAlign, this.winGrainOf(wV), 'ordinalIn', true);
         const u = this.intervalsOf(uV, env);
         const w = this.intervalsOf(wV, env);
         const wi = ivIndexOf(w, d);
@@ -1810,7 +1819,7 @@ export class Evaluator {
       if (name === 'epochOrdinal') {
         const [uV, dV] = e.args.map(a => this.evalExpr(a.value, env));
         const d = this.point(dV);
-        this.checkTzMembership(this.predicateAlign, this.winGrainOf(uV), 'epochOrdinal');   // ADR-40
+        this.checkTzMembership(this.predicateAlign, this.winGrainOf(uV), 'epochOrdinal', true);   // ADR-40
         const uIv = this.intervalsOf(uV, env);
         const idx = ivIndexOf(uIv, d);
         if (idx < 0) this.outOrErr(d, this.winAnnOfV(uV), 'epochOrdinal: 点が窓の外');
@@ -1884,8 +1893,15 @@ export class Evaluator {
         const binding = this.lookupBinding(name, env);
         if (binding && binding.decl.params.length > 0) {
           const locals = this.bindParams(binding.decl.params, e.args, env, name);
-          const defEnv = binding.premise ? { ...env, premise: binding.premise } : env;
-          return this.evalExpr(binding.decl.rhs, childEnv(defEnv, locals));
+          // 引数付き束縛の右辺も呼び出し側 locals 鎖を遮断（ADR-53 判断 3 の完遂＝還流第 17 便 §1:
+          // この経路だけ漏れて「T(x) = dayNo(d)」が使用箇所の変数名に依存していた。実引数は遮断前の
+          // env で評価済み——値渡しの意味は不変）
+          const base: Env = { ...(binding.premise ? { ...env, premise: binding.premise } : env),
+                              locals: null, parent: null };
+          const prevSevered = this.severedLocalsEnv;
+          this.severedLocalsEnv = this.severedLocalsEnv ?? env;   // 最外の遮断点を保持
+          try { return this.evalExpr(binding.decl.rhs, childEnv(base, locals)); }
+          finally { this.severedLocalsEnv = prevSevered; }
         }
       }
     }
@@ -1962,7 +1978,7 @@ export class Evaluator {
           this.err('インスタンス参照（値引数適用）は窓束縛のみ——cycle は台の点列を filter で書く'
             + '（everyDay |> filter(d => weekday(d) == Mon)。ADR-42 判断 5/7 (b)）');
         }
-        this.checkTzMembership(this.predicateAlign, callee.grain, 'cycle 射影');   // ADR-40（weekday 等）
+        this.checkTzMembership(this.predicateAlign, callee.grain, 'cycle 射影', true);   // ADR-40（weekday 等）
         const ms = this.point(args[0]);
         const idx = ivIndexOf(callee.iv, ms);
         if (idx < 0) this.err('cycle: 点が対象窓の外');
@@ -1995,7 +2011,7 @@ export class Evaluator {
         }
         if (callee.labelFn) {
           this.checkArgIsPoint(args[0], who);   // ADR-42 判断 7 (e)
-          this.checkTzMembership(this.predicateAlign, callee.grain, 'label 射影');   // ADR-40
+          this.checkTzMembership(this.predicateAlign, callee.grain, 'label 射影', true);   // ADR-40
           return this.projectLabel(callee.labelFn, callee.iv, [], args[0], env);
         }
       }
@@ -2013,7 +2029,7 @@ export class Evaluator {
         }
         if (top.labelFn || top.labels || top.labelsCycle) {
           this.checkArgIsPoint(args[0], who);   // ADR-42 判断 7 (e)
-          this.checkTzMembership(this.predicateAlign, top.grain, 'ラベル射影');    // ADR-40
+          this.checkTzMembership(this.predicateAlign, top.grain, 'ラベル射影', true);    // ADR-40
         }
         if (top.labelFn) return this.projectLabel(top.labelFn, top.iv, top.ann, args[0], env);
         // 窓列への並行ラベル列の束縛名射影（ADR-39）: 名前(d) ≡ labels[窓列序数(d の属する窓)]。

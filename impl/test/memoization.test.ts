@@ -85,3 +85,45 @@ monthStart |> filter(d => T == Mon)`, W);
     expect(d).toEqual(['2026-01-01', '2026-02-01']);
   });
 });
+
+describe('ADR-53 追記（還流第 17 便）: 引数付き束縛の遮断と記録条件の精密化', () => {
+  it('引数付き束縛の右辺も呼び出し側ラムダ変数を掴めない（判断 3 の完遂——旧挙動＝変数名依存）', () => {
+    expect(() => run(G + `T(x) = dayNo(d)
+everyDay |> filter(d => T(d) == 1)`, W))
+      .toThrow(/束縛の右辺から呼び出し側のラムダ変数は見えない: d/);
+  });
+
+  it('引数に定数を渡す形も同じエラー（旧挙動＝引数が無視され述語の点に解決）', () => {
+    expect(() => run(G + `T(x) = dayNo(d)
+everyDay |> filter(d => T(2026-01-05) == 1)`, { from: '2026-01-01', to: '2026-01-10' }))
+      .toThrow(/束縛の右辺から呼び出し側のラムダ変数は見えない: d/);
+  });
+
+  it('正道＝右辺はパラメータで受ける（T(x) = dayNo(x)——外延固定）', () => {
+    expect(evalDates(G + `T(x) = dayNo(x)
+everyDay |> filter(d => T(d) == 1)`, W)).toEqual(['2026-01-01', '2026-02-01']);
+  });
+
+  it('値由来の検査は記録されない——束縛内で tz が閉じた形は別 tz 文脈から参照しても通る（誤帰属と過剰停止の封止）', () => {
+    // A の右辺内の検査（ordinalIn 単位窓×枠窓＝値由来・ordinalIn＝右辺内 filter が確定した align）は
+    // どちらも右辺内で完結——K 文脈からのヒット時再実行の対象にしない（還流第 17 便 §2-2）
+    const r = run(`
+premise K = Gregorian with { tz: "+05:45" }
+premise G { calendar-system: Gregorian; tz: "Asia/Tokyo" }
+@G
+A = everyDay |> filter(t => ordinalIn(day, month, t) == 1)
+K.monthStart |> filter(d => coincides(A, day, d))`, W);
+    expect(r.results[0].dates).toEqual(['2026-01-01T03:15', '2026-02-01T03:15']);
+  });
+
+  it('within（値由来）だけが立つ束縛も偽陽性を出さない（参照等値の偶然一致の封止。還流第 17 便 §2-3）', () => {
+    const r = run(`
+premise K = Gregorian with { tz: "+05:45" }
+premise G { calendar-system: Gregorian; tz: "Asia/Tokyo" }
+@G
+A = everyDay |> within(month)
+everyDay |> filter(d => coincides(A, day, d))
+K.monthStart |> filter(d => coincides(A, day, d))`, W);
+    expect(r.results[1].dates).toEqual(['2026-01-01T03:15', '2026-02-01T03:15']);
+  });
+});
