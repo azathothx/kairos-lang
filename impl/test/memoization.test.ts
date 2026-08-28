@@ -127,3 +127,36 @@ K.monthStart |> filter(d => coincides(A, day, d))`, W);
     expect(r.results[1].dates).toEqual(['2026-01-01T03:15', '2026-02-01T03:15']);
   });
 });
+
+describe('ADR-53 追記 3（還流第 18 便）: ヒット時再実行の再記録——間接参照の順序独立', () => {
+  const KGN = `
+premise K = Gregorian with { tz: "+05:45" }
+premise GN { calendar-system: Gregorian; tz: "Asia/Tokyo" }
+@GN
+T = weekday(2026-01-05)
+B = T
+`;
+  const W3 = { from: '2026-01-01', to: '2026-03-31' };
+
+  it('T を先に単独評価しても B = T 経由の危険な文は止まる（066d858 退行の封止——再実行は外側フレームへ再記録する）', () => {
+    expect(() => run(KGN + `everyDay |> filter(d => T == Mon)
+everyDay |> filter(d => B == Mon)
+K.monthStart |> filter(d => B == Mon)`, W3)).toThrow(ADR40);
+  });
+
+  it('premise 公開語の間接参照でも同じ（TT 先行評価→BB 経由）', () => {
+    expect(() => run(`
+premise K = Gregorian with { tz: "+05:45" }
+premise GP { calendar-system: Gregorian; tz: "Asia/Tokyo"; TT = weekday(2026-01-05); BB = TT }
+@GP
+everyDay |> filter(d => TT == Mon)
+everyDay |> filter(d => BB == Mon)
+K.monthStart |> filter(d => BB == Mon)`, W3)).toThrow(ADR40);
+  });
+
+  it('単一文内の整列切替 × 間接参照でも立つ（判断 5 の両条件が間接参照込みで閉じる）', () => {
+    expect(() => run(KGN
+      + 'everyDay |> filter(d => T == Mon) |> snapTo(K.day) |> filter(d => B == Mon)', W3))
+      .toThrow(ADR40);
+  });
+});

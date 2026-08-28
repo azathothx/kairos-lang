@@ -728,7 +728,10 @@ export class Evaluator {
             if (hit !== undefined) {
                 // 記録済みの tz 名検査を現在の predicateAlign で再実行（ADR-53 §2——順序独立の安全ゲート）
                 for (const c of hit.tzChecks)
-                    this.checkTzMembership(this.predicateAlign, c.win, c.ctx);
+                    this.checkTzMembership(this.predicateAlign, c.win, c.ctx, true);
+                // ↑ fromPredicate=true: 再実行された検査は、評価中の外側束縛のフレームへも再記録する
+                //（「ネスト束縛は全層へ記録——外側ヒット時は内側評価が走らない」の維持。第 17 便処置が
+                // ここを既定 false のまま落とし、間接参照 B = T 経由で順序独立が破れた＝還流第 18 便）
                 return hit.v;
             }
             // 束縛の循環検出（§4.8 の依存解析・F110）: premise 公開語（evalDef）と同じ網を本体層にも
@@ -858,7 +861,10 @@ export class Evaluator {
         if (hit !== undefined) {
             // 記録済みの tz 名検査を現在の predicateAlign で再実行（ADR-53 §2——順序独立の安全ゲート）
             for (const c of hit.tzChecks)
-                this.checkTzMembership(this.predicateAlign, c.win, c.ctx);
+                this.checkTzMembership(this.predicateAlign, c.win, c.ctx, true);
+            // ↑ fromPredicate=true: 再実行された検査は、評価中の外側束縛のフレームへも再記録する
+            //（「ネスト束縛は全層へ記録——外側ヒット時は内側評価が走らない」の維持。第 17 便処置が
+            // ここを既定 false のまま落とし、間接参照 B = T 経由で順序独立が破れた＝還流第 18 便）
             return hit.v;
         }
         // 束縛の循環検出（§4.8 の依存解析・F110）: 右辺評価中に自分（または相互参照先）へ戻ったら静的エラー
@@ -1295,7 +1301,10 @@ export class Evaluator {
         if (hit !== undefined) {
             // 記録済みの tz 名検査を現在の predicateAlign で再実行（ADR-53 §2——順序独立の安全ゲート）
             for (const c of hit.tzChecks)
-                this.checkTzMembership(this.predicateAlign, c.win, c.ctx);
+                this.checkTzMembership(this.predicateAlign, c.win, c.ctx, true);
+            // ↑ fromPredicate=true: 再実行された検査は、評価中の外側束縛のフレームへも再記録する
+            //（「ネスト束縛は全層へ記録——外側ヒット時は内側評価が走らない」の維持。第 17 便処置が
+            // ここを既定 false のまま落とし、間接参照 B = T 経由で順序独立が破れた＝還流第 18 便）
             return hit.v;
         }
         this.derivingEntities.add(ent.name);
