@@ -181,12 +181,12 @@ baseAlign・再実行の外側フレーム再記録〕）。
 
 ## テスト
 
-（28 ファイル・626 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（28 ファイル・627 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・
 `test/at-time-of-day.test.ts`〔ADR-51〕・`test/memoization.test.ts`〔ADR-53＝遮断・順序独立・
-間接参照 witness〕・`test/table-postfix.test.ts`〔束縛後置 covering〕がある。）
+間接参照 witness 3 経路・診断全文固定〕・`test/table-postfix.test.ts`〔束縛後置 covering〕がある。）
 
 
 - `test/examples.test.ts` — spec §7 の全代表例。糖衣形と core 展開形の一致、JS Date による独立オラクル照合

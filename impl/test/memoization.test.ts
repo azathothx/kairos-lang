@@ -60,7 +60,10 @@ premise G { calendar-system: Gregorian; tz: "Asia/Tokyo" }
 T = weekday(2026-01-05)
 `;
 const W4 = { from: '2026-01-01', to: '2026-04-01' };
-const ADR40 = /入力と窓の tz 名が不一致/;
+// 期待値は診断の全文をアンカーつきで固定する（還流第 19 便 §2——/入力と窓の tz 名が不一致/ だけでは
+// 入力/窓の左右を取り違えても 626 本が通っていた。左右取り違え・ctx 名の差し替え・誘導文の末尾追記の
+// いずれの変異でも赤になる形。受理境界は不変＝文言の固定を厳しくしただけ）
+const ADR40 = /^cycle 射影: 入力と窓の tz 名が不一致（入力="\+05:45"・窓="Asia\/Tokyo"）——ラベル 1 日ずれの所属が黙って通る形（ADR-36 改訂 2\/ADR-40）。同じ日付の所属が意図なら rebase\(to: "Asia\/Tokyo"\) で再錨する$/;
 
 describe('ADR-53 §2: tz 名検査（ADR-40）の評価順序独立性', () => {
   it('検査を通らない文が先でも ADR-40 エラー（旧挙動＝先に別文脈で評価されると検査ごと黙殺）', () => {
@@ -154,7 +157,24 @@ everyDay |> filter(d => BB == Mon)
 K.monthStart |> filter(d => BB == Mon)`, W3)).toThrow(ADR40);
   });
 
-  it('単一文内の整列切替 × 間接参照でも立つ（判断 5 の両条件が間接参照込みで閉じる）', () => {
+  it('bizDay 標準導出の間接参照でも同じ（bizDay 先行評価→B = bizDay 経由——defCache 第 3 経路。還流第 19 便 §3 が無検査を検出）', () => {
+    // :1367 の fromPredicate=true を落とすと 22/22/1 点で黙って通る（HEAD は ERR）——上 2 本はこの経路を守らない
+    expect(() => run(`
+premise K = Gregorian with { tz: "+05:45" }
+premise C6 { calendar-system: Gregorian; tz: "Asia/Tokyo"; nonWorking = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun) }
+premise G8 { calendar-system: Gregorian; tz: "Asia/Tokyo"; calendar: C6 }
+@G8
+B = bizDay
+everyDay |> filter(d => coincides(bizDay, day, d))
+everyDay |> filter(d => coincides(B, day, d))
+K.monthStart |> filter(d => coincides(B, day, d))`, { from: '2026-01-01', to: '2026-02-01' })).toThrow(ADR40);
+  });
+
+  // ⚠ 下の 1 本は判断 5 の「単一文内の整列切替」側を間接参照込みで守る別面の witness——追記 3 の退行
+  //（ヒット時再実行の再記録漏れ）は検出しない（T を先に単独評価する文が無いため。還流第 19 便 §1 の
+  // 変異試験＝eval.ts を 066d858 へ戻すと上の並び順 2 本が赤・本件は green のまま）。
+  // 追記 3 の回帰 witness は「並び順 2 経路＋bizDay 経路」の 3 本。
+  it('単一文内の整列切替 × 間接参照でも立つ（判断 5 の両条件が間接参照込みで閉じる——追記 3 の退行は検出しない別面）', () => {
     expect(() => run(KGN
       + 'everyDay |> filter(d => T == Mon) |> snapTo(K.day) |> filter(d => B == Mon)', W3))
       .toThrow(ADR40);
