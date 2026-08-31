@@ -42,6 +42,35 @@ bizDay |> within(month) |> last
 monthEnd |> roll(Preceding, on: bizDay) |> shift(-3, unit: bizDay)   # 月末の 3 営業日前
 ```
 
+## 米国のカレンダーでも、式は同じ
+
+上の式は日本の祝日データに 1 文字も依存していない。同じ式を米国連邦祝日（2026 年・振替後の
+observed 日付）に載せ替える:
+
+```kairos
+# eval: 2026-01-01..2026-07-01 tz: America/New_York
+premise US {
+  calendar-system: Gregorian
+  tz: "America/New_York"
+  wkst: Sun
+}
+
+@US
+federal2026 = [2026-01-01, 2026-01-19, 2026-02-16, 2026-05-25, 2026-06-19,
+               2026-07-03, 2026-09-07, 2026-10-12, 2026-11-11, 2026-11-26,
+               2026-12-25] covering: 2026..2026
+satSun = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+bizDay = everyDay \ (satSun | federal2026)
+
+bizDay |> within(month) |> last
+#=> 2026-01-30 2026-02-27 2026-03-31 2026-04-30 2026-05-29 2026-06-30
+```
+
+変わったのは前提（premise）のデータと tz だけで、**本体の式は 1 文字も変わらない**。
+「営業日の列を作り、月ごとに最後の点を取る」という構造は暦データから独立している——どの国の
+カレンダーでも、差し替えるのはデータだけである。
+[米国版を Playground で実行](https://kairos-lang.org/playground/#s=cHJlbWlzZSBVUyB7CiAgY2FsZW5kYXItc3lzdGVtOiBHcmVnb3JpYW4KICB0ejogIkFtZXJpY2EvTmV3X1lvcmsiCiAgd2tzdDogU3VuCn0KCkBVUwpmZWRlcmFsMjAyNiA9IFsyMDI2LTAxLTAxLCAyMDI2LTAxLTE5LCAyMDI2LTAyLTE2LCAyMDI2LTA1LTI1LCAyMDI2LTA2LTE5LAogICAgICAgICAgICAgICAyMDI2LTA3LTAzLCAyMDI2LTA5LTA3LCAyMDI2LTEwLTEyLCAyMDI2LTExLTExLCAyMDI2LTExLTI2LAogICAgICAgICAgICAgICAyMDI2LTEyLTI1XSBjb3ZlcmluZzogMjAyNi4uMjAyNgpzYXRTdW4gPSBldmVyeURheSB8PiBmaWx0ZXIoZCA9PiB3ZWVrZGF5KGQpID09IFNhdCBvciB3ZWVrZGF5KGQpID09IFN1bikKYml6RGF5ID0gZXZlcnlEYXkgXCAoc2F0U3VuIHwgZmVkZXJhbDIwMjYpCgpiaXpEYXkgfD4gd2l0aGluKG1vbnRoKSB8PiBsYXN0Cg&f=2026-01-01&t=2026-07-01&z=America%2FNew_York)。
+
 ## ブラウザで試す
 
 前提込みの自己完結形（祝日テーブルを式の中に持つ）を

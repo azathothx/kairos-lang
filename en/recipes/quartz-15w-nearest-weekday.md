@@ -1,5 +1,5 @@
 ---
-source_sha: d7f48d508ce7
+source_sha: d67338bb31c3
 ---
 
 # Nearest weekday to the 15th — Quartz 15W by composition
@@ -51,6 +51,44 @@ stream:
 The roll targets become business days, and what to do when the 15th itself is a holiday is one
 more condition on `d15 |> filter` — a dedicated token folds the spec shut, while composition
 opens for repair.
+
+## Holiday support with real data — the 2026 US federal calendar
+
+Here is that swap performed with real data. The roll targets become business days derived
+from the 2026 US federal holidays (observed dates):
+
+```kairos
+# eval: 2026-01-01..2026-12-31 tz: America/New_York
+premise US {
+  calendar-system: Gregorian
+  tz: "America/New_York"
+  wkst: Sun
+}
+
+@US
+federal2026 = [2026-01-01, 2026-01-19, 2026-02-16, 2026-05-25, 2026-06-19,
+               2026-07-03, 2026-09-07, 2026-10-12, 2026-11-11, 2026-11-26,
+               2026-12-25] covering: 2026..2026
+satSun = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+bizDay = everyDay \ (satSun | federal2026)
+
+d15 = everyDay |> within(month) |> nth(15)
+(d15 |> filter(d => weekday(d) != Sat and weekday(d) != Sun))
+  | (d15 |> filter(d => weekday(d) == Sat) |> roll(Preceding, on: bizDay))
+  | (d15 |> filter(d => weekday(d) == Sun) |> roll(Following, on: bizDay))
+#=> 2026-01-15 2026-02-17 2026-03-16 2026-04-15 2026-05-15 2026-06-15
+#=> 2026-07-15 2026-08-14 2026-09-15 2026-10-15 2026-11-16 2026-12-15
+#~> 範囲外 2026-01-01..2026-01-02（federal2026 covering 2026-01-01..2026-12-31）
+```
+
+February is the one to watch. The weekday nearest to Sunday 2/15 is Monday 2/16 — but **2/16 is
+Washington's Birthday, a federal holiday** — and because the roll targets are business days, the
+result escapes one more day to **2/17**. The "nearest weekday that also avoids holidays", which
+Quartz's `W` structurally cannot express, falls out of swapping a single axis. The trailing
+annotation says that near the head of the window a roll target could lie before the coverage
+claim — the data's edge made explicit instead of silently computed (the governing machinery:
+[spec §4.10](../spec/30-body-layer.md)).
+[Run the US version in the Playground](https://kairos-lang.org/en/playground/#s=cHJlbWlzZSBVUyB7CiAgY2FsZW5kYXItc3lzdGVtOiBHcmVnb3JpYW4KICB0ejogIkFtZXJpY2EvTmV3X1lvcmsiCiAgd2tzdDogU3VuCn0KCkBVUwpmZWRlcmFsMjAyNiA9IFsyMDI2LTAxLTAxLCAyMDI2LTAxLTE5LCAyMDI2LTAyLTE2LCAyMDI2LTA1LTI1LCAyMDI2LTA2LTE5LAogICAgICAgICAgICAgICAyMDI2LTA3LTAzLCAyMDI2LTA5LTA3LCAyMDI2LTEwLTEyLCAyMDI2LTExLTExLCAyMDI2LTExLTI2LAogICAgICAgICAgICAgICAyMDI2LTEyLTI1XSBjb3ZlcmluZzogMjAyNi4uMjAyNgpzYXRTdW4gPSBldmVyeURheSB8PiBmaWx0ZXIoZCA9PiB3ZWVrZGF5KGQpID09IFNhdCBvciB3ZWVrZGF5KGQpID09IFN1bikKYml6RGF5ID0gZXZlcnlEYXkgXCAoc2F0U3VuIHwgZmVkZXJhbDIwMjYpCgpkMTUgPSBldmVyeURheSB8PiB3aXRoaW4obW9udGgpIHw-IG50aCgxNSkKKGQxNSB8PiBmaWx0ZXIoZCA9PiB3ZWVrZGF5KGQpICE9IFNhdCBhbmQgd2Vla2RheShkKSAhPSBTdW4pKQogIHwgKGQxNSB8PiBmaWx0ZXIoZCA9PiB3ZWVrZGF5KGQpID09IFNhdCkgfD4gcm9sbChQcmVjZWRpbmcsIG9uOiBiaXpEYXkpKQogIHwgKGQxNSB8PiBmaWx0ZXIoZCA9PiB3ZWVrZGF5KGQpID09IFN1bikgfD4gcm9sbChGb2xsb3dpbmcsIG9uOiBiaXpEYXkpKQo&f=2026-01-01&t=2026-12-31&z=America%2FNew_York).
 
 ## Try it in your browser
 
