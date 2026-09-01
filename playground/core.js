@@ -1,5 +1,6 @@
 // Kairos Playground — ブラウザ内評価の共通本体（ja/en 両ページの app.js から init(lang) で起動。
-// UI 文字列だけ辞書切替・例のコードと評価器出力（註釈・エラー＝日本語が正）は日英共通。
+// UI 文字列は辞書切替・評価器出力（註釈・エラー＝日本語が正）は共通。プリセット例は言語別
+// （en＝米国連邦祝日版・cascade〈日本の振替休日導出〉だけは見せ場として日英共通。2026-09-01）。
 // 生成物 js/ はリファレンス実装のトランスパイル。ビルド: 非公開正本の tools/build-playground.mjs）
 import { run, formatAnnotation } from './js/index.js';
 
@@ -110,8 +111,76 @@ bizDay`,
   },
 };
 
+// 英語ページのプリセット（2026-09-01 言語別化）: payday/monthend3/friday13/empty は米国連邦祝日
+//（observed）・America/New_York 版。cascade（日本の振替休日・国民の休日の導出）だけは言語の
+// 見せ場として日英共通——「法定表から規則で導く」の実演は日本の暦がいちばん濃い。
+const EXAMPLES_EN = {
+  payday: {
+    from: '2026-07-01', to: '2026-11-01', tz: 'America/New_York',
+    code: `premise US {
+  calendar-system: Gregorian
+  tz: "America/New_York"
+  wkst: Sun
+}
+
+@US
+federal2026 = [2026-01-01, 2026-01-19, 2026-02-16, 2026-05-25, 2026-06-19,
+               2026-07-03, 2026-09-07, 2026-10-12, 2026-11-11, 2026-11-26,
+               2026-12-25] covering: 2026..2026
+satSun = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+bizDay = everyDay \\ (satSun | federal2026)
+
+everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)`,
+  },
+  monthend3: {
+    from: '2026-08-01', to: '2026-12-01', tz: 'America/New_York',
+    code: `premise US {
+  calendar-system: Gregorian
+  tz: "America/New_York"
+  wkst: Sun
+}
+
+@US
+federal2026 = [2026-01-01, 2026-01-19, 2026-02-16, 2026-05-25, 2026-06-19,
+               2026-07-03, 2026-09-07, 2026-10-12, 2026-11-11, 2026-11-26,
+               2026-12-25] covering: 2026..2026
+satSun = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+bizDay = everyDay \\ (satSun | federal2026)
+
+monthEnd |> roll(Preceding, on: bizDay) |> shift(-3, unit: bizDay)`,
+  },
+  cascade: EXAMPLES.cascade,
+  friday13: {
+    from: '2026-01-01', to: '2027-01-01', tz: 'America/New_York',
+    code: `premise US {
+  calendar-system: Gregorian
+  tz: "America/New_York"
+  wkst: Sun
+}
+
+@US
+(everyDay |> filter(d => weekday(d) == Fri)) & (everyDay |> within(month) |> nth(13))`,
+  },
+  empty: {
+    from: '2027-01-04', to: '2027-01-11', tz: 'America/New_York',
+    code: `premise US {
+  calendar-system: Gregorian
+  tz: "America/New_York"
+  wkst: Sun
+}
+
+@US
+holidays2027 = [] covering: 2027..2027
+satSun = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+bizDay = everyDay \\ (satSun | holidays2027)
+
+bizDay`,
+  },
+};
+
 export function init(lang) {
   const T = STRINGS[lang];
+  const EX = lang === 'en' ? EXAMPLES_EN : EXAMPLES;
   const $ = id => document.getElementById(id);
   const src = $('pg-src'), out = $('pg-out');
 
@@ -169,11 +238,12 @@ export function init(lang) {
   }
 
   $('pg-example').addEventListener('change', e => {
-    const ex = EXAMPLES[e.target.value];
+    const ex = EX[e.target.value];
     if (!ex) return;
     src.value = ex.code;
     $('pg-from').value = ex.from;
     $('pg-to').value = ex.to;
+    $('pg-tz').value = ex.tz || 'Asia/Tokyo';
     evaluate();
   });
   $('pg-run').addEventListener('click', evaluate);

@@ -13,9 +13,9 @@ should happen*. It goes beyond cron-style patterns: schedules like "3 business d
 first-class expressions.
 
 ```text
-premise JP { calendar-system: Gregorian; calendar: TSE; tz: "Asia/Tokyo"; wkst: Mon }
+premise US { calendar-system: Gregorian; calendar: NYSE; tz: "America/New_York"; wkst: Sun }
 
-@JP
+@US
 monthEnd |> roll(Preceding, on: bizDay) |> shift(-3, unit: bizDay)   # 3 business days before month-end
 ```
 
@@ -108,7 +108,7 @@ that would feed outputs back into the expression. Instead the runtime injects th
 time as data (exactly like a holiday table), and Kairos computes the next fire as a pure function of it:
 
 ```text
-@JP
+@US
 lastCompleted = [2026-07-09T14:23] covering: ..     # injected by the runtime (with source:/asof:)
 lastCompleted |> snapTo(day) |> roll(Following, on: bizDay) |> shift(+3, unit: bizDay)
 #=> 2026-07-14   ("3 business days after the last completion")
