@@ -1,18 +1,58 @@
 {
   "name": "kairos-reference",
   "version": "0.0.1",
-  "description": "Kairos schedule DSL — reference implementation prototype",
+  "description": "Kairos schedule definition language — reference implementation (CLI + evaluator, zero runtime dependencies)",
+  "keywords": [
+    "schedule",
+    "scheduling",
+    "cron",
+    "calendar",
+    "business-days",
+    "holidays",
+    "dsl",
+    "timezone"
+  ],
+  "homepage": "https://kairos-lang.org/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azathothx/kairos-lang.git",
+    "directory": "impl"
+  },
+  "bugs": {
+    "url": "https://github.com/azathothx/kairos-lang/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "azathothx",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "kairos": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "stdlib",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
   "directories": {
     "test": "test"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": [],
-  "author": "azathothx",
-  "license": "Apache-2.0",
-  "type": "module",
   "devDependencies": {
     "@types/node": "^26.1.0",
     "esbuild": "^0.28.1",

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Kairos CLI — サブコマンド: list（範囲の点列）・next（次の N 発火）
 // 使い方（kairos ＝ node src/cli.ts。配布名は 1.0 で npm bin / SEA に載せる）:
 //   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--json] <file.kairos>

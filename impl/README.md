@@ -1,5 +1,11 @@
 # Kairos リファレンス実装（プロトタイプ）
 
+> **English readers**: this is the reference implementation of [Kairos](https://kairos-lang.org/), a schedule
+> definition language. The language docs are canonical in Japanese with a full English mirror —
+> [English spec](https://kairos-lang.org/en/spec/) · [recipes](https://kairos-lang.org/en/recipes/) ·
+> [playground](https://kairos-lang.org/en/playground/). CLI: `npx kairos-lang next -n 3 payday.kairos`
+> (evaluator messages are Japanese; `--json` output is language-neutral). Apache-2.0.
+
 スケジュール定義言語 **Kairos**（[`../spec/`](../spec/)）のリファレンス実装の試作。
 目的は仕様の実行可能性の検証——**EBNF §5.6 がそのままパーサに、代表例 §7 と 40-examples の実データが
 そのままテストに**なるかを確かめ、仕様の穴を実行で炙り出すこと（結果＝綻び F43〜F50。

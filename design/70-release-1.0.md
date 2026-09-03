@@ -75,6 +75,24 @@ external の実運用を見て宣言する**（比較 3 案〈全信号の自然
 4. git タグ付け・公開同期（publish.sh＝設計者の手動実行）・GitHub Release。**公開ページを改名・
    削除する場合は旧 URL に `redirect_from` を張る**（2026-07-27 常設化＝外部レビュー第 5 回 N4）
 5. 設計ジャーナル（非公開）に宣言記録・90-open-questions の最終スナップショット確認
+6. **npm publish（✅ 配布形式は裁定済み 2026-09-04＝案 A→A′・準備完了）**——設計者裁定は案 A（.ts を
+   型剥がしで直実行）だったが、**Node は node_modules 配下の .ts を型剥がししない**
+   （`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`・最小実験で確認）ため、A の趣旨（束ねない・実行時
+   依存ゼロ・最小工数）を保った **A′＝tsc の素通し変換**で実装済み: `tsconfig.build.json`
+   （outDir dist・rewriteRelativeImportExtensions・declaration）・`bin: {kairos: dist/cli.js}`
+   （src/cli.ts に shebang）・`exports/types`＝dist/index.js/.d.ts・`files: [dist, stdlib, README.md,
+   LICENSE, NOTICE]`（LICENSE/NOTICE を impl/ に同梱）・`engines: node >=20`・`prepack: npm run build`
+   （pack/publish 時に自動ビルド・dist は gitignore）。検証＝dist 直・node_modules 配下の模擬コピーの
+   両方で `--version`/`list`/`next` 実走一致・630 テスト green。
+   **当日チェックリスト**: ① WSL 側で `npm login`（Windows のログインは持ち越されない・`npm whoami`
+   で確認）② npm アカウントの **2FA を有効化**（publish 時に OTP を求められる・2FA 迂回トークンは
+   廃止方向）③ `npm view kairos-lang` が E404 のまま（空き）④ impl/package.json の **name→
+   `kairos-lang`・version→`1.0.0`** ⑤ `npm pack --dry-run` で同梱物を目視（dist/stdlib/README/
+   LICENSE/NOTICE・test と node_modules を含まない）⑥ 公開クローンを v1.0.0 タグ時点に同期してから
+   `npm publish`（初回は手動・OTP 入力）⑦ 検証＝別ディレクトリで `npx kairos-lang@1.0.0 --version`
+   → `1.0.0`・`next -n 3` 実走 ⑧ 以後の版は Trusted Publishing（GitHub Actions OIDC）へ移行可
+   （初回 publish 後にパッケージ設定で構成・任意）。**取り消しは 72 時間以内・依存なしの場合のみ**
+   ——誤りは unpublish でなく patch 版で上書きする。
 
 ## 宣言日（確定）と宣言週の段取り
 
