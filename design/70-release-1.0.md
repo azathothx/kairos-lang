@@ -65,7 +65,8 @@ external の実運用を見て宣言する**（比較 3 案〈全信号の自然
 
 1. ~~`shiftBoundary` の正式名への一括置換~~ → **前倒し完了（2026-07-26・`rephase` に裁定＝条件 3・
    全コーパス置換済み・CHANGELOG 追補 11）**
-2. spec/README の RC5→1.0 表記更新・spec/CHANGELOG に「RC5→1.0」節。**対象は spec だけでなく
+2. **✅ 機械化済み（2026-09-04）＝非公開ツール層の宣言スクリプト `declare-1.0.mjs`（dry-run 既定・`--apply` で書込）**——状態行 5・Playground 注記 2・CHANGELOG「1.0」節・impl/package.json と lock の name/version を一括差し替え（アンカー 7/7 実在・残存 RC 表記 0 件を dry-run で確認済み）。**RC5 残存検査は doc-consistency に休眠形で新設済み**（状態行が「リリース候補」でなくなると自動で起きる・許容リスト 4 ファイル）。当日は `--apply` → impl/ で typecheck＋全スイート → コミット。手動は 70-release と設計記録の記述・検定側のみ。
+   （旧記述）spec/README の RC5→1.0 表記更新・spec/CHANGELOG に「RC5→1.0」節。**対象は spec だけでなく
    「RC5」を名乗る全入口**——README 英日・llms.txt・en/spec/README・Playground の RC 注記・検定側
    （教本 3 冊/README の「RC5 準拠」表記）を同時更新し、doc-consistency に**「RC5」残存検査**を
    足して宣言コミットに同梱する（テスト数 4 入口一致と同型の網＝第 9 回レビュー提案・更新漏れを
@@ -84,9 +85,10 @@ external の実運用を見て宣言する**（比較 3 案〈全信号の自然
    LICENSE, NOTICE]`（LICENSE/NOTICE を impl/ に同梱）・`engines: node >=20`・`prepack: npm run build`
    （pack/publish 時に自動ビルド・dist は gitignore）。検証＝dist 直・node_modules 配下の模擬コピーの
    両方で `--version`/`list`/`next` 実走一致・630 テスト green。
-   **当日チェックリスト**: ① WSL 側で `npm login`（Windows のログインは持ち越されない・`npm whoami`
-   で確認）② npm アカウントの **2FA を有効化**（publish 時に OTP を求められる・2FA 迂回トークンは
-   廃止方向）③ `npm view kairos-lang` が E404 のまま（空き）④ impl/package.json の **name→
+   **当日チェックリスト**: ✅① WSL 側で `npm login`（2026-09-04 完了＝`--browser=false` で URL を手動で
+   開く形・`npm whoami`＝azathothx・~/.npmrc 600）✅② npm アカウントの **2FA**（mode: auth-and-writes
+   を確認済み＝publish 時に OTP・認証アプリを手元に）③ `npm view kairos-lang` が E404 のまま（空き・
+   9/4 再確認済み）④ impl/package.json の **name→
    `kairos-lang`・version→`1.0.0`** ⑤ `npm pack --dry-run` で同梱物を目視（dist/stdlib/README/
    LICENSE/NOTICE・test と node_modules を含まない）⑥ 公開クローンを v1.0.0 タグ時点に同期してから
    `npm publish`（初回は手動・OTP 入力）⑦ 検証＝別ディレクトリで `npx kairos-lang@1.0.0 --version`

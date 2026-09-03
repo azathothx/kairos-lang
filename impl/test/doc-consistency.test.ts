@@ -306,6 +306,26 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     expect(stale).toEqual([]);
   });
 
+  it('1.0 宣言後は「RC5」「リリース候補」が入口・本文に残らない（歴史表記の許容リスト 4 ファイル・宣言前は休眠——70-release 宣言時作業 2）', () => {
+    // 宣言前＝休眠: spec/README の状態行が「リリース候補」のうちは検査しない（宣言コミットで自動的に起きる。
+    // 差し替えは非公開 tools/declare-1.0.mjs が担い、本検査は取りこぼしの網）
+    if (/リリース候補/.test(read('spec/README.md'))) return;
+    const allow = new Set(['spec/40-grammar.md', 'en/spec/40-grammar.md',
+                           'reference/table-literal.md', 'en/reference/table-literal.md']);   // 経緯 2・「RC5 追補 9」引用
+    const files = [...CURRENT_DOCS, 'llms.txt', 'playground/index.html', 'en/playground/index.html']
+      .filter(p => !/CHANGELOG\.md$/.test(p));
+    const stale: string[] = [];
+    for (const p of files) {
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (/\bRC5\b|リリース候補|release candidate/i.test(line) && !allow.has(p)) stale.push(`${p}:${i + 1}`);
+      }
+    }
+    expect(stale, '1.0 宣言後に RC 表記が残っている').toEqual([]);
+    for (const p of allow) {
+      expect(read(p).split('\n').filter(l => /\bRC5\b/.test(l)).length, `${p} の RC5 歴史表記は 1 行のまま`).toBe(1);
+    }
+  });
+
   it('英語ミラーの固定訳語が統一されている（別訳の混入を割る・2026-07-24 第 3 回レビュー指摘 K の再発防止）', () => {
     // 日本語側の用語規律と同型。正: consumer-relative（利用側相対）・placeholder（仮称）・
     // Exhaustiveness verification（I5 網羅性検証——coverage は覆域の固定訳）・descriptor（記述語）・
