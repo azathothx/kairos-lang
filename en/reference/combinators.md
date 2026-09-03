@@ -1,5 +1,5 @@
 ---
-source_sha: 581883c9a28f
+source_sha: 4abe12219ade
 ---
 
 # `|` `&` `\` — combinators (union, intersection, difference) and the cascade
@@ -75,6 +75,12 @@ everyDay \ satSun
   regression. Cross-tz composition of "the **same date**" (TSE × NYSE joint business days) is the
   third branch — re-anchor by date-label correspondence with [`rebase`](rebase.md), then `&`
   (`(tseBiz |> rebase(to: "America/New_York")) & nyseBiz`; ADR-40 · F69).
+- **Placing [`at`](at.md) after a combinator drops the points inside annotated intervals** — `|`,
+  `&`, and `\` transport the annotations of both sides as a union, so anything outside the
+  intersection of the terms' effective coverage (e.g. next year's days after joining a holiday table
+  whose coverage has ended) is not accepted as a witness by `at`'s expansion, and the points vanish
+  with no error or warning (the annotation remains). Keep time-of-day attachment to evaluations that
+  close inside coverage, or update the coverage first (at.md Pitfalls; reflux mail 20 §3).
 
 ## Related
 

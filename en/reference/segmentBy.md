@@ -1,5 +1,5 @@
 ---
-source_sha: b1cf6318f027
+source_sha: 006808f61036
 ---
 
 # `segmentBy` — interval-sequence windows (cut at markers)
@@ -123,7 +123,9 @@ everyDay |> filter(d => sekkiMonth(d) == 寅)
   on a **non-periodic sequence** (lunisolar month numbers — a leap month repeats the preceding
   month's number), silently rotate the labels with no error and no annotation (there is no
   reference list to check against, so machine detection is impossible in principle). For
-  non-periodic data labels use the static `labels:` (its same-length check guards paired updates).
+  non-periodic data labels use the static `labels:` (its same-length check guards paired updates) —
+  or, for **externally supplied** data, the `label:` projection (next section), whose expression stays
+  unchanged as coverage grows.
   Checking the contents is the job of doctests and [`coincides`](coincides.md).
 
 ## label: (ADR-34)
@@ -133,6 +135,36 @@ The parenthesized named-arg `segmentBy(m, edges:, empties:, label: (p => expr))`
 time). When merely pasting a data column, `labels:` is canonical (ADR-39, ADR-30 revised); `label:`
 is for computations involving index expressions and conditions
 ([`../../stdlib/kyureki.md`](../../stdlib/kyureki.md) (Japanese) §7 (5)).
+
+**Externally supplied data labels — the form whose expression stays unchanged as coverage grows**
+(reflux mail 20 §2, 2026-09-03): receive the markers through [`external`](external.md) and attach its
+**label column** (supplied together with the dates under the same-length contract of ADR-30) with
+`label: (p => markerTable(p))`. `p` is the window's first point — the marker point itself — so the
+projection returns that marker's label as is. Even for **non-periodic** data labels such as lunisolar
+month numbers (a leap month repeats the preceding number), the same-length check lives on the supply
+contract's side (`契約違反: labels は時点列と同長`), and **the text of the expression does not change
+with the yearly coverage update** — "if the date is authoritative, so is the label that names it",
+realized with the existing machinery:
+
+```kairos
+# eval: 2026-02-15..2026-02-22
+# resolve: saku = dates 2026-01-19 2026-02-17 2026-03-19 2026-04-17 2026-05-17 covering: 2026-01-01..2026-05-31 asof: 2026-09-03 labels: m12 m1 m2 m3 m4
+premise L { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon; source: "moon/saku"
+  saku  = external(kind: dates, labels: [m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12])
+  lunar = day |> segmentBy(saku, edges: drop, empties: keep, label: (p => saku(p)))
+}
+@L
+everyDay |> filter(d => lunar(d) == m1)
+#=> 2026-02-17 2026-02-18 2026-02-19 2026-02-20 2026-02-21
+```
+
+When the supply grows by one new moon (`2026-05-17` with `m4`), `lunar` simply gains one window and
+the definition above is untouched (measured: with five new moons, m1 = 30 days, m2 = 29 days,
+m3 = 4/17–5/16). The value-domain declaration `labels: [m1, …, m12]` is static knowledge (a leap
+month repeats a name inside the domain). **A point sequence derived by `filter` carries no labels**
+(labels are properties of tables and windows — ADR-30/34/42), so the projection does not stand when
+the new moons are filtered out of another table — supply the new moons as **their own `external`**
+(if you already compute them upstream, just ship the dates and the month numbers together).
 
 ## Pitfalls
 

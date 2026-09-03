@@ -1,5 +1,5 @@
 ---
-source_sha: 1d34f0260e85
+source_sha: 081fae1e15f5
 ---
 
 # `at` — attaching a wall-clock time to a day set
@@ -78,6 +78,14 @@ previous day" adjusts the day in the day layer before attaching the time:
   change in points cannot be read from them). Evaluations that stay inside coverage agree. The
   operational defense is keeping coverage current (runway warnings = ADR-37 decision 8), not the
   shape of the expression.
+  **The same rule applies to `at` placed after a combinator** (reflux mail 20 §3, 2026-09-03): `|`,
+  `&`, and `\` transport the annotations of both sides as a union (ADR-37 decision 4), so points that
+  fall outside the **intersection of the terms' effective coverage** — i.e. inside an annotated
+  interval — are dropped at the `at` stage. A single term drops nothing (`satSun |> at(…)` has
+  unbounded coverage), yet `(satSun | holidays2026) |> at(…)` shrinks the coverage to the holiday
+  table's year and every point of the following year disappears — **no error, no warning; only the
+  out-of-coverage annotation remains** (the dropped points cannot be read from it). An external that
+  is not referenced is never resolved and does not take part in coverage.
 - **Feeding `at` output into a counting stage or a `segmentBy` marker classifies even finite
   input as "infinite"** (reflux mail 15 (b)). The tick-derived endless flag passes through the
   filter (a convention-conformant conservative approximation) — with `takeLast` the
