@@ -1,5 +1,5 @@
 ---
-source_sha: afac0419542f
+source_sha: f58f9d28e45b
 ---
 
 # Recipes — practical forms of the schedules long said to be unwritable
@@ -17,7 +17,7 @@ first, the background after.
 |---|---|
 | [Last day of the month](cron-last-day-of-month.md) | cron's most common stumbling block, up to the last *business* day |
 | [Easter](easter-schedule.md) | The canonical movable feast RRULE cannot express — pure arithmetic, zero data |
-| [4-4-5 fiscal calendar](4-4-5-calendar.md) | A calendar with no "months"; the 53rd-week rule falls out of the definition |
+| [What is a 4-4-5 calendar?](4-4-5-calendar.md) | Definition, the 4-5-4/5-4-4 variants, the 53rd week, a 2026 period table; the carry rule falls out of the definition |
 | [Nearest weekday to the 15th](quartz-15w-nearest-weekday.md) | The general form of Quartz `15W`, extendable to holidays |
 
 - Every code example is execution-verified by the reference implementation's doctests
