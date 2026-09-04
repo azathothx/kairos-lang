@@ -1,5 +1,5 @@
 ---
-source_sha: 914993bdd186
+source_sha: dff290168aca
 ---
 
 # 40-examples — Expressiveness studies (a sample book of known schedules)
@@ -50,7 +50,7 @@ the write-ups are executed directly as doctests by the reference implementation.
 
 | File | Subject |
 |---|---|
-| [01-jp-holidays.md](../../../design/40-examples/01-jp-holidays.md) | The complete set of Japanese national holidays (fixed dates, Happy Monday, equinoxes, substitute holidays, citizens' holidays, one-off Olympic moves) plus everyday schedules (payday, garbage collection, China's tiaoxiu) |
+| [01-jp-holidays.md](../../../design/40-examples/01-jp-holidays.md) | The complete set of Japanese national holidays (fixed dates, Happy Monday, equinoxes, substitute holidays, citizens' holidays, one-off Olympic moves) plus everyday schedules (payday, garbage collection, Mainland China's tiaoxiu) |
 | [02-cycles.md](../../../design/40-examples/02-cycles.md) | Sexagenary stems and branches (day/year), the 60-cycle, rokuyō, ichiryū-manbai days |
 | [03-astronomical.md](../../../design/40-examples/03-astronomical.md) | 24 solar terms, the lunisolar calendar, seasonal markers, lunar phases, Easter, ISO week numbers |
 | [04-projections.md](../../../design/40-examples/04-projections.md) | Tear-out studies for the projection family (ordinalIn/labelOf/snapTo/epochOrdinal/label:) |
@@ -76,7 +76,7 @@ the write-ups are executed directly as doctests by the reference implementation.
 | Year-limited exceptions (Olympic moves) | Expressible | table literals, asof/source |
 | Payday (25th, previous business day) | Expressible | — |
 | Garbage collection (1st and 3rd Wednesday) | Expressible | — |
-| China's tiaoxiu (swapped workdays) | Expressible | table literals, cascade subtraction |
+| Mainland China's tiaoxiu (swapped workdays) | Expressible | table literals, cascade subtraction |
 | Sexagenary day cycle | Expressible | anchor = authoritative data |
 | Sexagenary year cycle, hinoe-uma | Expressible | year-window cycles |
 | The 60-cycle | Expressible but blunt | (cycle products replaceable by predicate composition) |

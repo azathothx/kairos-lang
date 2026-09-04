@@ -1,5 +1,5 @@
 ---
-source_sha: e8762b805a25
+source_sha: 7a46d66079b7
 ---
 
 # `nonWorking` — the calendar entity's reserved public word and the `bizDay` standard derivation
@@ -126,7 +126,7 @@ Cal.holidays |> shift(-1, unit: day)
   `everyDay \ (TSE.nonWorking |> snapTo(day))` means "read the overlap on chronos through the user
   side's day boundaries" — not reconciliation of "the same date label"; for that, use
   [`rebase`](rebase.md) (ADR-40).
-- Cascades (substitute holidays, tiaoxiu) are composed on the **right-hand side** of `nonWorking`
+- Cascades (substitute holidays, Mainland China's tiaoxiu) are composed on the **right-hand side** of `nonWorking`
   (ADR-01 — filtering appears only at the final stage of the standard derivation).
 - Out of `calendar:` scope, `bizDay` remains a free binding name (existing manual-binding styles
   keep working).

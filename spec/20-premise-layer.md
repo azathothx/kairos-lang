@@ -395,7 +395,7 @@ premise JP {
   自己参照になるため）。**`nonWorking` を上書きする派生は `source:` も上書きする（宣言必須寄り）**——
   黙って継承すると改変データが公式出所を名乗る。
 - **カスケードとの整理**（ADR-01）: 足し戻し・反転の上書き合成は `nonWorking` の**右辺**で表す
-  （§4.5 の宣言順・左結合。中国の調休は `nonWorking = (satSun | holidays) \ workdaysSpecial`）。
+  （§4.5 の宣言順・左結合。中国本土の調休〈国務院弁公庁の年次通知〉は `nonWorking = (satSun | holidays) \ workdaysSpecial`）。
   濾過は標準導出の最終段にだけ現れ、そこへ至る合成がカスケードを担う——「濾過の残余」への退行ではない。
 - **統治は要求駆動**: 実体 premise 自身は `calendar:` を要求しない。実体内の束縛が bizDay 系の軸を
   使えば自己の `calendar:` を要求し、自己・相互の循環は静的エラー。

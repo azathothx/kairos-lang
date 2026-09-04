@@ -1,5 +1,5 @@
 ---
-source_sha: b3f5232003c5
+source_sha: dc2afc587a67
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -499,7 +499,7 @@ premise JP {
   data claim the official provenance.
 - **Squaring with cascades** (ADR-01): add-back and inversion override compositions are expressed
   on the **right-hand side** of `nonWorking` (declaration order and left association per §4.5;
-  China's tiaoxiu is `nonWorking = (satSun | holidays) \ workdaysSpecial`). Filtering appears only
+  Mainland China's tiaoxiu (State Council holiday arrangement) is `nonWorking = (satSun | holidays) \ workdaysSpecial`). Filtering appears only
   at the final stage of the standard derivation, and the composition leading up to it carries the
   cascade — not a regression to "the residue of filtering".
 - **Governance is demand-driven**: an entity premise does not itself require `calendar:`. If a
