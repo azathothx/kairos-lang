@@ -74,5 +74,8 @@ same paths without the `en/` segment (a hash check keeps the mirror in step).
 
 - Playground (evaluate Kairos in the browser; the reference implementation as-is):
   https://kairos-lang.org/en/playground/ (Japanese UI: https://kairos-lang.org/playground/)
+- [Kairos exam — study materials](https://exam.kairos-lang.org/): graded textbooks (Grade 3 reading,
+  Grade 2 writing, Grade 1 operational semantics) and sample questions, every example executed
+  against the reference implementation (Japanese)
 - [Design records index](https://raw.githubusercontent.com/azathothx/kairos-lang/main/design/INDEX.md):
   53 architecture decision records and the full design history (Japanese)

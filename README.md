@@ -160,6 +160,10 @@ including cross-checks against the official ephemeris of the National Astronomic
 | [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype — Japanese) |
 | [`design/`](design/) | Design records: 53 ADRs, domain model, expressiveness studies incl. the ["impossible schedules" catalog](en/design/40-examples/11-impossible-schedules.md) (Japanese; catalog mirrored in English) |
 
+Study materials for the Kairos language exam — graded textbooks (reading, writing, operational
+semantics) and sample questions, every example executed against the reference implementation — live at
+[exam.kairos-lang.org](https://exam.kairos-lang.org/) (Japanese).
+
 ## License
 
 [Apache-2.0](LICENSE) (attribution in [NOTICE](NOTICE)). Contributions are accepted under Apache-2.0 §5

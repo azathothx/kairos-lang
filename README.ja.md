@@ -45,6 +45,9 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 
 設計の履歴を遡るときは [`design/INDEX.md`](design/INDEX.md) から。
 
+Kairos 言語検定の教材（3 級 読解・2 級 作文・1 級 運用意味論の教本と、実装で実行検証したサンプル問題）は
+別サイト [exam.kairos-lang.org](https://exam.kairos-lang.org/)。
+
 ## クイックスタート（リファレンス実装）
 
 **まずブラウザで試す**: [Playground](https://kairos-lang.org/playground/) はリファレンス実装を

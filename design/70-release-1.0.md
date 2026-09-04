@@ -65,7 +65,7 @@ external の実運用を見て宣言する**（比較 3 案〈全信号の自然
 
 1. ~~`shiftBoundary` の正式名への一括置換~~ → **前倒し完了（2026-07-26・`rephase` に裁定＝条件 3・
    全コーパス置換済み・CHANGELOG 追補 11）**
-2. **✅ 機械化済み（2026-09-04）＝非公開ツール層の宣言スクリプト `declare-1.0.mjs`（dry-run 既定・`--apply` で書込）**——状態行 5・Playground 注記 2・CHANGELOG「1.0」節・impl/package.json と lock の name/version を一括差し替え（アンカー 7/7 実在・残存 RC 表記 0 件を dry-run で確認済み）。**RC5 残存検査は doc-consistency に休眠形で新設済み**（状態行が「リリース候補」でなくなると自動で起きる・許容リスト 4 ファイル）。当日は `--apply` → impl/ で typecheck＋全スイート → コミット。手動は 70-release と設計記録の記述・検定側のみ。
+2. **✅ 機械化済み（2026-09-04）＝非公開ツール層の宣言スクリプト `declare-1.0.mjs`（dry-run 既定・`--apply` で書込）**——状態行 5・Playground 注記 2・CHANGELOG「1.0」節・impl/package.json と lock の name/version を一括差し替え（アンカー 7/7 実在・残存 RC 表記 0 件を dry-run で確認済み）。**RC5 残存検査は doc-consistency に休眠形で新設済み**（状態行が「リリース候補」でなくなると自動で起きる・許容リスト 4 ファイル）。当日は `--apply` → impl/ で typecheck＋全スイート → コミット。手動は 70-release と設計記録の記述のみ（検定側も同型の `follow-1.0.mjs` で機械化＝2026-09-04・下記）。
    （旧記述）spec/README の RC5→1.0 表記更新・spec/CHANGELOG に「RC5→1.0」節。**対象は spec だけでなく
    「RC5」を名乗る全入口**——README 英日・llms.txt・en/spec/README・Playground の RC 注記・検定側
    （教本 3 冊/README の「RC5 準拠」表記）を同時更新し、doc-consistency に**「RC5」残存検査**を
@@ -74,7 +74,18 @@ external の実運用を見て宣言する**（比較 3 案〈全信号の自然
 3. 英語版の追従（**全章訳済み 2026-07-24＝前倒し完了・rephase 置換も英日同時済み**——1.0 時に
    残るのは最終改稿の追従・`source_sha` 更新のみ。ドリフトは doc-consistency 検査が自動検出）
 4. git タグ付け・公開同期（publish.sh＝設計者の手動実行）・GitHub Release。**公開ページを改名・
-   削除する場合は旧 URL に `redirect_from` を張る**（2026-07-27 常設化＝外部レビュー第 5 回 N4）
+   削除する場合は旧 URL に `redirect_from` を張る**（2026-07-27 常設化＝外部レビュー第 5 回 N4）。
+   **Release 本文の英語草稿＝ローンチ計画書（非公開層）§6 に起草済み（2026-09-04）**——当日は追補数・
+   テスト数・日付を実数へ。**SEA バイナリの添付＝裁定済み（2026-09-04・設計者）: 1.0 の Release には添付しない。
+   Windows 単体 exe は 1.0.x で「Windows 管理者・Excel 利用者向けガイド」と同時に出す**（コマンドが打てる
+   非開発者向けの導線＝ローンチ計画書〈非公開層〉Phase D の 2 本目の軌道・1.0 の Release 本文に「近日」は
+   書かない）。材料（記録）: 現行
+   HEAD で SEA ビルドが green（2026-09-04 実測＝27 秒・Linux 118.0 MB・list の出力バイト一致・next --json
+   一致）＝技術的には添付可。1.0 で添付しない理由（開発者レーン向け）＝①主導線は npm（Node 20+・`npx kairos-lang`）で足りる
+   ②Windows exe は注入で署名が無効になり SmartScreen 警告が第一印象になる ③macOS 台が無く非対称
+   ④ビルドは非公開ツール層＝利用者が再現できない生成物を配る形 ⑤patch 版ごとに再ビルド・再添付の運用が
+   増える。1.0.x で出す形＝Windows x64 単体（壊れた署名を剥がして未署名に揃え・zip＋SHA256・Release 本文で npm と
+   並記）・Linux 単体は需要待ち。想定問答 6（production）では「SEA も可能」を即応材料として保持（押し付けない）。
 5. 設計ジャーナル（非公開）に宣言記録・90-open-questions の最終スナップショット確認
 6. **npm publish（✅ 配布形式は裁定済み 2026-09-04＝案 A→A′・準備完了）**——設計者裁定は案 A（.ts を
    型剥がしで直実行）だったが、**Node は node_modules 配下の .ts を型剥がししない**
@@ -112,16 +123,25 @@ Kairos 自身の実測——六曜〈公開 doctest 済み rokuyo.kairos の式�
   **RC5 残存検査の許容リスト（レビュー §4 の棚卸し）**: 歴史表記として残す 4 行＝§5.4 経緯 2
   （spec/40-grammar・en）＋ reference/table-literal.md の「RC5 追補 9」引用（日英）——宣言
   コミットの「RC5」残存検査にはこのリストを除外指定する。当日更新は本体 11 行（状態行 4 は
-  追補番号検査が守る・llms.txt・Playground 注記 2・70-release 内 3）＋検定 4 行（README:51・
-  教本 3 冊「RC5 準拠」＝spec_head 22 箇所→1.0 タグ・検証ブロック再実走）。
-  **9/14 までの残 LOW（任意）**: EBNF の既存非終端棚卸し（digit2/digit4/digits/letter 未定義・
-  elapsed-width 空導出・引数付き束縛への covering 後置——文法凍結前に一度だけ）・impl/README の
-  機構列挙とテスト一覧の現行化・検証録 11 の「555 テスト」記録齟齬の注記・検定 README v1/L1 教本
-  v1.1 の表記統一・L3 教本リテラル一覧へ Thh:mm（検定 RC5 追従と同時）。
+  追補番号検査が守る・llms.txt・Playground 注記 2・70-release 内 3）＋**検定側＝`follow-1.0.mjs`
+  （2026-09-04 機械化・dry-run 既定・`--apply --head v1.0.0`＝教本 3 冊の版行＋公開 README の 4 行・bank
+  90 問の spec_head→版タグ・残存 RC 走査。scratch 複製で --apply→verify.mjs 全 PASS を事前実証済み）→
+  verify.mjs 再実走 → 公開同期（第 11 回レビュー J もこれで解消）**。
+  **9/14 までの残 LOW（任意）**: ✅ EBNF の既存非終端棚卸し（追補 16 補綴 8/28 で処置）・impl/README の
+  機構列挙とテスト一覧の現行化・検証録 11 の「555 テスト」記録齟齬の注記・✅ 検定 README v1/L1 教本
+  v1.1 の表記統一・✅ L3 教本リテラル一覧へ Thh:mm（いずれも 2026-09-04 処置・検定側は 9/14 の公開同期で出る）。
 - **9/14（宣言当日）**: 条件 4 差分確認→条件 5（npm test・検査・公開層ガード）→宣言時作業
   1〜5（下記）→ npm publish（**パッケージ名 kairos-lang に裁定済み**＝2026-08-28・404 で空き実測・
   素の kairos は既存 v2.1.3 のため回避・CLI コマンド名は kairos）→ Show HN（ローンチ台本
   Phase C・設計者磨き済み）。
+- ✅ **検定サイト exam.kairos-lang.org は 2026-09-04 に稼働**（Pages 化＋サブドメイン割当＝同時実施・https 強制・
+  sitemap 23 URL・GSC 送信済み・本体 README 英日と llms.txt に導線。残り任意＝verified domains〈設計者〉）。裁定
+  2026-09-04（計画は検定側 design/20-domain-plan.md・7/30 策定。トリガー (a)「宣言準備と束ねる」の窓が転記漏れで
+  過ぎていたため、(b)「対外告知の前」＝ローンチ週に URL が拡散する前に恒久 URL を立てる）。フェーズ 1（Pages
+  一式・表示検査とリンク検査の移植・公開同期＝当方・9/4 着手）→ フェーズ 2（**設計者: DNS に CNAME `exam` →
+  azathothx.github.io を 1 本**・Pages 有効化＋Enforce HTTPS・verified domains）→ フェーズ 3（当方: 200・証明書・
+  canonical・sitemap・robots の実測・GSC ドメインプロパティの包含確認・本体からの導線）。稼働後の 9/14 検定追従
+  バッチは「稼働中サイトの内容更新」になる。Release 本文・ローンチ記事からの参照は任意。
 - 白露実測便が 9/8 前後に届かない場合も宣言は 9/14 で進める（条件 2 は充足済み・追送は
   継続観測として受領）。
 
