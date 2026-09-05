@@ -10,6 +10,7 @@ cron・Quartz・iCalendar RRULE で「書けない」と長く言われてきた
 | [イースターの日付](easter-schedule.md) | RRULE が書けない移動祝日の代表。データゼロの純算術 |
 | [4-4-5 会計暦とは](4-4-5-calendar.md) | 定義・4-5-4／5-4-4 の変種・第 53 週の扱い・2026 年の期間表。繰上げ規則は定義の形から出る |
 | [15 日に最も近い平日](quartz-15w-nearest-weekday.md) | Quartz `15W` の一般形。祝日対応まで |
+| [米国の選挙日・ブラックフライデー・感謝祭の次の日曜](us-election-day-and-thanksgiving.md) | 計算で決まる日を基準にした相対日。RRULE の `BYMONTHDAY=2..8` 符号化を法律の言葉の順に |
 
 - コード例はすべてリファレンス実装の doctest（`impl/test/doctest.test.ts`）が実行検証する。
   `# eval:` が評価範囲・`#=>` が期待値（規約は [reference](../reference/README.md#実行例の規約doctest)）。

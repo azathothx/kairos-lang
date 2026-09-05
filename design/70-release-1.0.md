@@ -132,8 +132,8 @@ Kairos 自身の実測——六曜〈公開 doctest 済み rokuyo.kairos の式�
   v1.1 の表記統一・✅ L3 教本リテラル一覧へ Thh:mm（いずれも 2026-09-04 処置・検定側は 9/14 の公開同期で出る）。
 - **9/14（宣言当日）**: 条件 4 差分確認→条件 5（npm test・検査・公開層ガード）→宣言時作業
   1〜5（下記）→ npm publish（**パッケージ名 kairos-lang に裁定済み**＝2026-08-28・404 で空き実測・
-  素の kairos は既存 v2.1.3 のため回避・CLI コマンド名は kairos）→ Show HN（ローンチ台本
-  Phase C・設計者磨き済み）。
+  素の kairos は既存 v2.1.3 のため回避・CLI コマンド名は kairos）。**Show HN は宣言日から切り離し 9/22〜24**（裁定 2026-09-06＝npm の慣らし・米選挙日レシピ・README の npm 形の後。
+  段取りはローンチ計画書〈非公開層〉Phase D 冒頭）。
 - ✅ **検定サイト exam.kairos-lang.org は 2026-09-04 に稼働**（Pages 化＋サブドメイン割当＝同時実施・https 強制・
   sitemap 23 URL・GSC 送信済み・本体 README 英日と llms.txt に導線。残り任意＝verified domains〈設計者〉）。裁定
   2026-09-04（計画は検定側 design/20-domain-plan.md・7/30 策定。トリガー (a)「宣言準備と束ねる」の窓が転記漏れで

@@ -12,4 +12,5 @@ Each redirects with `redirect_to`; the targets are the same links as in the post
 - [/hn/payday](/hn/payday/) — payday: the 25th, rolled back to the previous business day (2026 US federal holidays)
 - [/hn/month-end](/hn/month-end/) — 3 business days before month-end
 - [/hn/jp-holidays](/hn/jp-holidays/) — Japan's substitute and sandwiched holidays from the statutory list
+- [/hn/election-day](/hn/election-day/) — US Election Day, the Tuesday after the first Monday in November (recipe: [US Election Day, Black Friday and the Sunday after Thanksgiving](/en/recipes/us-election-day-and-thanksgiving.html))
 - [/hn/stdlib-gregorian](/hn/stdlib-gregorian/) — the Gregorian calendar as Kairos stdlib source (GitHub)

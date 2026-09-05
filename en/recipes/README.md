@@ -1,5 +1,5 @@
 ---
-source_sha: f58f9d28e45b
+source_sha: 7ffe913e6be7
 ---
 
 # Recipes — practical forms of the schedules long said to be unwritable
@@ -19,6 +19,7 @@ first, the background after.
 | [Easter](easter-schedule.md) | The canonical movable feast RRULE cannot express — pure arithmetic, zero data |
 | [What is a 4-4-5 calendar?](4-4-5-calendar.md) | Definition, the 4-5-4/5-4-4 variants, the 53rd week, a 2026 period table; the carry rule falls out of the definition |
 | [Nearest weekday to the 15th](quartz-15w-nearest-weekday.md) | The general form of Quartz `15W`, extendable to holidays |
+| [US Election Day, Black Friday and the Sunday after Thanksgiving](us-election-day-and-thanksgiving.md) | Dates relative to a computed date; RRULE's `BYMONTHDAY=2..8` encoding written in the order the law states it |
 
 - Every code example is execution-verified by the reference implementation's doctests
   (`impl/test/doctest.test.ts`). `# eval:` gives the evaluation range and `#=>` the expected
