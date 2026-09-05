@@ -367,7 +367,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
       for (const e of readdirSync(new URL(dir, root), { withFileTypes: true })) {
         const p = `${dir}${e.name}`;
         if (e.isDirectory()) {
-          if (['.git', 'node_modules'].includes(e.name) || isPrivate(p)) continue;
+          // hn/＝Show HN 用の短縮リダイレクト（redirect_to のスタブ・sitemap 除外）——404.md と同じくリンク到達の外（2026-09-05）
+          if (['.git', 'node_modules', 'hn'].includes(e.name) || isPrivate(p)) continue;
           walk(`${p}/`);
         } else if (p.endsWith('.md') && !isPrivate(p) && p !== '404.md') all.add(p);   // 404.md はインフラページ（リンク到達の外・Pages が自動配信）
       }
