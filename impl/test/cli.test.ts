@@ -2,7 +2,7 @@
 // 単体層は cmdList/cmdNext/renderHuman を直接呼び（表示と JSON が同じ CliReport から出る構造の検証）、
 // 実走層は node サブプロセスで入口（引数解釈・stdout/stderr の割り当て・終了コード契約）を検査する。
 // 終了コード契約: 0=成功・1=エラー・2=next が地平線内に要求件数未達。
-import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
@@ -342,3 +342,25 @@ describe('CLI 実走（サブプロセス）', () => {
     });
   });
 });
+
+// npm の bin は node_modules/.bin/kairos → dist/cli.js のシンボリックリンク——argv[1] がリンク側・import.meta.url が
+// 実体側になる。旧ガード（URL の文字列一致）だと main() が走らず黙って終了した（2026-09-07 pack→install 実走で検出・
+// realpath 比較へ修正）。Windows でシンボリックリンクが作れない環境は skip（そこは npm の .cmd シムが実パスで起動する）。
+describe('bin のシンボリックリンク経由（npm の .bin 形）', () => {
+  const linkDir = mkdtempSync(join(tmpdir(), 'kairos-bin-'));
+  const link = join(linkDir, 'kairos');
+  let linkOk = true;
+  try { symlinkSync(join(IMPL, 'src', 'cli.ts'), link, 'file'); } catch { linkOk = false; }
+  afterAll(() => rmSync(linkDir, { recursive: true, force: true }));
+  it.skipIf(!linkOk)('リンク経由でも main が走る（--version が版を出す・next --json が 3 点を返す）', () => {
+    const v = spawnSync('node', [link, '--version'], { encoding: 'utf8' });
+    expect(v.status).toBe(0);
+    expect(v.stdout.trim()).toBe(VERSION);
+    const r = spawnSync('node', [link, 'next', '-n', '3', '--json', join(IMPL, 'examples', 'payday.kairos')], { encoding: 'utf8' });
+    expect(r.status).toBe(0);
+    const report = JSON.parse(r.stdout) as CliReport;
+    expect(report.found).toBe(3);
+    expect(report.results[0].points).toHaveLength(3);
+  });
+});
+

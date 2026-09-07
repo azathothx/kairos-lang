@@ -99,6 +99,11 @@ external の実運用を見て宣言する**（比較 3 案〈全信号の自然
    LICENSE, NOTICE]`（LICENSE/NOTICE を impl/ に同梱）・`engines: node >=20`・`prepack: npm run build`
    （pack/publish 時に自動ビルド・dist は gitignore）。検証＝dist 直・node_modules 配下の模擬コピーの
    両方で `--version`/`list`/`next` 実走一致・630 テスト green。
+   **配布経路の実害を事前に検出・修正（2026-09-07）**: pack した tarball を別ディレクトリへ install して `.bin/kairos` を実走
+   したところ**無出力で終了**——npm の bin はシンボリックリンクで、`isMain` ガード（URL の文字列一致）が argv[1]〈リンク側〉と
+   import.meta.url〈実体側〉の不一致で偽に落ちていた（9/4 の検証は cp 模擬で見逃し）。realpath 比較へ修正・リンク経由の
+   witness を cli.test.ts に追加（旧コードで赤を実測）・SEA も再検証 green。**CI に pack→install→実走のジョブを新設**
+   （3 OS × Node 20＝engines 下限）＝publish 前から publish 後と同じ経路を機械検査。当日はこの CI が green であることが前提。
    **当日チェックリスト**: ✅① WSL 側で `npm login`（2026-09-04 完了＝`--browser=false` で URL を手動で
    開く形・`npm whoami`＝azathothx・~/.npmrc 600）✅② npm アカウントの **2FA**（mode: auth-and-writes
    を確認済み＝publish 時に OTP・認証アプリを手元に）③ `npm view kairos-lang` が E404 のまま（空き・
@@ -130,8 +135,9 @@ Kairos 自身の実測——六曜〈公開 doctest 済み rokuyo.kairos の式�
   （2026-09-04 機械化・dry-run 既定・`--apply --head v1.0.0`＝教本 3 冊の版行＋公開 README の 4 行・bank
   90 問の spec_head→版タグ・残存 RC 走査。scratch 複製で --apply→verify.mjs 全 PASS を事前実証済み）→
   verify.mjs 再実走 → 公開同期（第 11 回レビュー J もこれで解消）**。
-  **9/14 までの残 LOW（任意）**: ✅ EBNF の既存非終端棚卸し（追補 16 補綴 8/28 で処置）・impl/README の
-  機構列挙とテスト一覧の現行化・検証録 11 の「555 テスト」記録齟齬の注記・✅ 検定 README v1/L1 教本
+  **9/14 までの残 LOW（任意）**: ✅ EBNF の既存非終端棚卸し（追補 16 補綴 8/28 で処置）・✅ impl/README の
+  機構列挙とテスト一覧の現行化（ADR-52 まで列挙済み・テスト数 637＝9/7）・✅ 検証録 11 の「555 テスト」記録齟齬の注記
+  （8/28 に注記済みと 9/7 確認）・✅ 検定 README v1/L1 教本
   v1.1 の表記統一・✅ L3 教本リテラル一覧へ Thh:mm（いずれも 2026-09-04 処置・検定側は 9/14 の公開同期で出る）。
 - **9/14（宣言当日）**: 条件 4 差分確認→条件 5（npm test・検査・公開層ガード）→宣言時作業
   1〜5（下記）→ npm publish（**パッケージ名 kairos-lang に裁定済み**＝2026-08-28・404 で空き実測・
