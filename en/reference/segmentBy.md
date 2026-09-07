@@ -1,5 +1,5 @@
 ---
-source_sha: 006808f61036
+source_sha: d39c2c67dd0f
 ---
 
 # `segmentBy` — interval-sequence windows (cut at markers)
@@ -165,6 +165,16 @@ month repeats a name inside the domain). **A point sequence derived by `filter` 
 (labels are properties of tables and windows — ADR-30/34/42), so the projection does not stand when
 the new moons are filtered out of another table — supply the new moons as **their own `external`**
 (if you already compute them upstream, just ship the dates and the month numbers together).
+
+**Using labels as numbers** (reflux regular mail 2026-09-08 §3): the value domain of `labels:` is
+**enumeration names** (`labels:` on `external` accepts identifiers only — ADR-30's value-domain
+declaration is static knowledge), so a definition that does arithmetic on a label, such as a lunisolar
+month number, keeps a name-to-number function inside the premise: `monthNo = l => l == m1 ? 1 :
+l == m2 ? 2 : … : 12` (a nested conditional; the readability cost is explicit). In the supplier's
+measurement the rokuyō (大安) definition written this way matched the static `labels:` version point
+for point. A one-word projection that takes the ordinal from the declaration order (something like
+`ord(lunar(d))`) is not in the 1.0 vocabulary; it is a post-1.0 candidate in
+[90-open-questions](../../design/90-open-questions.md).
 
 ## Pitfalls
 
