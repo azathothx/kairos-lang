@@ -4,7 +4,7 @@
 > that follow it (each page records its source revision as `source_sha`, and a consistency check
 > flags stale translations) ([日本語版はこちら](../../spec/README.md)).
 
-**Status: Release candidate (RC5, declared 2026-07-08; addenda through no. 18, 2026-08-31).**
+**Status: 1.0 (declared 2026-09-14; addenda through no. 18, 2026-08-31).**
 Semantics, the operator family, the grammar (EBNF, §5.6), and the lexis are frozen. **Naming is final
 for every word** — the last placeholder `shiftBoundary` was settled as **`rephase`** on 2026-07-26
 (see §5.4). Expressiveness is validated against 20 well-known schedule families

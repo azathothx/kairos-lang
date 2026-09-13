@@ -151,7 +151,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
   it('対話痕跡の役割語が文書に残っていない（公式体裁への正規化・2026-07-12）', () => {
     // 裁定・判断の主体は「設計者」、機械検証は「N 観点レビュー」（凡例は design/README）。
     // 「ユーザー」単独は言語の利用者の意（ユーザー定義 等）で正当——複合語だけを検査する。
-    const banned = /ユーザー(裁定|判断|確認|指示|指摘|提案|要望|決定|協働|レビュー|の洞察|の直観|の読み)|エージェント|チャット|AskUserQuestion|SendMessage|Claude/;
+    const banned = /ユーザー(裁定|判断|確認|指示|指摘|提案|要望|決定|協働|レビュー|の洞察|の直観|の読み)|エージェント|チャット|AskUserQuestion|SendMessage|Claude(?! (Fable|Opus|Sonnet|Haiku)\b)/;
+    // 「Claude」はモデル名（Claude Fable 5.1 等＝外部ベンチの対象モデル・収蔵 27）としての出現は役割語でないため除外（2026-09-10）
     // 規約自体を説明する行は対象外
     const legend = /役割語|正規化|対話痕跡/;
     const designDocs = readdirSync(new URL('design/', root), { recursive: true })

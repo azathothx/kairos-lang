@@ -28,7 +28,7 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 <p align="center"><img src="assets/figures/compare-composability.ja.svg" width="880"
   alt="合成が要である理由: cron は固定パターンまで・RRULE は繰り返し規則まで。Kairos は式が合成でき、結果は常にストリームとして次の定義へ流せる（閉包）。"></p>
 
-**ステータス: リリース候補（RC5＝2026-07-08 宣言・追補 18〈2026-08-31〉まで反映）**。意味論・演算子族・文法（EBNF）・字句は確定、命名も
+**ステータス: 1.0（2026-09-14 宣言・追補 18〈2026-08-31〉まで反映）**。意味論・演算子族・文法（EBNF）・字句は確定、命名も
 **全語確定**（最後の仮称 `shiftBoundary` は `rephase` に裁定済み＝2026-07-26）。表現力は既知スケジュール 20 要素のサンプル
 検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・638 テスト）で実証済み。
 
@@ -52,6 +52,17 @@ Kairos 言語検定の教材（3 級 読解・2 級 作文・1 級 運用意味�
 
 **まずブラウザで試す**: [Playground](https://kairos-lang.org/playground/) はリファレンス実装を
 そのまま実行する——インストール不要・式はブラウザの外に出ない。
+
+**npm から入れる**（Node.js 20+・実行時依存ゼロ）:
+
+```bash
+npm i -g kairos-lang                             # 入れずに試すなら: npx kairos-lang --version
+kairos list impl/examples/payday.kairos --from 2026-01-01 --to 2027-01-01
+kairos next -n 3 --json impl/examples/payday.kairos   # 今日から次の 3 発火（機械可読）
+```
+
+（`impl/examples/` はこのリポジトリにある。npm パッケージに入るのは CLI と stdlib。下のブロックは開発用に TypeScript を
+そのまま実行する形）
 
 Node.js 24+ で TypeScript をそのまま実行できる。
 

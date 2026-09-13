@@ -123,6 +123,17 @@ Full explanation with sequence diagrams and runnable doctests:
 **Try it in your browser first**: the [Playground](https://kairos-lang.org/en/playground/) runs the
 reference implementation as-is — no install, nothing leaves your browser.
 
+**Install from npm** (Node.js 20+; zero runtime dependencies):
+
+```bash
+npm i -g kairos-lang                             # or without installing: npx kairos-lang --version
+kairos list impl/examples/payday.kairos --from 2026-01-01 --to 2027-01-01
+kairos next -n 3 --json impl/examples/payday.kairos   # next 3 firings from today, machine-readable
+```
+
+(`impl/examples/` lives in this repository; the npm package ships the CLI and the stdlib. The block below runs
+the TypeScript source directly, for development.)
+
 Runs TypeScript directly with Node.js 24+; zero runtime dependencies.
 
 ```bash
@@ -146,7 +157,7 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 ## Status and documentation
 
-**Release candidate (RC5, declared 2026-07-08; addenda through no. 18, 2026-08-31).** Semantics, the operator family, grammar (EBNF), and lexis are
+**Version 1.0 (declared 2026-09-14; addenda through no. 18, 2026-08-31).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
 is validated against 20 well-known schedule families and by a reference implementation (638 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
