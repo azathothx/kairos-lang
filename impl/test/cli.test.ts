@@ -226,8 +226,12 @@ describe('todayIn', () => {
 });
 
 describe('CLI 実走（サブプロセス）', () => {
+  // 1.0.1 から CLI の既定 tz は機械の tz。このブロックの golden は日本の例を JST の機械で流した形なので、子プロセスの
+  // TZ を Asia/Tokyo に固定する（CI のランナーは UTC＝固定しないと日粒度の点が 2026-01-22T15:00 と印字されて赤になる。
+  // 2026-09-14 の 1.0.1 公開直後に ubuntu/windows の両ジョブで実測）。機械 tz の既定そのものは末尾の witness が検査する。
   const cli = (...args: string[]) =>
-    spawnSync(process.execPath, ['src/cli.ts', ...args], { cwd: IMPL, encoding: 'utf8' });
+    spawnSync(process.execPath, ['src/cli.ts', ...args],
+      { cwd: IMPL, encoding: 'utf8', env: { ...process.env, TZ: 'Asia/Tokyo' } });
 
   it('旧形式（サブコマンド省略）は list と同じ出力・終了コード 0', () => {
     const r = cli('examples/payday.kairos', '--from', '2026-01-01', '--to', '2027-01-01');

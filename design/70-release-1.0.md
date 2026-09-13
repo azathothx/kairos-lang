@@ -142,6 +142,8 @@ Kairos 自身の実測——六曜〈公開 doctest 済み rokuyo.kairos の式�
 - ✅ **9/14 実施済み（2026-09-14 0〜1 時台）**: 条件 4・5 通過→declare-1.0.mjs --apply→638 green→正本 c13f062＋タグ→公開 68348d4＋タグ v1.0.0→
   GitHub Release「Kairos 1.0」→検定 follow-1.0→verify 全問 PASS→公開 3c108da→**npm kairos-lang 1.0.0**（設計者の端末で `npm publish --browser=false`＝2FA は Web 承認）→
   npx 実走が参照実装とバイト一致→dev.to 2 本公開。記録は設計記録 2026-09-14。
+- ✅ **1.0.1（同日 3 時台）**: CLI の既定 tz を機械の tz へ（1.0.0 は Asia/Tokyo 固定＝npm 慣らし初日の Windows 実走で検出・NZ premise で窓が 0 件）。
+  witness 3 本・641 テスト・公開 aaceba6＋タグ v1.0.1＋Release・npm 1.0.1（設計者の端末）・dev.to ガイド更新。言語・評価は不変＝CHANGELOG 追補なし。
 - **9/14（宣言当日）**: 条件 4 差分確認→条件 5（npm test・検査・公開層ガード）→宣言時作業
   1〜5（下記）→ npm publish（**パッケージ名 kairos-lang に裁定済み**＝2026-08-28・404 で空き実測・
   素の kairos は既存 v2.1.3 のため回避・CLI コマンド名は kairos）。**Show HN は宣言日から切り離し 9/22〜24**（裁定 2026-09-06＝npm の慣らし・米選挙日レシピ・README の npm 形の後。
