@@ -29,7 +29,8 @@ node src/cli.ts next --json examples/payday.kairos           # 機械可読（�
 ### CLI サブコマンド
 
 - **`list [--from] [--to] [--tz] [--json] <file>`** — 範囲 `[from, to)` の全発火・区間註釈・
-  被覆サマリ。既定は実行 tz の今日から 1 年。
+  被覆サマリ。既定は**機械の tz**（`Intl` の解決値・`--tz` で上書き）の今日から 1 年。ラベルと `[from, to)` の
+  端点はこの tz で読む——定義の premise tz と違うと日粒度の点は時刻付き（例 NY の 0 時＝JST 13:00）で印字される（1.0.1）。
 - **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--json] <file>`** — `from`（既定＝今日）以降の
   次の N 発火（既定 1）。探索窓を 1 年から倍々に広げ（上限 `--horizon` 年・既定 10）、見つかったら
   **[from, 最終発火日の翌日) で確定再評価**——区間註釈・残走路が答えの範囲と整合する。
@@ -187,7 +188,7 @@ baseAlign・再実行の外側フレーム再記録〕）。
 
 ## テスト
 
-（28 ファイル・638 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（28 ファイル・641 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・

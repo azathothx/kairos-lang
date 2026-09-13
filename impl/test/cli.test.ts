@@ -364,3 +364,43 @@ describe('bin のシンボリックリンク経由（npm の .bin 形）', () =>
   });
 });
 
+
+// 1.0.1: CLI の既定 tz は機械の tz（Intl の解決値）。ラベルと [from, to) の端点がその tz で読まれる——
+// 1.0.0 は Asia/Tokyo 固定で、非 JST の環境では日粒度の点が時刻付きで印字され、窓が日をまたぐ実害があった
+// （2026-09-14 npm 慣らしで検出＝NZ premise の 9/25 が JST の窓に入らず 0 件）。ライブラリ（cmdList/cmdNext を
+// 直接呼ぶ側）の既定は Asia/Tokyo のまま＝doctest と既存の単体テストは不変。機械 tz は子プロセスの TZ で模擬する。
+describe('既定 tz は機械の tz（1.0.1・CLI 境界の時計読みと同じ扱い）', () => {
+  const NZ = 'premise NZ {\n  calendar-system: Gregorian\n  tz: "Pacific/Auckland"\n  wkst: Mon\n}\n@NZ\n'
+    + 'everyDay |> within(month) |> nth(25)\n';
+  const nzFile = join(tmpdir(), `kairos-nz-${process.pid}.kairos`);
+  writeFileSync(nzFile, NZ);
+  afterAll(() => rmSync(nzFile, { force: true }));
+  const cliIn = (tz: string, ...args: string[]) =>
+    spawnSync(process.execPath, ['src/cli.ts', ...args],
+      { cwd: IMPL, encoding: 'utf8', env: { ...process.env, TZ: tz } });
+
+  it('機械 tz が定義 tz と同じなら日粒度の点は日付だけで印字され、その日の窓に入る', () => {
+    const r = cliIn('Pacific/Auckland', 'list', '--from', '2026-09-25', '--to', '2026-09-26', '--json', nzFile);
+    expect(r.status).toBe(0);
+    const rep = JSON.parse(r.stdout) as CliReport;
+    expect(rep.tz).toBe('Pacific/Auckland');
+    expect(rep.results[0].dates).toEqual(['2026-09-25']);
+  });
+
+  it('--tz は機械 tz より優先する', () => {
+    const r = cliIn('Asia/Tokyo', 'list', '--from', '2026-09-25', '--to', '2026-09-26',
+      '--tz', 'Pacific/Auckland', '--json', nzFile);
+    expect(r.status).toBe(0);
+    const rep = JSON.parse(r.stdout) as CliReport;
+    expect(rep.tz).toBe('Pacific/Auckland');
+    expect(rep.results[0].dates).toEqual(['2026-09-25']);
+  });
+
+  it('--from の既定「今日」も機械 tz で読み、使った tz が CliReport.tz に残る', () => {
+    const r = cliIn('Pacific/Auckland', 'next', '-n', '1', '--json', nzFile);
+    expect(r.status).toBe(0);
+    const rep = JSON.parse(r.stdout) as CliReport;
+    expect(rep.tz).toBe('Pacific/Auckland');
+    expect(rep.from).toBe(todayIn('Pacific/Auckland'));
+  });
+});

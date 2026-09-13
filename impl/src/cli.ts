@@ -38,6 +38,13 @@ export interface CliReport {
   warnings: string[];
 }
 
+/** 機械（実行環境）の tz＝Intl の解決値。CLI の既定 tz はこれ（1.0.1——1.0.0 は Asia/Tokyo 固定で、非 JST の環境では
+ *  日粒度の点が時刻付きで印字され [from, to) の窓が日をまたいだ）。時計読みと同じく CLI 境界だけで読む——
+ *  ライブラリ側（run / cmdList / cmdNext の既定）は Asia/Tokyo のままで、評価は不変に決定的 */
+export function hostTz(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+}
+
 /** 実行 tz の今日（市民日付）。時計読みは CLI 境界のみ——言語・評価は不変に決定的 */
 export function todayIn(tz: string): string {
   return new Intl.DateTimeFormat('en-CA',
@@ -211,9 +218,10 @@ export function renderHuman(rep: CliReport, lang: CliLang = 'ja'): string[] {
 
 const USAGE_JA = `使い方（kairos ＝ node src/cli.ts）:
   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
-      範囲 [from, to) の全発火・区間註釈・被覆サマリ（既定: 実行 tz の今日から 1 年）
+      範囲 [from, to) の全発火・区間註釈・被覆サマリ（既定: 機械の tz の今日から 1 年）
   kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
       from 以降の次の N 発火（既定: n=1・from=今日・地平線 10 年。本体式 1 つのファイル向け）
+  --tz: ラベルと [from, to) の端点の tz（既定＝機械の tz。定義の premise tz と違うと日粒度の点は時刻付きで印字される）
   --supply: external の解決値を静的束で渡す——{束縛名: {dates|instants, covering, asof [, labels]}}
   --lang en: 定型出力の枠組みを英語表示（エラー・註釈文は日本語が正のまま・--json は言語中立）
 サブコマンド省略時は list・--version で実装版。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達`;
@@ -221,10 +229,12 @@ const USAGE_JA = `使い方（kairos ＝ node src/cli.ts）:
 const USAGE_EN = `Usage (kairos = node src/cli.ts):
   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
       All firings in [from, to) plus interval annotations and the coverage summary
-      (default: one year from today in the execution tz)
+      (default: one year from today in the machine's time zone)
   kairos next [-n count] [--from YYYY-MM-DD] [--horizon years] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
       The next N firings at or after from (default: n=1, from=today, horizon 10 years;
       intended for files with a single body expression)
+  --tz: zone for labels and the [from, to) endpoints (default: the machine's time zone; if it differs from
+      the definition's premise tz, day-granular points are printed with a time of day)
   --supply: static bundle resolving external() — {binding: {dates|instants, covering, asof [, labels]}}
   --lang en: English framing for the human-readable output. Evaluator messages (errors and
       annotation texts) stay in Japanese — the implementation's canonical output language;
@@ -282,8 +292,8 @@ export function main(argv: string[]): number {
     const T = CLI_STRINGS[lang];
     if (positionals.length !== 1) throw new KairosError('ファイルを 1 つ指定する');
     const source = readFileSync(positionals[0], 'utf8');
-    const tz = values.tz as string | undefined;
-    const from = (values.from as string | undefined) ?? todayIn(tz ?? 'Asia/Tokyo');
+    const tz = (values.tz as string | undefined) ?? hostTz();   // 既定＝機械の tz（--tz で上書き）
+    const from = (values.from as string | undefined) ?? todayIn(tz);
     const supplyPath = (values as { supply?: string }).supply;
     let resolve: ExternalResolver | undefined;
     if (supplyPath) {
@@ -298,12 +308,11 @@ export function main(argv: string[]): number {
     let rep: CliReport;
     if (cmd === 'list') {
       const to = (values as { to?: string }).to ?? addYears(from, 1);
-      rep = cmdList(source, { from, to, ...(tz ? { tz } : {}), ...(resolve ? { resolve } : {}) });
+      rep = cmdList(source, { from, to, tz, ...(resolve ? { resolve } : {}) });
     } else {
       const n = posInt((values as { n?: string }).n ?? '1', '-n');
       const horizonYears = posInt((values as { horizon?: string }).horizon ?? '10', '--horizon');
-      rep = cmdNext(source, { from, n, horizonYears, ...(tz ? { tz } : {}),
-        ...(resolve ? { resolve } : {}) });
+      rep = cmdNext(source, { from, n, horizonYears, tz, ...(resolve ? { resolve } : {}) });
     }
 
     if (values.json) console.log(JSON.stringify(rep, null, 2));
