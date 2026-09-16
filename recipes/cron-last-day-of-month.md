@@ -71,6 +71,40 @@ bizDay |> within(month) |> last
 カレンダーでも、差し替えるのはデータだけである。
 [米国版を Playground で実行](https://kairos-lang.org/playground/#s=cHJlbWlzZSBVUyB7CiAgY2FsZW5kYXItc3lzdGVtOiBHcmVnb3JpYW4KICB0ejogIkFtZXJpY2EvTmV3X1lvcmsiCiAgd2tzdDogU3VuCn0KCkBVUwpmZWRlcmFsMjAyNiA9IFsyMDI2LTAxLTAxLCAyMDI2LTAxLTE5LCAyMDI2LTAyLTE2LCAyMDI2LTA1LTI1LCAyMDI2LTA2LTE5LAogICAgICAgICAgICAgICAyMDI2LTA3LTAzLCAyMDI2LTA5LTA3LCAyMDI2LTEwLTEyLCAyMDI2LTExLTExLCAyMDI2LTExLTI2LAogICAgICAgICAgICAgICAyMDI2LTEyLTI1XSBjb3ZlcmluZzogMjAyNi4uMjAyNgpzYXRTdW4gPSBldmVyeURheSB8PiBmaWx0ZXIoZCA9PiB3ZWVrZGF5KGQpID09IFNhdCBvciB3ZWVrZGF5KGQpID09IFN1bikKYml6RGF5ID0gZXZlcnlEYXkgXCAoc2F0U3VuIHwgZmVkZXJhbDIwMjYpCgpiaXpEYXkgfD4gd2l0aGluKG1vbnRoKSB8PiBsYXN0Cg&f=2026-01-01&t=2026-07-01&z=America%2FNew_York)。
 
+## 動かす——crontab は 1 行だけ残す
+
+Kairos が答えるのは「いつ動くべきか」の集合までで、起動・リトライ・記録は実行系（systemd・ジョブランナー等）の
+仕事である（[言語仕様 §7.8](../spec/90-examples.md)）。接続の型は 2 つ。どちらも CLI（`npm i -g kairos-lang`）で
+そのまま動く。
+
+**型 1: cron を時計として残し、判定だけ Kairos に移す。** crontab の行は 1 本だけ残し、毎朝 9 時に「今日は点があるか」
+を聞いて、あれば起動する。ラベルと `[--from, --to)` の窓は機械の tz で読まれる（定義の premise tz と違うなら `--tz`
+で揃える）:
+
+```text
+0 9 * * *  cd /srv/batch && ./run-if-today.sh month-end.kairos ./close-books.sh
+```
+
+```sh
+#!/bin/sh
+# run-if-today.sh <定義.kairos> <ジョブ> —— 今日 [今日, 明日) に点があればジョブを exec する
+today=$(date +%F); tomorrow=$(date -d "$today + 1 day" +%F)   # GNU date。macOS は date -v+1d +%F
+n=$(kairos list --from "$today" --to "$tomorrow" --json "$1" | jq '.results[0].dates | length')
+[ "$n" -gt 0 ] && exec "$2"
+```
+
+人間向けの出力には被覆サマリの `#` 行が混ざるため、判定は `--json` で数える。
+
+**型 2: 次の 1 点を予約する。** 時刻も定義側に置き（`… |> last |> at(T23:55)`）、`next --json` で次の発火を取る。
+壁時計（機械の tz）と epoch ミリ秒の両方で返るので、OS の一回限りのタイマーに渡し、ジョブの最後で次を登録し直す
+（仕様の言う「定期的に再具現化する」運用）:
+
+```sh
+t=$(kairos next --json month-end.kairos | jq -r '.results[0].dates[0]')   # 例 2026-09-30T23:55
+systemd-run --user --on-calendar="$(echo "$t" | tr T ' '):00" ./close-books.sh
+# Linux の at(1)、Windows の schtasks /sc once でも同じ形
+```
+
 ## ブラウザで試す
 
 前提込みの自己完結形（祝日テーブルを式の中に持つ）を

@@ -1,5 +1,5 @@
 ---
-source_sha: 6cfedd124871
+source_sha: e716afd73e1f
 ---
 
 # Cron: run on the last day of the month — and the last business day
@@ -81,6 +81,41 @@ character for character**. "Build the stream of business days, take the last poi
 month" is a structure independent of any one country's calendar — whichever calendar you run
 under, what you swap is the data.
 [Run the US version in the Playground](https://kairos-lang.org/en/playground/#s=cHJlbWlzZSBVUyB7CiAgY2FsZW5kYXItc3lzdGVtOiBHcmVnb3JpYW4KICB0ejogIkFtZXJpY2EvTmV3X1lvcmsiCiAgd2tzdDogU3VuCn0KCkBVUwpmZWRlcmFsMjAyNiA9IFsyMDI2LTAxLTAxLCAyMDI2LTAxLTE5LCAyMDI2LTAyLTE2LCAyMDI2LTA1LTI1LCAyMDI2LTA2LTE5LAogICAgICAgICAgICAgICAyMDI2LTA3LTAzLCAyMDI2LTA5LTA3LCAyMDI2LTEwLTEyLCAyMDI2LTExLTExLCAyMDI2LTExLTI2LAogICAgICAgICAgICAgICAyMDI2LTEyLTI1XSBjb3ZlcmluZzogMjAyNi4uMjAyNgpzYXRTdW4gPSBldmVyeURheSB8PiBmaWx0ZXIoZCA9PiB3ZWVrZGF5KGQpID09IFNhdCBvciB3ZWVrZGF5KGQpID09IFN1bikKYml6RGF5ID0gZXZlcnlEYXkgXCAoc2F0U3VuIHwgZmVkZXJhbDIwMjYpCgpiaXpEYXkgfD4gd2l0aGluKG1vbnRoKSB8PiBsYXN0Cg&f=2026-01-01&t=2026-07-01&z=America%2FNew_York).
+
+## Running it — keep one crontab line
+
+Kairos stops at *when things should happen*; firing, retrying and logging stay with your runner
+(systemd, a job queue, whatever you already trust — [spec §7.8](../spec/90-examples.md)). Two wiring
+patterns, both working with the CLI as it ships (`npm i -g kairos-lang`).
+
+**Pattern 1: cron stays the clock, Kairos makes the decision.** Keep a single crontab line and, every
+morning at 9, ask "is there a point today?"; run the job if so. Labels and the `[--from, --to)` window
+are read in the machine's time zone (pass `--tz` if the definition's `premise` zone differs):
+
+```text
+0 9 * * *  cd /srv/batch && ./run-if-today.sh month-end.kairos ./close-books.sh
+```
+
+```sh
+#!/bin/sh
+# run-if-today.sh <definition.kairos> <job> — exec the job if there is a point in [today, tomorrow)
+today=$(date +%F); tomorrow=$(date -d "$today + 1 day" +%F)   # GNU date; macOS: date -v+1d +%F
+n=$(kairos list --from "$today" --to "$tomorrow" --json "$1" | jq '.results[0].dates | length')
+[ "$n" -gt 0 ] && exec "$2"
+```
+
+Count with `--json`: the human-readable output also prints the coverage summary as `#` lines.
+
+**Pattern 2: schedule the next point, one at a time.** Put the time of day into the definition as well
+(`… |> last |> at(T23:55)`) and ask `next --json` for the next firing. It comes back as wall-clock text
+(machine's zone) and as epoch milliseconds; hand it to a one-shot OS timer and let the job re-register
+the next point as its last step — the "re-materialize periodically" loop the spec describes:
+
+```sh
+t=$(kairos next --json month-end.kairos | jq -r '.results[0].dates[0]')   # e.g. 2026-09-30T23:55
+systemd-run --user --on-calendar="$(echo "$t" | tr T ' '):00" ./close-books.sh
+# same shape with at(1) on Linux, or schtasks /sc once on Windows
+```
 
 ## Try it in your browser
 
