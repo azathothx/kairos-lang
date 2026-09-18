@@ -25,6 +25,7 @@ const CURRENT_DOCS = [
   ...mdFiles('en/stdlib/'),
   ...mdFiles('en/design/40-examples/'), // カタログ＋需要順の研究英訳（11→10→05→09→06・2026-08-17 設計者裁定。旧: カタログのみ＝2026-08-06）
   ...mdFiles('en/recipes/'),
+  'assets/logo/README.md', // ロゴ・アイコンの解説（/assets/ に公開＝2026-09-18 設計者指摘: 表セルの \| が公開面に露出・網の外だった）
 ];
 
 // 公開される design 文書（kramdown 検査の対象＝2026-08-17 設計者指摘: 11 の表で \| が再発——

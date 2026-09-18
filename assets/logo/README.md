@@ -7,7 +7,7 @@ K モノグラムと `|>` アイコンの**二部品ファミリー**——ど�
 | ファイル | 内容 |
 | --- | --- |
 | `kairos-mark.svg` | K モノグラム（金プレート・dark 対応の media query 内蔵）。favicon・README の正 |
-| `kairos-pipe.svg` | `\|>` アイコン（同上） |
+| `kairos-pipe.svg` | <code>&#124;></code> アイコン（同上） |
 | `kairos-mark-mono.svg` / `kairos-pipe-mono.svg` | 単色版（`currentColor`）。インライン埋め込みで文字色に追従 |
 | `favicon-32.png` / `apple-touch-icon.png` | ラスタのフォールバック（マスターから生成） |
 | `social-preview.svg` / `.png` | GitHub ソーシャルプレビュー 1280×640（SVG が原版・フォントは Ubuntu / Ubuntu Mono。反映は Settings → Social preview へ手動アップロード） |
