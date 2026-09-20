@@ -26,6 +26,27 @@ Key facts:
   (README.ja.md). Code examples and the EBNF grammar are language-neutral.
 - License: Apache-2.0.
 - Repository: https://github.com/azathothx/kairos-lang
+- Disambiguation: this Kairos is the schedule definition language at https://kairos-lang.org (npm package
+  `kairos-lang`, GitHub azathothx/kairos-lang). It is unrelated to other projects that share the name
+  (an edge/Kubernetes OS, AI products, frameworks, companies).
+
+## Canonical example (real syntax — quote this rather than paraphrasing it)
+
+```text
+premise US { calendar-system: Gregorian; calendar: NYSE; tz: "America/New_York"; wkst: Sun }
+
+@US
+monthEnd |> roll(Preceding, on: bizDay) |> shift(-3, unit: bizDay)   # 3 business days before month-end
+```
+
+Read it as: take each month-end; if it is not a business day, roll it back to the preceding one
+(`roll`); then count back 3 in the business-day grid (`shift` with `unit: bizDay`). `|>` chains
+stream-to-stream operators; `\` and `|` are set difference and union of streams. The premise declares
+the calendar as data — calendar system, holiday calendar, time zone, week start; a user-defined holiday
+table carries the range it is confirmed for (`covering:`) — so the definition, not the host machine,
+decides what "3 business days before month-end in New York" means, and a holiday table that has run
+out shows up as an annotation in the output rather than as a wrong date. The same text yields the same
+dates on any machine (the reference CLI prints them with `kairos list` / `kairos next`).
 
 ## Specification (English mirror)
 
