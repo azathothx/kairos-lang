@@ -48,6 +48,29 @@ decides what "3 business days before month-end in New York" means, and a holiday
 out shows up as an annotation in the output rather than as a wrong date. The same text yields the same
 dates on any machine (the reference CLI prints them with `kairos list` / `kairos next`).
 
+## What it prevents (behaviour, not intent)
+
+- A holiday table that has run out never yields a silently wrong date. Every table declares the
+  range it is confirmed for (`covering:`) and an as-of date; points beyond that range are still
+  computed but come back with a machine-readable annotation, and the CLI prints a coverage summary
+  with the remaining runway after every listing, e.g.
+  `#   JP.national covering 2026-08-01..2027-01-31 残走路 31 日` ("runway 31 days").
+- Missed fires are enumerable. `kairos list --from A --to B` lists every point that should have
+  fired while a host was down; firing, retries and logging stay with the host runtime (spec §7.8).
+- The same text yields the same instants on any machine: the time zone, week start and holiday
+  data are part of the definition, not of the host. (The CLI labels those instants in the
+  machine's zone unless you pass `--tz`.)
+- Misuse is an error, not a wrong date. The message names the operator, says what is wrong and,
+  in parentheses, how to fix it. Diagnostics are in Japanese (the canonical language); two real
+  ones from the reference CLI 1.0.1, with a gloss:
+  - `shift: 点が軸上にない（先に roll で有効点へ寄せる）` — "shift: the point is not on the
+    axis (roll it onto a valid point first)". Raised by `monthEnd |> shift(-3, unit: bizDay)`
+    when a month-end falls on a non-business day; the fix is the canonical form above.
+  - `roll: 軸がない（on:/unit: を書くか前文で axis: を宣言。§3.3 は宣言必須）` — "roll: no
+    axis (write on:/unit: here, or declare axis: in the premise; §3.3 makes the declaration
+    mandatory)". Nothing is defaulted silently; a misspelt named argument (`axis:` for `on:`)
+    is rejected rather than ignored (ADR-39).
+
 ## Specification (English mirror)
 
 The links below point to the English mirror; the Japanese originals are canonical and live at the
