@@ -655,6 +655,11 @@ export class Evaluator {
     if (st.block) absorb(st.block);
     if (st.expr) {
       base = this.rt.premises.get(st.expr.base) ?? this.err(`未定義の premise: ${st.expr.base}`);
+      // 1.0.2: 前文メンバー（calendar:/tz:/axis:/wkst:/roll:/source:/epoch:）は基底連鎖から継承し、ブロックの宣言が
+      // 上書きする（ADR-35 改訂 3＝還流 2026-09-23 定期便 §3）。公開語の内側（evalDef の overlayMembers＝判断 8）と
+      // 同じ集合を入口の本体層にも見せる——source: も同様（判断 5「nonWorking を上書きする派生は source: も上書き」は
+      // 宣言必須「寄り」で未執行＝従来どおり）。
+      for (const [k, v] of this.overlayMembers(new Map(), base)) members.set(k, v);
       if (st.expr.withBlock) absorb(st.expr.withBlock);
       for (const stage of st.expr.stages) {
         if (stage.name !== 'rephase') this.err(`premise 段 ${stage.name} は未対応（プロトタイプ）`);
@@ -2623,7 +2628,7 @@ export class Evaluator {
           this.bool(this.applyValue(pred, [{ k: 'point', ms: p }], env)));
       }
       case 'roll': {
-        const conv = this.sym(this.evalExpr(positional[0] ?? this.err('roll は規約が必要（I3）'), env));
+        const conv = this.sym(this.evalExpr(positional[0] ?? this.rollMember(env), env));
         const axisS = this.toStream(this.evalAxis(named('on') ?? this.axisMember(env, 'roll'), env));
         this.checkAlign(stream.align, axisS.align, 'roll(on:)');
         const axis = axisS.pts;
@@ -2977,6 +2982,13 @@ export class Evaluator {
       return this.applyStage(stream, { name: rhs.name, args: [] }, env);
     }
     this.err('糖衣の右辺を変換として適用できない（生成子を含む糖衣は生成子位置で使う）');
+  }
+
+  /** 前文メンバー roll:（spec §3.3＝ロール規約の畳み込み・1.0.2 で実装）: 規約の位置引数が無いときの既定 */
+  private rollMember(env: Env): Expr {
+    const m = env.members.get('roll');
+    if (!m) this.err('roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言');
+    return typeof m === 'string' ? { t: 'name', name: m } : m;
   }
 
   private axisMember(env: Env, op: string): Expr {

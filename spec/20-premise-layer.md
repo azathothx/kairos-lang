@@ -203,6 +203,9 @@ premise 束縛の右辺には、値式・窓生成語に加えて**本体層の�
 
 派生的定義は、既存 premise の公開語を上書き・追加して新しい premise を作る（`premise → premise` の閉包）。core は
 `with` 上書き——base を土台に、指定した公開語だけ差し替え、残りは継承する。
+**前文メンバー**（`calendar:`・`tz:`・`axis:`・`wkst:`・`roll:`・`source:`・`epoch:`）も基底連鎖から継承し、ブロックの宣言が
+上書きする——入口の本体層が見る集合は、公開語の内側が見る集合（§3.9 の member 解決規則）と同じ（ADR-35 改訂 3・1.0.2）。
+`nonWorking` を上書きする派生が `source:` も上書きすべきこと（§3.9・宣言必須寄り）は従来どおり。
 
 ```text
 premise Fiscal = Gregorian with {

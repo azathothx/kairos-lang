@@ -205,7 +205,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
   it('状態行の追補番号が CHANGELOG の最終追補番号と一致する（4 入口——第 11 回レビュー D の再発防止。テスト数検査と同じ枠）', () => {
     // 「テスト数は機械検査・追補番号は手動」の間隙で生じるドリフトを封じる。1.0 後は状態行が
     // 「1.0＋追補 N」へ変わるので、正規表現の「追補」部だけ読み替えて同じ網を使う
-    const latest = Math.max(...[...read('spec/CHANGELOG.md').matchAll(/^## RC\d+ 追補 (\d+)/gm)]
+    const latest = Math.max(...[...read('spec/CHANGELOG.md').matchAll(/^## (?:RC\d+|1\.0) 追補 (\d+)/gm)]
       .map(m => Number(m[1])));
     const entries: [string, RegExp][] = [
       ['spec/README.md', /追補 (\d+)/],

@@ -1,5 +1,5 @@
 ---
-source_sha: d39c2c67dd0f
+source_sha: 0015ff84a1e7
 ---
 
 # `segmentBy` — interval-sequence windows (cut at markers)
@@ -169,12 +169,20 @@ the new moons are filtered out of another table — supply the new moons as **th
 **Using labels as numbers** (reflux regular mail 2026-09-08 §3): the value domain of `labels:` is
 **enumeration names** (`labels:` on `external` accepts identifiers only — ADR-30's value-domain
 declaration is static knowledge), so a definition that does arithmetic on a label, such as a lunisolar
-month number, keeps a name-to-number function inside the premise: `monthNo = l => l == m1 ? 1 :
+month number, keeps a name-to-number function inside the premise: `monthLabelNo = l => l == m1 ? 1 :
 l == m2 ? 2 : … : 12` (a nested conditional; the readability cost is explicit). In the supplier's
 measurement the rokuyō (大安) definition written this way matched the static `labels:` version point
 for point. A one-word projection that takes the ordinal from the declaration order (something like
 `ord(lunar(d))`) is not in the 1.0 vocabulary; it is a post-1.0 candidate in
 [90-open-questions](../../design/90-open-questions.md).
+
+⚠ Give this function a name that **does not collide with a standard word** — `monthNo` is a public word of the
+standard Gregorian premise, used both by the label projection of `month` (stdlib/gregorian.md §1) and as the
+calendar-coordinate value function (§2). Redefining it inside a premise collapses every month-number read into the
+default branch of the conditional (`== 12` matches every day of the window; anything else matches nothing; no
+warning). In the `Gregorian with { … }` form `month(d)` is affected too; a direct `monthNo(d)` call collapses even
+in a flat premise (measured in the reflux urgent mail of 2026-09-23 — the supplier renamed their function and this
+page renamed its example).
 
 ## Pitfalls
 
@@ -199,6 +207,10 @@ for point. A one-word projection that takes the ordinal from the declaration ord
   filter canonical form drops those points and annotates). To exclude the head side from the
   coverage itself, put a narrowing covering claim on the derived binding
   (`starts = setsu |> filter(…) covering: 2026-02-04..`).
+- **The `label:` projection form has no length check** — a static `labels:` binding stops on "label count ≠ window
+  count", but `label:` has no length constraint, so one missing supply point (a missing major solar term) silently
+  turns into a leap month and shifts rokuyō by a day. Put the month-number continuity check in the supply path
+  (reflux regular mail 2026-09-23 §2-2, measured by the production adopter).
 - A window binding with `labels:` supports **window-instance reference** (value-argument
   application, ADR-42) — `sekkiW("立春")` is **all days of the interval** of the 立春 (Risshun)
   term (the 2/4–2/18 class), a different thing from the table projection

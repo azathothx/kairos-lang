@@ -1,5 +1,5 @@
 ---
-source_sha: dc2afc587a67
+source_sha: 0c2415e6162a
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -255,6 +255,10 @@ definition of TZ (mapping, civil day, gaps/overlaps, leap seconds, versions) is 
 A derived definition makes a new premise by overriding or extending an existing premise's public
 words (the `premise → premise` closure). The core is `with` override — on top of the base, only the
 named public words are replaced; the rest is inherited.
+**Premise members** (`calendar:`, `tz:`, `axis:`, `wkst:`, `roll:`, `source:`, `epoch:`) are inherited along the base chain
+as well, and the block's declarations override them — the entry premise's body sees the same set that the inside of a public
+word sees (the member resolution rule of §3.9; ADR-35 revision 3, 1.0.2). That a derivation overriding `nonWorking` should also
+override `source:` (§3.9, declaration leaning towards required) is unchanged.
 
 ```text
 premise Fiscal = Gregorian with {
