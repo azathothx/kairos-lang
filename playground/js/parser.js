@@ -10,7 +10,7 @@ export class ParseError extends Error {
     }
 }
 const GEN_WORDS = new Set(['grid', 'span', 'split', 'cycle']);
-const MEMBER_KEYS = new Set(['calendar-system', 'calendar', 'axis', 'roll', 'granularity',
+export const MEMBER_KEYS = new Set(['calendar-system', 'calendar', 'axis', 'roll', 'granularity',
     'tz', 'wkst', 'asof', 'source', 'epoch']);
 const WORD_OPS = new Set(['and', 'or', 'not', 'mod', 'div', 'in', 'premise', 'with']);
 export function parse(src) {

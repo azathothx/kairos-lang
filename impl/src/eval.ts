@@ -23,7 +23,7 @@ import type {
 } from './ast.ts';
 import type { DateVal, WidthVal } from './lexer.ts';
 import { getTz, Tz } from './tz.ts';
-import { parseCoveringText } from './parser.ts';
+import { parseCoveringText, MEMBER_KEYS } from './parser.ts';
 
 export class KairosError extends Error {}
 
@@ -556,6 +556,9 @@ export class Evaluator {
   private derivingEntities = new Set<string>();
   /** 解決中の束縛（引数なし束縛の自己・相互循環の検出＝§4.8 の依存解析。F110） */
   private resolvingDefs: string[] = [];
+  /** 解決中の前文メンバーの値（`axis: axis`・`roll: roll`・`axis: roll; roll: axis` のように値が前文メンバー名へ
+   *  戻る自己・相互参照の検出。鍵は値 Expr の参照同一性＝継承・後置とも同じ Expr を運ぶ。F115） */
+  private resolvingMembers = new Set<Expr>();
   /** 適用評価中のラムダ本体（糖衣定義の再帰適用の検出＝§4.8「展開は有限」。F110。
    *  鍵は本体 Expr の参照同一性——lambda 値は解決ごとに再生成されるが本体 AST は同一。
    *  正当な再適用（f(a) | f(b)）は逐次・ネスト f(g(s)) は先に引数を評価するため再入しない） */
@@ -823,16 +826,23 @@ export class Evaluator {
     // 前文メンバー（wkst 等の遅延解決。§3.6・§4.8）
     if (env.members.has(name)) {
       const m = env.members.get(name)!;
-      return typeof m === 'string' ? m : this.evalExpr(m, env);
+      if (typeof m === 'string') return m;
+      // 値が前文メンバー名へ戻る形（axis: axis・roll: roll・相互）は名前解決が無限再帰し、誘導の無い
+      // RangeError で落ちていた——解決中の値の再入で止める（F115＝還流 2026-09-28 定期便 #4）。同名の
+      // 公開語があれば上で先に解決されるので、ここに来るのは本当に自分へ戻る値だけ
+      if (this.resolvingMembers.has(m)) {
+        this.err(`前文メンバーの自己参照: ${name}: の値が ${name} 自身へ戻る（直接または相互）——値には規約`
+          + `（Following/Preceding）・点列や premise の名前・文字列を書く（前文メンバー名は値にならない。§3.3）`);
+      }
+      this.resolvingMembers.add(m);
+      try { return this.evalExpr(m, env); } finally { this.resolvingMembers.delete(m); }
     }
     if (this.rt.topBindings.has(name)) {
       const b = this.rt.topBindings.get(name)!;
       if (b.params.length > 0) this.err(`${name} は引数付き束縛（呼び出しが必要）`);
       // 評価文脈ごとのメモ化（premise 公開語の defCache と同じ面・同じ文脈キー）: 述語内の
       // 束縛名射影（sekkiMonth(d) 級）が実体化全点で右辺を再評価する O(N²) の封止
-      const key = `#top#${env.premise?.name ?? ''}#${name}#`
-        + ['wkst', 'tz', 'calendar-system', 'calendar', 'axis', 'roll', 'asof', 'source']
-          .map(k => this.memberStr(env.members, k)).join('#');
+      const key = `#top#${env.premise?.name ?? ''}#${name}#` + this.memberKey(env.members);
       const hit = this.defCache.get(key);
       if (hit !== undefined) {
         // 記録済みの tz 名検査を現在の predicateAlign で再実行（ADR-53 §2——順序独立の安全ゲート）
@@ -929,6 +939,14 @@ export class Evaluator {
     return JSON.stringify(m);   // その他の式も一意にキー化（'?' への潰しは衝突源。I6 の文脈キー）
   }
 
+  /** メモ化の文脈キー（defCache／fineCache 共通）: 前文メンバー**全語**（parser の MEMBER_KEYS）の値を並べる。
+   *  以前は 8 語の手書きで `granularity:`（と `epoch:`）が無く、`within(granularity)` を読む右辺が
+   *  「先に何を評価したか」で値を変えた（@Base〈month〉を先に評価すると @Mine〈week〉が基底の値を返す。
+   *  F114＝還流 2026-09-28 定期便 #3）。鍵の語は列挙を手で写さず MEMBER_KEYS に追従させる */
+  private memberKey(members: Map<string, string | Expr>): string {
+    return [...MEMBER_KEYS].map(k => this.memberStr(members, k)).join('#');
+  }
+
   /** premise 公開語の評価。裸名は root（利用側の premise）で再解決される＝機構 A。
    *  前文メンバーは定義側優先で上書き重ね（ADR-35 判断 8） */
   private evalDef(root: PremiseInstance, name: string, def: BindingDecl, env: Env): V {
@@ -942,9 +960,7 @@ export class Evaluator {
       return { k: 'lambda', params: def.params.map(p => p.name), body: def.rhs, env: defEnv };
     }
     // asof/source をキーに含める（版差の誤共有防止——註釈が asof を運ぶ。ADR-37）
-    const key = `${root.name}#${name}#`
-      + ['wkst', 'tz', 'calendar-system', 'calendar', 'axis', 'roll', 'asof', 'source']
-        .map(k => this.memberStr(members, k)).join('#');
+    const key = `${root.name}#${name}#` + this.memberKey(members);
     const hit = this.defCache.get(key);
     if (hit !== undefined) {
       // 記録済みの tz 名検査を現在の predicateAlign で再実行（ADR-53 §2——順序独立の安全ゲート）
@@ -1363,9 +1379,9 @@ export class Evaluator {
     }
     // 導出のメモ化（公開語の defCache と同じ文脈キー）: 述語内の bizDay 参照（coincides 等）が
     // 評価点ごとに再導出して二次コストになるのを防ぐ
-    const cacheKey = `bizDay⌗${ent.name}⌗`
-      + ['wkst', 'tz', 'calendar-system', 'calendar', 'axis', 'roll', 'asof', 'source']
-        .map(k => this.memberStr(env.members, k)).join('#');
+    // 在圏 premise 名も鍵に含める——everyDay は在圏解決（day を上書きした派生では別の点列）なので、
+    // 同じ実体・同じメンバー値でも在圏が違えば導出は別物（F114: 基底を先に評価すると派生の整列エラーが消えた）
+    const cacheKey = `bizDay⌗${ent.name}⌗${env.premise?.name ?? ''}⌗` + this.memberKey(env.members);
     const hit = this.defCache.get(cacheKey);
     if (hit !== undefined) {
       // 記録済みの tz 名検査を現在の predicateAlign で再実行（ADR-53 §2——順序独立の安全ゲート）
@@ -1428,9 +1444,7 @@ export class Evaluator {
     }
     // メモ化は実体名＋文脈キー（定義側優先で重ねたメンバー。defCache と同じ面——ADR-41 帰結）
     const entMembers = this.overlayMembers(env.members, ent);
-    const key = `bizFine⌗${ent.name}⌗`
-      + ['wkst', 'tz', 'calendar-system', 'calendar', 'axis', 'roll', 'asof', 'source']
-        .map(k => this.memberStr(entMembers, k)).join('#');
+    const key = `bizFine⌗${ent.name}⌗${env.premise?.name ?? ''}⌗` + this.memberKey(entMembers);
     const hit = this.fineCache.get(key);
     if (hit) return hit;
     if (this.derivingEntities.has(ent.name)) {

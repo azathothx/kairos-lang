@@ -2,7 +2,9 @@
 // `premise Mine = Base with { … }` を @ の入口にしたとき、本体層が直接引く前文メンバー
 // （calendar:→bizDay の標準導出・axis:・tz:）が基底連鎖から見える。修正前は
 // ①「未解決の名前: bizDay」②「軸がない」③ tz が黙って機械 tz に落ちる（同じ式が束縛の内側なら
-// 基底の tz を見る非対称）だった。source: は継承しない（判断 5）。roll: メンバー（spec §3.3）も同時に実装。
+// 基底の tz を見る非対称）だった。source: も同じ集合で継承する（⑤。判断 5 の「必須寄り」は未執行）。
+// roll: メンバー（spec §3.3）も同時に実装。末尾の describe は還流 2026-09-28 定期便 #2 の写経（roll: の意味を
+// 崩す変異 5 つが指紋照合以外で捕まらなかった）。
 import { describe, it, expect } from 'vitest';
 import { run, evalDates } from '../src/index.ts';
 
@@ -91,5 +93,65 @@ premise Base = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon; roll
 premise Mine = Base with { marker = everyDay |> within(month) |> nth(1) }
 @Mine
 marker |> roll(on: bizDay)`, W)).toEqual(['2026-02-02', '2026-03-02']);
+  });
+});
+
+// 還流 2026-09-28 定期便 #2: roll: の意味を崩す変異 5 つ（宣言を位置引数より優先／常に Following／後置より在圏 premise を
+// 優先／後置を無視／on: 無しで rollMember へ落ちない）が、上記 9 本では Playground の指紋照合以外に捕まらなかった。
+// 供給側の witness 7 本（先方リポジトリ tests/kairos-premise-members.test.ts 130-183 行・main 072548b）を式と期待値ごと写経。
+describe('還流 2026-09-28 定期便 #2: roll: の意味を固定する witness（供給側 7 本の写経）', () => {
+  it('1. roll: Preceding を宣言して位置引数を省略すると Preceding で寄る（常に Following を返す変異を殺す）', () => {
+    // 2/1（日）は窓の前（1/30）へ寄って窓外・3/1（日）は 2/27（金）へ
+    expect(evalDates(CAL + `
+premise Base = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon; roll: Preceding }
+@Base
+everyDay |> within(month) |> nth(1) |> roll(on: bizDay)`, W)).toEqual(['2026-02-27']);
+  });
+
+  it('2. 位置引数は宣言より優先する（roll: Following の在圏で roll(Preceding, …) は Preceding）', () => {
+    expect(evalDates(CAL + `
+premise Base = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon; roll: Following }
+@Base
+everyDay |> within(month) |> nth(1) |> roll(Preceding, on: bizDay)`, W)).toEqual(['2026-02-27']);
+  });
+
+  it('3. 軽量形の後置 @Base roll: Preceding でも宣言値を使う（spec §3.3「束定義または軽量形の後置」）', () => {
+    expect(evalDates(CAL + `
+premise Base = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon }
+@Base roll: Preceding
+everyDay |> within(month) |> nth(1) |> roll(on: bizDay)`, W)).toEqual(['2026-02-27']);
+  });
+
+  it('4. 本体層では後置の roll: が premise の roll: より優先する（最内優先＝spec §3.3。premise 自身の公開語の内側では逆に premise の宣言が勝つ＝ADR-35 判断 8）', () => {
+    expect(evalDates(CAL + `
+premise Base = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon; roll: Following }
+@Base roll: Preceding
+everyDay |> within(month) |> nth(1) |> roll(on: bizDay)`, W)).toEqual(['2026-02-27']);
+  });
+
+  it('5. 3 段の連鎖では中間の段の宣言が基底に勝つ（Base Following → Mid Preceding → Mine＝Mid with {}）', () => {
+    expect(evalDates(CAL + `
+premise Base = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon; roll: Following }
+premise Mid = Base with { roll: Preceding }
+premise Mine = Mid with {}
+@Mine
+everyDay |> within(month) |> nth(1) |> roll(on: bizDay)`, W)).toEqual(['2026-02-27']);
+  });
+
+  it('6. axis: と roll: を両方畳むと roll() だけで寄る（派生の入口・on: も位置引数も無い形）', () => {
+    expect(evalDates(CAL + `
+premise Base = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon; axis: bizDay; roll: Preceding }
+premise Mine = Base with {}
+@Mine
+everyDay |> within(month) |> nth(1) |> roll()`, W)).toEqual(['2026-02-27']);
+  });
+
+  it('7. 宣言も位置引数も無いときの誘導文言は全文一致（両端を固定）', () => {
+    expect(() => run(CAL + `
+premise Base = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon }
+@Base
+everyDay |> within(month) |> nth(1) |> roll(on: bizDay)`, W)).toThrow(
+      /^roll は規約が必要（I3）——位置引数で Following\/Preceding を書くか前文で roll: を宣言$/,
+    );
   });
 });

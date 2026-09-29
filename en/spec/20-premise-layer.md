@@ -1,5 +1,5 @@
 ---
-source_sha: 0c2415e6162a
+source_sha: 9801783df3be
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -91,7 +91,9 @@ lexical scope default (default → evaluation context → block declaration → 
 wins), not back-stage inference, so each stage's locality is preserved. The same mechanism lets a
 roll convention be declared once as the preamble member `roll:` (in a bundle definition, or
 postfixed to the lightweight form) and inherited by stages. Being a dangerous member, however, the
-convention is recommended to stay explicit.
+convention is recommended to stay explicit. A preamble member's value is a convention name, the name of a
+point stream or premise, a string, a number or a date; **a preamble member name is not a value** (`roll: roll`,
+`axis: axis` or the mutual `axis: roll; roll: axis` is a self-reference error; 1.0 addendum 21).
 
 ```text
 # explicit (write the axis at each stage)
@@ -255,7 +257,8 @@ definition of TZ (mapping, civil day, gaps/overlaps, leap seconds, versions) is 
 A derived definition makes a new premise by overriding or extending an existing premise's public
 words (the `premise → premise` closure). The core is `with` override — on top of the base, only the
 named public words are replaced; the rest is inherited.
-**Premise members** (`calendar:`, `tz:`, `axis:`, `wkst:`, `roll:`, `source:`, `epoch:`) are inherited along the base chain
+**Premise members** (all 10 words: `calendar-system:`, `calendar:`, `axis:`, `roll:`, `granularity:`, `tz:`, `wkst:`, `asof:`,
+`source:`, `epoch:` — the list was made precise in 1.0 addendum 21) are inherited along the base chain
 as well, and the block's declarations override them — the entry premise's body sees the same set that the inside of a public
 word sees (the member resolution rule of §3.9; ADR-35 revision 3, 1.0.2). That a derivation overriding `nonWorking` should also
 override `source:` (§3.9, declaration leaning towards required) is unchanged.
