@@ -408,3 +408,19 @@ describe('既定 tz は機械の tz（1.0.1・CLI 境界の時計読みと同じ
     expect(rep.from).toBe(todayIn('Pacific/Auckland'));
   });
 });
+
+describe('CLI の stdout 排出（F113・2026-09-29 レッドチーム監査で実測: process.exit が未送出分を捨てる）', () => {
+  const IMPL_DIR = fileURLToPath(new URL('..', import.meta.url));
+  it('パイプ先でも大きな --json 出力が欠けない（86,400 点＝約 3.5 MB の JSON が完全に届く。旧: 65,536 バイトで切れて SyntaxError）', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'kairos-f113-'));
+    const file = join(dir, 'tiny.kairos');
+    writeFileSync(file, 'premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }\n@JP\neveryInstant |> strideBy(1s, from: 2026-01-01)\n');
+    const r = spawnSync(process.execPath,
+      ['src/cli.ts', 'list', '--from', '2026-01-01', '--to', '2026-01-02', '--tz', 'Asia/Tokyo', '--json', file],
+      { cwd: IMPL_DIR, encoding: 'utf8', env: { ...process.env, TZ: 'Asia/Tokyo' }, maxBuffer: 64 * 1024 * 1024 });
+    rmSync(dir, { recursive: true, force: true });
+    expect(r.status).toBe(0);
+    const rep = JSON.parse(r.stdout) as CliReport;
+    expect(rep.results[0].points.length).toBe(86_400);
+  });
+});

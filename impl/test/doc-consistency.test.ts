@@ -28,6 +28,10 @@ const CURRENT_DOCS = [
   'assets/logo/README.md', // ロゴ・アイコンの解説（/assets/ に公開＝2026-09-18 設計者指摘: 表セルの \| が公開面に露出・網の外だった）
 ];
 
+// 外部の生データ層（AI 検索の回答・調査報告の逐語保存＝2026-09-28 新設・非公開・publish.sh の PRIVATE_PATHS）。
+// 逐語保存が目的なので役割語・相対リンクの検査対象から外す（内容を直すと記録が偽になる）。
+const RAW_DATA_DIR = 'design/ai-observations';
+
 // 公開される design 文書（kramdown 検査の対象＝2026-08-17 設計者指摘: 11 の表で \| が再発——
 // 従来の検査対象は上の CURRENT_DOCS のみで、公開層である design/ が網の外だった）。
 // 対象は明示列挙（歴史記録の層＝作業記と受領記録〈60-reviews・「エスケープ自体の引用」を含む〉は
@@ -157,7 +161,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     // 規約自体を説明する行は対象外
     const legend = /役割語|正規化|対話痕跡/;
     const designDocs = readdirSync(new URL('design/', root), { recursive: true })
-      .map(f => `design/${f}`).filter(p => p.endsWith('.md'));
+      .map(f => `design/${f}`).filter(p => p.endsWith('.md') && !p.startsWith(RAW_DATA_DIR));
     const stale: string[] = [];
     for (const p of [...CURRENT_DOCS, ...designDocs]) {
       for (const [i, line] of read(p).split('\n').entries()) {
@@ -222,7 +226,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
   it('不可視文字（SOFT HYPHEN・ゼロ幅）が本文に混入していない（2026-07-13 レビュー指摘 I の再発防止）', () => {
     const banned = /[\u00AD\u200B\u200C\u200D\u2060\uFEFF]/;
     const designDocs = readdirSync(new URL('design/', root), { recursive: true })
-      .map(f => `design/${f}`).filter(p => p.endsWith('.md'));
+      .map(f => `design/${f}`).filter(p => p.endsWith('.md') && !p.startsWith(RAW_DATA_DIR));
     const stale: string[] = [];
     for (const p of [...CURRENT_DOCS, ...designDocs, 'llms.txt']) {
       for (const [i, line] of read(p).split('\n').entries()) {
@@ -234,7 +238,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
 
   it('Markdown の相対リンクが実在のファイル/ディレクトリに解決される（2026-07-13 再レビュー提案の常設化）', () => {
     const designDocs = readdirSync(new URL('design/', root), { recursive: true })
-      .map(f => `design/${f}`).filter(p => p.endsWith('.md'));
+      .map(f => `design/${f}`).filter(p => p.endsWith('.md') && !p.startsWith(RAW_DATA_DIR));
     const all = [...new Set([...CURRENT_DOCS, ...designDocs])];
     const broken: string[] = [];
     for (const p of all) {

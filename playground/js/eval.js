@@ -2969,6 +2969,11 @@ export class Evaluator {
                 const wV = this.evalExpr(positional[0] ?? this.err('strideBy(w) の幅が必要'), env);
                 if (!isObj(wV) || wV.k !== 'width')
                     this.err('strideBy は幅リテラルを取る');
+                // 幅は正——0 幅は前進しない無限ループになる（2026-09-29 レッドチーム監査で `strideBy(0s, …)` が停止しないことを実測＝F112）。
+                // stride(0) の「黙って空」根絶（ADR-38 判断 12）の strideBy 版: 黙って回り続ける方がなお悪いので静的エラーで止める
+                if ((wV.w.kind === 'civil' ? wV.w.days : wV.w.ms) <= 0) {
+                    this.err('strideBy: 幅は正の量（0 幅は前進しない＝無限ループ。1s・1d のような正の幅を書く。ADR-38 判断 12）');
+                }
                 const fromE = named('from') ?? this.err('strideBy: from: が必須（起点の明示。ADR-31・§4.7）');
                 const fromV = this.evalExpr(fromE, env);
                 let anchor;

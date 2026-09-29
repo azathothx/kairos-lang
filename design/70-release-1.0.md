@@ -114,6 +114,8 @@ external の実運用を見て宣言する**（比較 3 案〈全信号の自然
    → `1.0.0`・`next -n 3` 実走 ⑧ 以後の版は Trusted Publishing（GitHub Actions OIDC）へ移行可
    （初回 publish 後にパッケージ設定で構成・任意）。**取り消しは 72 時間以内・依存なしの場合のみ**
    ——誤りは unpublish でなく patch 版で上書きする。
+   **1.0.2 で確定した手順（2026-09-24）**: WSL では `npm login --browser=false` に加えて **`npm publish --browser=false`**（2FA の
+   Web 認証 URL を手動で開く。`--browser=false` 無しは `BROWSER` 未設定エラーで止まる）。
 
 ## 宣言日（確定）と宣言週の段取り
 

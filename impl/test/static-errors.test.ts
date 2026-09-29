@@ -92,3 +92,14 @@ everyDay |> within(month) |> first
 `, Y2026)).toThrow(/前文には置けない/);
   });
 });
+
+describe('strideBy の幅（F112・2026-09-29 レッドチーム監査で実測: 0 幅は前進せず無限ループ）', () => {
+  it('経過時間 0s は静的エラー（ADR-38 判断 12 の strideBy 版）', () => {
+    expect(() => run(PRELUDE + `\neveryInstant |> strideBy(0s, from: 2026-01-01)\n`, Y2026))
+      .toThrow(/strideBy: 幅は正の量/);
+  });
+  it('市民日 0d も同じ', () => {
+    expect(() => run(PRELUDE + `\neveryInstant |> strideBy(0d, from: 2026-01-01)\n`, Y2026))
+      .toThrow(/strideBy: 幅は正の量/);
+  });
+});

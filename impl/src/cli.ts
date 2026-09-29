@@ -340,4 +340,7 @@ const isMain = (() => {
   if (!process.argv[1] || typeof import.meta.url !== 'string') return false;
   try { return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; }
 })();
-if (isMain) process.exit(main(process.argv.slice(2)));
+// process.exit() は stdout の未送出分を捨てる——stdout がパイプのとき（`| jq`・`$(…)`・MCP の子プロセス）大きな出力の末尾が
+// 黙って欠落し、--json は 64 KB（パイプのバッファ 1 つ分）で切れて不正な JSON になった（2026-09-29 レッドチーム監査の実測＝F113・
+// 604,800 行中 467,147 行）。終了コードは exitCode に置き、イベントループの排出を待ってから終了する（main は同期・開いたハンドルは無い）。
+if (isMain) process.exitCode = main(process.argv.slice(2));
