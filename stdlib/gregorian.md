@@ -196,7 +196,7 @@ everyInstant |> strideBy(1h30m, from: 2026-01-05T09:00)
   （`java.time`・Python の一部）は月曜始まり。「番号の起点」と「週の開始表示」は別問題。
 
 これらの違いは「**Gregorian 暦の上の週の数え方の規約**」であって、暦法そのものではない。ゆえに `Gregorian` には
-週開始を焼き込まず、WKST として用途ごとに宣言する。これは「WKST の非二択性」（`../design/90-open-questions.md`。
+週開始を焼き込まず、WKST として用途ごとに宣言する。これは「WKST の非二択性」（`../design/91-closed-questions.md`。
 土曜始まりの組織も実在）と一貫する。
 
 ### 4.4 WKST が効く／効かない例

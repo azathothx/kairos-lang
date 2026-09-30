@@ -18,7 +18,7 @@ npm install          # devDependencies（typescript / vitest）のみ
 npm test             # spec §7 全代表例・NAOJ 暦要項実データ・静的エラー・reference/ と stdlib/ の doctest
 npm run typecheck
 
-# CLI（Node 24+。TS をネイティブ実行。サブコマンド省略時は list）
+# CLI（Node 24+。TS をネイティブ実行。サブコマンド省略時は list・`--help` で使い方）
 node src/cli.ts list examples/payday.kairos      --from 2026-01-01 --to 2027-01-01
 node src/cli.ts list examples/jp-holidays.kairos --from 2026-01-01 --to 2027-01-01
 node src/cli.ts list examples/rokuyo.kairos      --from 2026-01-01 --to 2027-01-01   # 旧暦・六曜（大安など）
@@ -188,7 +188,7 @@ baseAlign・再実行の外側フレーム再記録〕）。
 
 ## テスト
 
-（31 ファイル・681 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（33 ファイル・730 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・

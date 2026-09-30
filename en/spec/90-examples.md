@@ -1,5 +1,5 @@
 ---
-source_sha: 6e807d458e7e
+source_sha: 2e227a2a561c
 ---
 
 # Kairos Language Specification — 7. Worked Examples
@@ -211,6 +211,11 @@ Key points:
 - **Operational signals** — instants beyond the end of holiday data and the like carry
   out-of-coverage annotations and a runway alongside them (§4.10). The firing layer can consume
   these as the machine-readable signal "the data needs updating".
+- **The evaluation range clips** — an instant that was inside [from, to) and is moved outside it by a
+  stage (`roll`, `shift`, `snapTo`) is **not** in the output (evaluated month by month, "the first business
+  day rolled into the previous month" disappears). The semantics are unchanged; the reference implementation
+  emits a `window-clip` warning for such a point (distinct from `horizon-clip` at the materialisation horizon,
+  ADR-37 decision 8; 1.0 addendum 22). The fix is to evaluate over a wider range.
 - Anything relative to the execution origin, like "since the last completion", decomposes into the
   special form that injects t as external data (§7.7).
 - All three properties (determinism, missed-fire, operational signals) have been measured in the

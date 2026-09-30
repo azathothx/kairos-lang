@@ -1,5 +1,5 @@
 ---
-source_sha: f4be32a9a34f
+source_sha: cbf797d3d876
 ---
 
 # `shift` — move by n units
@@ -77,6 +77,11 @@ To land on a date, add [`snapTo(day)`](snapTo.md) downstream.
   (spec §4.10 transport table). When the image of a coverage gap overlaps the evaluation range,
   an annotation appears even where no points fire — "no points came out" and "the absence is
   trustworthy" are different claims, and the transported annotation carries the latter.
+
+- **A point moved across the edge of the evaluation range is not in the output** — evaluated over
+  `[2026-08-01, 2026-09-01)`, 8/3 (Mon) moves to 7/31 under `shift(-1, unit: bizDay)`, which is outside the range, so it disappears (the semantics are
+  range clipping, spec §7.8). The reference implementation emits the warning `window-clip: shift(-1) …` (1.0 addendum 22).
+  Evaluate over a wider range.
 
 ## Related
 

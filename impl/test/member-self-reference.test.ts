@@ -33,7 +33,7 @@ describe('F115: 前文メンバーの自己参照は誘導つきエラー（Rang
     expect(() => run(B('') + '@Base axis: axis\neveryDay |> within(month) |> nth(1) |> roll(Following)', W)).toThrow(SELF('axis'));
   });
   it('wkst: wkst・granularity: granularity（roll:/axis: 以外の語も同じ経路）', () => {
-    expect(() => run(B('wkst: wkst') + '@Base\neveryDay |> within(week) |> nth(1)', W)).toThrow(SELF('wkst'));
+    expect(() => run(CAL + 'premise Base = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: wkst }\n@Base\neveryDay |> within(week) |> nth(1)', W)).toThrow(SELF('wkst'));
     expect(() => run(B('granularity: granularity') + '@Base\neveryDay |> within(granularity) |> nth(1)', W)).toThrow(SELF('granularity'));
   });
   it('相互参照 axis: roll; roll: axis', () => {

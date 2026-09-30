@@ -1,5 +1,5 @@
 ---
-source_sha: 51782c6f3ae0
+source_sha: c620144a73e2
 ---
 
 # Standard premise: Gregorian
@@ -236,7 +236,7 @@ Week starts split by culture and use; there is no single right answer:
 These differences are "**conventions for counting weeks on top of the Gregorian calendar**", not
 the calendar system itself. Hence `Gregorian` bakes in no week start; it is declared per use as
 WKST. This is consistent with "WKST is not a two-way choice"
-(`../../design/90-open-questions.md`; Saturday-start organizations really exist).
+(`../../design/91-closed-questions.md`; Saturday-start organizations really exist).
 
 ### 4.4 Examples where WKST does and does not bite
 

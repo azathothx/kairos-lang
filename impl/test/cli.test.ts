@@ -424,3 +424,47 @@ describe('CLI の stdout 排出（F113・2026-09-29 レッドチーム監査で�
     expect(rep.results[0].points.length).toBe(86_400);
   });
 });
+
+describe('list の 0 点は黙らない（手当て (a)・2026-09-29 裁定・1.0 追補 22）', () => {
+  const IMPL_DIR = fileURLToPath(new URL('..', import.meta.url));
+  const withFile = (src: string, f: (file: string) => void) => {
+    const dir = mkdtempSync(join(tmpdir(), 'kairos-empty-'));
+    const file = join(dir, 'e.kairos');
+    writeFileSync(file, src);
+    try { f(file); } finally { rmSync(dir, { recursive: true, force: true }); }
+  };
+  const run = (...args: string[]) => spawnSync(process.execPath, ['src/cli.ts', ...args],
+    { cwd: IMPL_DIR, encoding: 'utf8', env: { ...process.env, TZ: 'Asia/Tokyo' } });
+  const EMPTY = 'premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }\n@JP\neveryDay |> filter(d => dayNo(d) == 32)\n';
+
+  it('単一式で 0 点なら「# 0 点（[from, to) に該当なし）」を stdout に出し exit 0（旧: 空出力）', () => {
+    withFile(EMPTY, file => {
+      const r = run('list', '--from', '2026-02-01', '--to', '2026-03-01', file);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe('# 0 点（[2026-02-01, 2026-03-01) に該当なし）\n');
+    });
+  });
+  it('--lang en は「# 0 points (nothing in [from, to))」', () => {
+    withFile(EMPTY, file => {
+      const r = run('list', '--from', '2026-02-01', '--to', '2026-03-01', '--lang', 'en', file);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe('# 0 points (nothing in [2026-02-01, 2026-03-01))\n');
+    });
+  });
+  it('--json は不変（dates: []・コメント行は入らない）', () => {
+    withFile(EMPTY, file => {
+      const r = run('list', '--from', '2026-02-01', '--to', '2026-03-01', '--json', file);
+      expect(r.status).toBe(0);
+      const rep = JSON.parse(r.stdout) as CliReport;
+      expect(rep.results[0].dates).toEqual([]);
+      expect(r.stdout).not.toContain('# 0');
+    });
+  });
+  it('複数式は従来どおり見出し行「# 式 n（0 件）」だけ（コメント行は重ねない）', () => {
+    withFile(EMPTY + 'everyDay |> filter(d => dayNo(d) == 15)\n', file => {
+      const r = run('list', '--from', '2026-02-01', '--to', '2026-03-01', file);
+      expect(r.status).toBe(0);
+      expect(r.stdout).toBe('# 式 1（0 件）\n# 式 2（1 件）\n2026-02-15\n');
+    });
+  });
+});

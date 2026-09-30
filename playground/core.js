@@ -7,7 +7,7 @@ import { run, formatAnnotation } from './js/index.js';
 const STRINGS = {
   ja: {
     exprHead: (i, n) => `# 式 ${i}（${n} 件）`,
-    noPoints: '（点ゼロ）',
+    empty: (from, to) => `# 0 点（[${from}, ${to}) に該当なし）`,
     noOutput: '（出力なし）',
     coverageHead: '# 被覆サマリ',
     concluded: '（完結主張）',
@@ -17,7 +17,7 @@ const STRINGS = {
   },
   en: {
     exprHead: (i, n) => `# expression ${i} (${n} point${n === 1 ? '' : 's'})`,
-    noPoints: '(no points)',
+    empty: (from, to) => `# 0 points (nothing in [${from}, ${to}))`,
     noOutput: '(no output)',
     coverageHead: '# coverage summary',
     concluded: '(concluded)',
@@ -189,13 +189,15 @@ export function init(lang) {
     try {
       const r = run(src.value, { from, to, tz: tz || undefined });
       const lines = [];
+      // 表示は CLI の list（impl/src/cli.ts の renderHuman）と行単位で同じにする——教材・検定の期待出力は CLI の出力で、
+      // 学習者は Playground で確かめる。単一式の 0 点は CLI と同じ行を出す（旧: 註釈が無いときだけ「（点ゼロ）」・
+      // 註釈があれば何も出さない＝CLI 1.0.5 の 0 点表示と食い違った。2026-09-30）
       r.results.forEach((res, i) => {
         if (r.results.length > 1) lines.push(T.exprHead(i + 1, res.dates.length));
+        else if (res.dates.length === 0) lines.push(T.empty(from, to));
         for (const d of res.dates) lines.push(d);
         for (const a of res.annotations) lines.push(`# ⚠ ${formatAnnotation(a)}`);
       });
-      if (r.results.length === 1 && r.results[0].dates.length === 0
-          && r.results[0].annotations.length === 0) lines.push(T.noPoints);
       if (r.coverage.length > 0) {
         lines.push(T.coverageHead);
         for (const c of r.coverage) {
@@ -211,8 +213,14 @@ export function init(lang) {
     }
   }
 
-  const b64e = s => btoa(String.fromCharCode(...new TextEncoder().encode(s)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  // バイト列は小分けにして文字列へ——fromCharCode(...全体) のスプレッドは 130 KB 前後で引数の上限を越え、
+  // 「URL に固定」が例外で黙って何も起きなかった（境界チェックリスト三巡目 2026-09-30・F146）
+  const b64e = s => {
+    const bytes = new TextEncoder().encode(s);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  };
   const b64d = s => new TextDecoder().decode(
     Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)));
 

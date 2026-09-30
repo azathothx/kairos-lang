@@ -55,6 +55,9 @@ newMoons |> snapTo(day)
   snapTo・同じ**日付**なら [`rebase`](rebase.md)・時刻つきの**所属**なら [`coincides`](coincides.md)
   （クロス tz は rebase で同 tz 化してから）。
 
+- **評価範囲の端で動いた点は出力に出ない**——`[2026-08-01, 2026-09-01)` で評価すると 範囲が 8/15 から始まると 8/20 が `snapTo(month)` で 8/1 へ寄り、範囲の外なので出力から
+  消える（意味論は範囲の切り取り・spec §7.8）。参照実装は `window-clip: snapTo …` を警告に出す（1.0 追補 22）。範囲を広げて評価する。
+
 ## 関連
 
 [`shift`](shift.md)・[`rebase`](rebase.md)（日付ラベル対応の再錨）・[`segmentBy`](segmentBy.md)（snap したマーカーで切る）・

@@ -327,10 +327,19 @@ everyDay |> filter(d => epochOrdinal(lunarW, d) == 0)
 describe('実装地平線の降格（ADR-37 判断 8——硬エラーからクリップ＋機械可読警告へ）', () => {
   it('snapTo: 計算範囲を越えたテーブル時点はクリップ＋警告（狭い評価範囲が書ける）', () => {
     const r = run(JP2 + `
+[2026-01-19T04:52, 2126-01-19T04:52] |> snapTo(month)
+`, { from: '2026-01-01', to: '2027-01-01' });
+    expect(r.results[0].dates).toEqual(['2026-01-01']);
+    expect(r.warnings.some(w => w.startsWith('horizon-clip: snapTo'))).toBe(true);
+  });
+
+  it('snapTo(day): 市民日への寄せは計算範囲の先の時点も落とさない——警告なし（日の先頭は実体化なしで決まる。F144）', () => {
+    const r = run(JP2 + `
 [2026-01-19T04:52, 2126-01-19T04:52] |> snapTo(day)
 `, { from: '2026-01-01', to: '2027-01-01' });
     expect(r.results[0].dates).toEqual(['2026-01-19']);
-    expect(r.warnings.some(w => w.startsWith('horizon-clip: snapTo'))).toBe(true);
+    expect(r.warnings).toEqual([]);
+    expect(r.runtime.fmt(r.results[0].points[0])).toBe('2026-01-19');
   });
 
   it('shift(unit: 窓語): 計算範囲を越えた着地はクリップ＋警告', () => {
@@ -460,7 +469,7 @@ everyDay \\ D2.t
   it('top-level 束縛も評価文脈ごとにメモ化される——述語内の反復参照で右辺評価は一回'
     + '（警告の重複で観測。実体化全点×右辺再評価の O(N²) の封止）', () => {
     const r = run(JP2 + `
-far = [2026-06-01, 2126-06-01T04:00] covering: .. |> snapTo(day)
+far = [2026-06-01, 2126-06-01T04:00] covering: .. |> snapTo(month)
 everyDay |> filter(d => not coincides(far, day, d))
 `, { from: '2026-01-01', to: '2026-01-08' });
     expect(r.results[0].dates).toEqual(days('2026-01-01', '2026-01-08'));

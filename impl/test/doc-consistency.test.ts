@@ -41,6 +41,7 @@ const PUBLISHED_DESIGN = [
   'design/10-domain-model.md',
   'design/70-release-1.0.md',
   'design/90-open-questions.md',
+  'design/91-closed-questions.md',
   'design/INDEX.md',
   'design/README.md',
   ...mdFiles('design/20-adr/'),

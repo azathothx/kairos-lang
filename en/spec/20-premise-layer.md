@@ -1,5 +1,5 @@
 ---
-source_sha: 9801783df3be
+source_sha: 4bb8ee9d2d62
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -24,6 +24,11 @@ top of premises, but are not premises.
 
 A preamble is placed before body expressions and governs the expressions that follow (effective
 until the next preamble). One and the same binding operation comes in three forms, long and short.
+
+Declaring a premise of the same name twice in one program is a static error (a later declaration never wins silently;
+1.0 addendum 22). Redefining a standard-library premise (`Gregorian` etc.) under its own name is still accepted. Writing the
+same preamble member twice in one block is a static error as well (override through a derived `with` or the lightweight
+postfix). An empty value of a dangerous member (`tz: ""`) is an error, distinct from leaving it undeclared.
 
 **Definition (multi-line allowed)** — defines the contents that `@name` bundles.
 

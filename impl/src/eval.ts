@@ -22,16 +22,22 @@ import type {
   Expr, Stage, Arg, Statement, Program, PremiseBlock, Member, Param, ListElem, CoveringRange,
 } from './ast.ts';
 import type { DateVal, WidthVal } from './lexer.ts';
+import { clipMessage } from './lexer.ts';
 import { getTz, Tz } from './tz.ts';
 import { parseCoveringText, MEMBER_KEYS } from './parser.ts';
 
-export class KairosError extends Error {}
+/** 統治されたエラー。文言は長さ上限で切る（clipMessage——利用者の値を写す診断が 1 MB になっていた。三巡目） */
+export class KairosError extends Error {
+  constructor(msg: string) { super(clipMessage(msg)); }
+}
 
 /** 供給エラー（ADR-46 判断 7 (a)）: 解決失敗の機械可読な部分類。実装系（発報層等）は本分類を
  *  boot throw から除外して劣化運転に落としてよい——契約違反（KairosError）とは区別される */
 export class SupplyError extends KairosError {}
 
 const DAY_MS = 86_400_000;
+/** 配列の要素数の上限（ECMAScript の規定＝2^32−1）。言語の上限ではない——実体化できない個数の判定にだけ使う（F137） */
+const ARRAY_MAX = 2 ** 32 - 1;
 
 // ---- 値 ----
 
@@ -265,6 +271,8 @@ export class Runtime {
     this.epoch = this.tz.civilDayStart(1970, 1, 1);
     this.computeEnd = toMs + 400 * DAY_MS;
     if (fromMs < this.epoch) throw new KairosError('プロトタイプの評価範囲は 1970-01-01 以降');
+    // 逆順の範囲は黙って 0 点だった（境界チェックリスト 2026-09-29・F117）。from = to は空の範囲として正当
+    if (toMs < fromMs) throw new KairosError('評価範囲が逆順: to が from より前（[from, to) は半開区間・to は排他。from = to なら空の範囲）');
   }
 
   /** 実行既定 tz での錨打ち（表示・asof 等の寛容な文脈。隙間→最初の瞬間・重複→最初の候補） */
@@ -586,12 +594,17 @@ export class Evaluator {
   runProgram(program: Program, defaultMembers: Map<string, string | Expr>): RunResult['results'] {
     const results: RunResult['results'] = [];
     let env: Env = { rt: this.rt, premise: null, members: defaultMembers, locals: null, parent: null };
+    // 同じプログラム内の premise 同名再定義は後勝ちで黙っていた（境界チェックリスト 2026-09-29・F123）。
+    // stdlib の premise を利用者が同名で定義し直す形（登録は index.ts 側）は従来どおり受理する
+    const declared = new Set<string>();
 
     const execStatements = (stmts: Statement[], env0: Env): Env => {
       let cur = env0;
       for (const st of stmts) {
         switch (st.t) {
           case 'premiseDef':
+            if (declared.has(st.name)) this.err(`premise の再定義は静的エラー: ${st.name}（同じ名前の premise は一度だけ宣言する。派生は \`premise ${st.name}2 = ${st.name} with { … }\` の形で）`);
+            declared.add(st.name);
             this.registerPremise(st);
             break;
           case 'preamble': {
@@ -605,6 +618,7 @@ export class Evaluator {
             if (st.members.some(m => m.key === 'epoch')) {
               this.err('epoch: は原始的定義のメンバー——利用側の前文には置けない（ADR-31）');
             }
+            this.checkMemberDecls(st.members, `@${st.name ?? ''}`);
             for (const m of st.members) members.set(m.key, m.value);
             const next: Env = { rt: this.rt, premise, members, locals: null, parent: null };
             if (st.block) { execStatements(st.block, next); }
@@ -613,6 +627,7 @@ export class Evaluator {
           }
           case 'binding': {
             if (CORE_WORDS.has(st.name)) this.err(`core 語 ${st.name} の再定義は静的エラー（§4.8）`);
+            if (this.rt.topBindings.has(st.name)) this.err(`束縛の再定義は静的エラー: ${st.name}（同じ名前の束縛は一度だけ。後の定義が黙って勝つことはない）`);   // F134
             this.rt.topBindings.set(st.name, { params: st.params, rhs: st.rhs, covering: st.covering });
             this.scanVocab(st.rhs);
             break;
@@ -647,9 +662,11 @@ export class Evaluator {
     let base: PremiseInstance | null = null;
 
     const absorb = (block: PremiseBlock) => {
+      this.checkMemberDecls(block.members, `premise ${st.name}`);
       for (const m of block.members) members.set(m.key, m.value);
       for (const b of block.bindings) {
         if (CORE_WORDS.has(b.name)) this.err(`core 語 ${b.name} の再定義は静的エラー（§4.8）`);
+        if (defs.has(b.name)) this.err(`premise ${st.name} の束縛の再定義は静的エラー: ${b.name}（同じブロックに同じ名前は一度だけ）`);   // F134
         defs.set(b.name, { params: b.params, rhs: b.rhs, covering: b.covering });
         this.scanVocab(b.rhs);
       }
@@ -704,6 +721,7 @@ export class Evaluator {
       else if (a.name === 'unit') U = a.value.t === 'name' ? a.value.name : undefined;
     }
     if (d === undefined || !W || !U) this.err('rephase(δ, on: W, unit: U) の引数が不足');
+    if (!Number.isInteger(d)) this.err(`rephase: δ は整数（${d} は不可。単位 U の個数で書く）`);   // 非整数は phase 経由で統治外エラーだった（F129）
     return { d: d!, W: W!, U: U! };
   }
 
@@ -835,7 +853,16 @@ export class Evaluator {
           + `（Following/Preceding）・点列や premise の名前・文字列を書く（前文メンバー名は値にならない。§3.3）`);
       }
       this.resolvingMembers.add(m);
-      try { return this.evalExpr(m, env); } finally { this.resolvingMembers.delete(m); }
+      try { return this.evalExpr(m, env); }
+      catch (err) {
+        // `wkst: Xyz`・`granularity: nope` は使用時に「未解決の名前: Xyz」とだけ出て、原因（前文の値）を指さなかった（軽微 11）
+        if (err instanceof KairosError && err.constructor === KairosError && err.message.startsWith('未解決の名前: ')
+            && !err.message.includes('前文メンバー')) {
+          this.err(`${err.message}——前文メンバー ${name}: の値が解決できない（値の綴りを確かめる）`);
+        }
+        throw err;
+      }
+      finally { this.resolvingMembers.delete(m); }
     }
     if (this.rt.topBindings.has(name)) {
       const b = this.rt.topBindings.get(name)!;
@@ -891,7 +918,16 @@ export class Evaluator {
         + `（点に依存する値は引数付き束縛のパラメータで受ける: T(x) = … の右辺では x を使い、`
         + `呼び出し側で T(${name}) と渡す。ADR-53）`);
     }
-    this.err(`未解決の名前: ${name}（premise 相対解決 §3.4）`);
+    // 標準語彙（day・month・weekday…）は calendar-system が持ち込む——宣言が無い・名前が premise でないときは
+    // 「未解決の名前: day」とだけ出て原因を指さなかった（境界チェックリスト 軽微 12）
+    const csM = env.members.get('calendar-system');
+    const csName = csM === undefined ? null : typeof csM === 'string' ? csM : csM.t === 'name' ? csM.name : '';
+    const csHint = csName === null
+      ? '——在圏の前文に calendar-system: の宣言が無い（day・month などの標準語彙は calendar-system が持ち込む。例 calendar-system: Gregorian）'
+      : !this.rt.premises.has(csName)
+        ? `——calendar-system: ${csName} という premise は無い（標準は Gregorian・Fiscal・ISOWeek）`
+        : '';
+    this.err(`未解決の名前: ${name}（premise 相対解決 §3.4）${csHint}`);
   }
 
 
@@ -937,6 +973,19 @@ export class Evaluator {
     if (m.t === 'name') return m.name;
     if (m.t === 'str') return m.v;
     return JSON.stringify(m);   // その他の式も一意にキー化（'?' への潰しは衝突源。I6 の文脈キー）
+  }
+
+  /** 前文メンバー宣言の検査（境界チェックリスト 2026-09-29）: 同一ブロック内の二重宣言は後勝ちで黙っていた（F122）・
+   *  `tz: ""` は未宣言と同じ扱いで黙って機械 tz に落ちていた（F118）。上書きは派生 with か軽量形の後置で行う */
+  private checkMemberDecls(ms: { key: string; value: string | Expr }[], where: string) {
+    const seen = new Set<string>();
+    for (const m of ms) {
+      if (seen.has(m.key)) this.err(`前文メンバーの二重宣言: ${m.key}:（${where}。同じブロックに同じメンバーは一度だけ——上書きは派生 with か軽量形の後置で）`);
+      seen.add(m.key);
+      if (m.key === 'tz' && (m.value === '' || (typeof m.value !== 'string' && m.value.t === 'str' && m.value.v === ''))) {
+        this.err(`tz: は空にできない（${where}。IANA 名か固定オフセット正準形 "±HH:MM" を書く——危険メンバーは未宣言と空を区別する。ADR-33）`);
+      }
+    }
   }
 
   /** メモ化の文脈キー（defCache／fineCache 共通）: 前文メンバー**全語**（parser の MEMBER_KEYS）の値を並べる。
@@ -1099,10 +1148,19 @@ export class Evaluator {
       } catch (err) {
         if (err instanceof KairosError) throw err;
         throw new SupplyError(`供給エラー: 解決に失敗——external ${owner.name}.${ctx.name}`
-          + `（source: "${source}"）: ${(err as Error).message}`);
+          + `（source: "${source}"）: ${err instanceof Error ? err.message : String(err)}`);
       }
       if (!data) {
         throw new SupplyError(`供給エラー: 解決値が無い——external ${owner.name}.${ctx.name}（source: "${source}"）`);
+      }
+      // 解決子は同期——async 関数を渡すと Promise が来て「covering がない」へ誤誘導していた（三巡目・F143）
+      if (typeof (data as { then?: unknown }).then === 'function') {
+        throw new SupplyError(`供給エラー: 解決子が Promise を返した——external ${owner.name}.${ctx.name}`
+          + `（source: "${source}"）。解決子は同期で値を返す（取得は run() の前に await で済ませ、結果を返す関数を渡す。ADR-46）`);
+      }
+      if (typeof data !== 'object' || Array.isArray(data)) {
+        throw new SupplyError(`供給エラー: 解決値がオブジェクトでない——external ${owner.name}.${ctx.name}`
+          + `（source: "${source}"）。{dates|instants, covering, asof [, labels]} を返す（ADR-46）`);
       }
       this.socketCache.set(snapKey, data);
     }
@@ -1122,7 +1180,13 @@ export class Evaluator {
     } catch (err) {
       this.err(`契約違反: covering が読めない——external ${src}: ${(err as Error).message}`);
     }
-    const r = this.resolveCovering(claim, env);
+    let r: { iv: Iv[]; desc: string; concluded: boolean };
+    try {
+      r = this.resolveCovering(claim, env);
+    } catch (err) {
+      if (err instanceof KairosError) this.err(`契約違反: ${err.message}——external ${src}`);
+      throw err;
+    }
     if (typeof data.asof !== 'string' || data.asof.trim() === '') {
       this.err(`契約違反: asof がない——external ${src}（データの観測日はデータと一緒に来る。ADR-46）`);
     }
@@ -1156,6 +1220,10 @@ export class Evaluator {
       for (const v of data.instants) {
         if (typeof v !== 'number' || !Number.isInteger(v)) {
           this.err(`契約違反: instants は有限整数の epoch ms——external ${src}: ${v}`);
+        }
+        // 時刻として表せない値（±8.64e15 ms の外）は黙って通り、診断の日付が NaN-NaN-NaN になっていた（三巡目・F140）
+        if (Math.abs(v) > 8.64e15) {
+          this.err(`契約違反: instants が時刻の表現範囲の外——external ${src}: ${v}（epoch ms は ±8.64e15 以内。秒やマイクロ秒で渡していないか）`);
         }
       }
       pts = data.instants.slice();
@@ -1202,7 +1270,10 @@ export class Evaluator {
   private registerCoverage(source: string, covDesc: string, covIv: Iv[], concluded: boolean, asof?: string) {
     const key = `${source}#${covDesc}#${asof ?? ''}`;
     if (this.rt.coverage.has(key)) return;
-    const covEnd = covIv.length ? Math.max(...covIv.map(x => x.end)) : Infinity;
+    // 区間リストは昇順（resolveCovering が検査）だが、合成覆域も通るので最大を畳み込みで取る——
+    // Math.max(...) のスプレッドは区間 13 万個で RangeError（統治外）になった（境界チェックリスト三巡目・F136）
+    let covEnd = covIv.length ? -Infinity : Infinity;
+    for (const x of covIv) if (x.end > covEnd) covEnd = x.end;
     this.rt.coverage.set(key, { source, covering: covDesc, ...(asof ? { asof } : {}), concluded, covEnd });
   }
 
@@ -1607,7 +1678,12 @@ export class Evaluator {
       case 'width': return { k: 'width', w: e.v };
       case 'lambda': return { k: 'lambda', params: e.params, body: e.body, env };
       case 'list': return this.evalList(e, env);
-      case 'neg': return -this.num(this.evalExpr(e.e, env));
+      case 'neg': {
+        const v = this.evalExpr(e.e, env);
+        // `strideBy(-1s, …)` は「数値ではない: width」で誘導が無かった（境界チェックリスト 軽微 16）
+        if (isObj(v) && v.k === 'width') this.err('幅は正の量（負の幅は書けない——向きは shift の符号や takeLast で表す）');
+        return -this.num(v);
+      }
       case 'not': return !this.bool(this.evalExpr(e.e, env));
       case 'ternary':
         return this.bool(this.evalExpr(e.c, env)) ? this.evalExpr(e.a, env) : this.evalExpr(e.b, env);
@@ -1770,6 +1846,9 @@ export class Evaluator {
     }
     const v = this.evalExpr(e, env);
     if (typeof v === 'number') {  // 年だけの略記（§5.6 covering-range）
+      // 年は 4 桁（日付リテラルと同じ範囲。F121 の covering 版）——10000 以上は黙って通り、275760 を越えると
+      // 端が NaN になって「要素が covering の外」へ誤誘導した（境界チェックリスト三巡目・F141）
+      if (!Number.isInteger(v) || v < 0 || v > 9999) this.err(`covering: 年は 4 桁の整数（0000..9999）: ${v}`);
       return tz.civilDayStart(isEnd ? v + 1 : v, 1, 1);
     }
     if (isObj(v) && v.k === 'point') return isEnd ? tz.addCivilDays(tz.floorToDay(v.ms), 1) : v.ms;
@@ -1785,9 +1864,10 @@ export class Evaluator {
       case '+': return this.num(l) + this.num(r);
       case '-': return this.num(l) - this.num(r);
       case '*': return this.num(l) * this.num(r);
-      case '/': return this.num(l) / this.num(r);
-      case 'mod': { const a = this.num(l), b = this.num(r); return ((a % b) + b) % b; }
-      case 'div': return Math.floor(this.num(l) / this.num(r));
+      // 0 除算は黙って偽（NaN）だった（境界チェックリスト 2026-09-29・F125）
+      case '/': { const b = this.num(r); if (b === 0) this.err('0 で割れない（/ の右辺は 0 以外。§4.9）'); return this.num(l) / b; }
+      case 'mod': { const a = this.num(l), b = this.num(r); if (b === 0) this.err('0 で割れない（mod の右辺は 0 以外。§4.9）'); return ((a % b) + b) % b; }
+      case 'div': { const b = this.num(r); if (b === 0) this.err('0 で割れない（div の右辺は 0 以外。§4.9）'); return Math.floor(this.num(l) / b); }
       case '<': return this.num(l) < this.num(r);
       case '<=': return this.num(l) <= this.num(r);
       case '>': return this.num(l) > this.num(r);
@@ -1805,7 +1885,20 @@ export class Evaluator {
   private eq(l: V, r: V): boolean {
     if (isObj(l) && l.k === 'point' && isObj(r) && r.k === 'point') return l.ms === r.ms;
     if (isObj(l) && l.k === 'time' && isObj(r) && r.k === 'time') return l.todMs === r.todMs;   // ADR-51（忘れると恒偽）
+    // 異なる型どうしの等値は黙って偽だった（境界チェックリスト 2026-09-29・F124）。ラベルは文字列値なので識別子形と
+    // 文字列形の等値（§5.5・F111）は保たれる
+    const tl = this.typeName(l), tr = this.typeName(r);
+    if (tl !== tr) this.err(`等値比較の両辺の型が異なる: ${tl} と ${tr}（比較は同じ型どうし。§4.9）`);
     return l === r;
+  }
+
+  private typeName(v: V): string {
+    if (typeof v === 'number') return '数値';
+    if (typeof v === 'string') return '文字列（ラベル）';
+    if (typeof v === 'boolean') return '論理値';
+    if (Array.isArray(v)) return 'リスト';
+    if (isObj(v)) return v.k === 'point' ? '時点' : v.k === 'time' ? '時刻' : v.k === 'stream' ? '時間ストリーム' : v.k;
+    return typeof v;
   }
 
   private evalCall(e: Extract<Expr, { t: 'call' }>, env: Env): V {
@@ -1996,6 +2089,10 @@ export class Evaluator {
         }
         this.applyingBodies.set(callee.body, calleeName ?? '(無名ラムダ)');
         try {
+          // 仮引数と実引数の個数が違うと undefined が黙って束縛されていた（F132）
+          if (args.length !== callee.params.length) {
+            this.err(`引数の個数が違う: ${calleeName ?? '(無名ラムダ)'} は仮引数 ${callee.params.length} 個（${args.length} 個渡された）`);
+          }
           const locals = new Map<string, V>();
           callee.params.forEach((p, i) => locals.set(p, args[i]));
           return this.evalExpr(callee.body, childEnv(callee.env, locals));
@@ -2257,6 +2354,10 @@ export class Evaluator {
         if (kindOf(operand) !== 'chronos') this.err('grid は chronos だけが受け取る（ADR-29）');
         const w = this.evalExpr(e.arg, env);
         if (!isObj(w) || w.k !== 'width') this.err('grid は幅リテラルを取る');
+        // 0 幅は実体化が前進せず停止しなかった（F130＝strideBy の F112 と同型。境界チェックリスト二巡目 2026-09-30）
+        if ((w.w.kind === 'civil' ? w.w.days : w.w.ms) <= 0) {
+          this.err('grid: 幅は正の量（0 幅は前進しない＝無限ループ。1d・1h のような正の幅を書く。ADR-38 判断 12）');
+        }
         const mod = (a: number, b: number) => ((a % b) + b) % b;
         if (w.w.kind === 'civil') {
           // 市民時幅（ADR-31/33）: 位相は在圏 tz の市民日の開始瞬間——DST 切替日は 23/25 時間
@@ -2294,15 +2395,21 @@ export class Evaluator {
           t0 = anchor + k * step;   // 紀元以後で最初の位相点（それ以前はプロトタイプの評価範囲外）
         }
         const iv: Iv[] = [];
-        for (let t = t0; t < this.rt.computeEnd; t += step) iv.push({ start: t, end: t + step });
-        const grain: GridTag = { kind: 'elapsed', step, phase: mod(t0, step), off: 0, tz: '' };
-        return { k: 'windows', iv, units: iv.map(x => x.start), labelFn, grain };
+        if ((this.rt.computeEnd - t0) / step > ARRAY_MAX) this.tooManyPoints('grid', (this.rt.computeEnd - t0) / step);   // F137
+        try {
+          for (let t = t0; t < this.rt.computeEnd; t += step) iv.push({ start: t, end: t + step });
+          const grain: GridTag = { kind: 'elapsed', step, phase: mod(t0, step), off: 0, tz: '' };
+          return { k: 'windows', iv, units: iv.map(x => x.start), labelFn, grain };
+        } catch (err) {
+          if (err instanceof RangeError) this.tooManyPoints('grid', (this.rt.computeEnd - t0) / step);   // F137
+          throw err;
+        }
       }
       case 'span': {
         const units = this.windowsOf(operand);
         const f = this.evalExpr(e.arg, env);
         const phase = e.named.phase ? this.num(this.evalExpr(e.named.phase, env)) : 0;
-        if (phase < 0) this.err('span: phase は 0 以上（負位相は周期を法として正規化して書く。F65）');
+        if (!Number.isInteger(phase) || phase < 0) this.err(`span: phase は 0 以上の整数（${phase} は不可。負位相は周期を法として正規化して書く。F65／F129）`);
         const iv: Iv[] = [];
         // phase > 0 のとき、紀元前に始まる窓の切れ端を先頭に張る。I5 では窓は全域を覆うが、
         // 有界実体化（紀元起点）は頭の単位 phase 個を覆えず、ordinalIn が「枠窓の外」を誤報していた
@@ -2313,7 +2420,7 @@ export class Evaluator {
         let idx = phase, n = 0;
         while (idx < units.iv.length) {
           const k = this.num(this.applyValue(f, [n], env));
-          if (k < 1) this.err('span: 個数は 1 以上');
+          if (!Number.isInteger(k) || k < 1) this.err(`span: 個数は 1 以上の整数（${k} は不可）`);   // 非整数は統治外エラーだった（F127）
           const last = Math.min(idx + k, units.iv.length) - 1;
           iv.push({ start: units.iv[idx].start, end: units.iv[last].end });
           idx += k; n++;
@@ -2344,6 +2451,10 @@ export class Evaluator {
           let ui = u.iv.findIndex(x => x.start >= p.start);
           const inParent = u.iv.filter(x => x.start >= p.start && x.end <= p.end).length;
           const endIdx = ui + inParent - 1;   // 親窓内の最後の単位
+          for (const w of widths as V[]) {   // 0・負・非整数の幅は統治外エラーだった（F128）
+            const wn = this.num(w);
+            if (!Number.isInteger(wn) || wn < 1) this.err(`split: 幅は 1 以上の整数（${wn} は不可）`);
+          }
           const total = (widths as V[]).reduce((s: number, w) => s + this.num(w), 0);
           // 実体化の両端に接する親窓は切れ端でありうる（span の頭の切れ端・末尾の打ち切り）ため検査しない。
           // 強度はエラー（ADR-48 裁定＝「黙って 53 週目を落とさない」を警告でなくエラーで保証）
@@ -2368,6 +2479,7 @@ export class Evaluator {
         const labelsV = this.evalExpr(e.arg, env);
         if (!Array.isArray(labelsV)) this.err('cycle はラベルのリストを取る');
         const labels = (labelsV as V[]).map(l => typeof l === 'string' ? l : this.err('cycle のラベルは名前'));
+        if (labels.length === 0) this.err('cycle: ラベル列が空（1 つ以上のラベルを並べる。§3.6）');   // 空は黙って通っていた（F135）
         const anchorE = e.named.anchor ?? this.err('cycle は anchor: が必要（§3.6）');
         const anchor = ivIndexOf(target.iv, this.point(this.evalExpr(anchorE, env)));
         if (anchor < 0) this.err('cycle: anchor が対象窓の外');
@@ -2562,7 +2674,13 @@ export class Evaluator {
             if (p >= windows[wi].start) nonEmpty.add(wi);
           }
           const empties_ = windows.map((_, i) => i).filter(i => !nonEmpty.has(i));
-          if (emptiesV === 'error' && empties_.length > 0) this.err('segmentBy(empties: error): 空窓がある');
+          // 生成子由来の入力（everyDay・day…）は [紀元, to+400 日) にしか実体化されない——その外に掛かる窓に点が無いのは
+          // 「空窓」ではなく「未実体化」。日付テーブルのマーカーが計算範囲の先まで延びる形（期の開始日・朔日の表）や、
+          // 1970 年より前に始まる表（元号）を評価すると「空窓がある」の偽エラーになっていた（三巡目・F145）。
+          // 紀元は tz 相対なので頭側は 1 日の余裕を取る。テーブル由来の入力は全点を持つので従来どおり全窓を判定
+          const judged = (x: Iv) => !stream.endless
+            || (x.start >= this.rt.epoch + DAY_MS && x.end <= this.rt.computeEnd);
+          if (emptiesV === 'error' && empties_.some(i => judged(windows[i]))) this.err('segmentBy(empties: error): 空窓がある');
           if (emptiesV === 'drop') windows = windows.filter((_, i) => nonEmpty.has(i));
         }
         const pts = edgesV === 'drop'
@@ -2594,6 +2712,8 @@ export class Evaluator {
         if (stream.wins.length === 0) this.err(`選択子 ${stage.name} は窓なしでは型エラー（I4）`);
         let n = 1;
         if (stage.name === 'nth') n = this.num(this.evalExpr(positional[0] ?? this.err('nth(n) の n が必要'), env));
+        // nth(0)・nth(-1)・nth(1.5) は黙って 0 点だった（境界チェックリスト 2026-09-29・F120）。要素が n 個に満たない窓の空は正当のまま
+        if (stage.name === 'nth' && (!Number.isInteger(n) || n < 1)) this.err(`nth: n は 1 以上の整数（${n} は不可。ADR-38 判断 12 と同規約）`);
         const ofE = named('of');
         let level = stream.wins.length - 1;   // 既定は最内窓（§4.3）
         if (ofE) {
@@ -2653,10 +2773,10 @@ export class Evaluator {
           if (ptIndexOf(axis, p) >= 0) { pts.push(p); continue; }   // 有効点は動かない
           if (conv === 'Following') {
             const i = ptUpperBound(axis, p);
-            if (i < axis.length) { pts.push(axis[i]); continue; }
+            if (i < axis.length) { this.windowClip(`roll(${conv})`, p, axis[i]); pts.push(axis[i]); continue; }
           } else {
             const i = ptUpperBound(axis, p) - 1;
-            if (i >= 0) { pts.push(axis[i]); continue; }
+            if (i >= 0) { this.windowClip(`roll(${conv})`, p, axis[i]); pts.push(axis[i]); continue; }
           }
           // 着地先が無い＝軸の尽き。三分岐（ADR-37 判断 6/8）:
           if (annAt(axisS.ann, p).length > 0) continue;   // ②実効被覆域外→空＋註釈（依存像が張る）
@@ -2675,6 +2795,8 @@ export class Evaluator {
       }
       case 'shift': {
         const n = this.num(this.evalExpr(positional[0] ?? this.err('shift(n) の n が必要'), env));
+        // 非整数は統治外エラー（窓単位＝TypeError・点列軸＝NaN の日付が warnings に漏れる）だった。F116（境界チェックリスト 2026-09-29）
+        if (!Number.isInteger(n)) this.err(`shift: n は整数（${n} は不可。方向は符号で表す。§5.2）`);
         const unitV = this.evalAxis(named('unit') ?? this.axisMember(env, 'shift'), env);
         const pts: number[] = [];
         let align: GridTag | null;
@@ -2704,7 +2826,9 @@ export class Evaluator {
                 + '（計算範囲 to+400日 の実体化地平線——言語の地平線ではない。ADR-37 判断 8）');
               continue;
             }
-            pts.push(unitV.iv[j].start + (p - unitV.iv[i].start));
+            const q = unitV.iv[j].start + (p - unitV.iv[i].start);
+            this.windowClip(`shift(${n})`, p, q);
+            pts.push(q);
           }
           // 判断 4: 入力註釈 ∪ n·U 平行移動した像（窓添字ずらしの像）
           ann = annUnion(stream.ann, shiftAnnByWindows(stream.ann, unitV.iv, n));
@@ -2723,7 +2847,7 @@ export class Evaluator {
               this.err('shift: 点が軸上にない（先に roll で有効点へ寄せる）');
             }
             const j = i + n;
-            if (j >= 0 && j < axis.length) { pts.push(axis[j]); continue; }
+            if (j >= 0 && j < axis.length) { this.windowClip(`shift(${n})`, p, axis[j]); pts.push(axis[j]); continue; }
             // 着地が軸の外＝軸の尽き。三分岐（判断 6/8）
             const beyond = j >= axis.length;
             const edgeProbe = beyond ? axis[axis.length - 1] + 1 : axis[0] - 1;
@@ -2747,9 +2871,15 @@ export class Evaluator {
         const wAnn = this.winAnnOfV(wV);
         const pts: number[] = [];
         let extra: Ann[] = [];
+        // 対象が市民日そのもの（幅 1d・日内オフセット 0）なら、実体化地平線の先の点も日の先頭へ解析的に寄せられる
+        // ——朔テーブル ｜> snapTo(day) のマーカーが to+400 日で切られ、segmentBy(labels:) の同長性検査が狭い評価窓で
+        // 「ラベル列の長さ ≠ 窓数」の偽エラーになっていた（spec §4.2 の「覆域基準＝評価範囲非依存」に実装を合わせる。
+        // 90-open の実装宿題・境界チェックリスト三巡目 2026-09-30・F144）。地平線の先へ出るのはテーブル由来の点だけ
+        const dayGrid = this.civilDayGridOf(wV, w);
         for (const p of stream.pts) {
           const i = ivIndexOf(w, p);
-          if (i >= 0) { pts.push(w[i].start); continue; }
+          if (i >= 0) { this.windowClip('snapTo', p, w[i].start); pts.push(w[i].start); continue; }
+          if (dayGrid && p >= this.rt.computeEnd) { pts.push(dayGrid.floorToDay(p)); continue; }
           // 点が窓の外。三分岐（ADR-37 判断 6/8）:
           if (p >= this.rt.computeEnd || p < this.rt.epoch) {   // ①実体化地平線
             this.rt.warnings.push(`horizon-clip: snapTo ${this.rt.fmt(p)}`
@@ -2885,7 +3015,8 @@ export class Evaluator {
         const pts = stream.pts.slice(Math.max(0, end - n), end);
         // 実装地平線ガード②（F107 同族）: 生成子由来で n 個に満たない＝実体化下限で切れている
         // （テーブル由来の n 未満は正当——covering の頭は註釈の経路が受け持つ）
-        if (stream.endless && pts.length < n) {
+        // 入力そのものが空（述語が一度も真にならない等）のときは地平線の話ではない——警告しない（軽微 15）
+        if (stream.endless && pts.length < n && stream.pts.length > 0) {
           this.rt.warnings.push(`horizon-clip: takeLast ${this.rt.fmt(until)}`
             + `（実体化下限で切れ——n=${n} 個中 ${pts.length} 個のみ。紀元は tz 相対・言語の地平線ではない。ADR-37 判断 8・F107）`);
         }
@@ -2941,7 +3072,17 @@ export class Evaluator {
                     tz: this.tzNameOf(env) };
         } else {
           const step = wV.w.ms;
-          for (let t = anchor; t < this.rt.computeEnd; t += step) pts.push(t);
+          // 点数が配列の上限を越えると RangeError（Invalid array length）が統治外で漏れた——1 ms 幅や、遠い過去の
+          // from: と細かい幅の組（境界チェックリスト三巡目・F137）。言語の上限は置かない（裁定 2026-09-29）——配列に
+          // 入らないと分かっている個数（2^32−1 超）は実体化の前に、その手前で処理系が音を上げた場合は落ちた時点で診断にする
+          const est = (this.rt.computeEnd - anchor) / step;
+          if (est > ARRAY_MAX) this.tooManyPoints('strideBy', est);
+          try {
+            for (let t = anchor; t < this.rt.computeEnd; t += step) pts.push(t);
+          } catch (err) {
+            if (err instanceof RangeError) this.tooManyPoints('strideBy', est);
+            throw err;
+          }
           align = { kind: 'elapsed', step, phase: mod(anchor, step), off: 0, tz: '' };
         }
         // ADR-36: strideBy の出力は定義上 anchor 付きグリッドの目盛りそのもの。
@@ -3003,6 +3144,24 @@ export class Evaluator {
     this.err('糖衣の右辺を変換として適用できない（生成子を含む糖衣は生成子位置で使う）');
   }
 
+  /** 評価範囲 [from, to) の内側にあった点が段（roll・shift・snapTo）で外側へ動いたとき警告（window-clip）。
+   *  意味論は §7.8 の切り取り（範囲外の点は出力に含まれない）で不変——月単位で評価する運用者に「発火が消えた」と
+   *  見える形を黙らせない（手当て (b)・2026-09-29 裁定・1.0 追補 22）。実体化地平線（to+400 日）の話は
+   *  horizon-clip（ADR-37 判断 8）＝別物。範囲外→範囲外（実体化域の点）は対象外 */
+  private windowClip(op: string, p: number, q: number) {
+    const inWin = (x: number) => x >= this.rt.fromMs && x < this.rt.toMs;
+    if (inWin(p) && !inWin(q)) {
+      this.rt.warnings.push(`window-clip: ${op} ${this.rt.fmt(p)} → ${this.rt.fmt(q)}`
+        + '（評価範囲 [from, to) の外へ動いた点は出力に含まれない——範囲を広げて評価する。§7.8）');
+    }
+  }
+
+  /** 実体化が配列の上限で落ちたときの診断（F137）。上限値は処理系のもの——言語の上限ではない */
+  private tooManyPoints(op: string, estimate: number): never {
+    this.err(`${op}: 点が多すぎて実体化できない（紀元または from: から計算範囲の端 to+400 日まで約 ${Math.ceil(estimate).toLocaleString('en-US')} 個`
+      + '——参照実装の配列の上限。幅を粗くするか、from: と評価範囲を近づける。言語の上限ではない）');
+  }
+
   /** 前文メンバー roll:（spec §3.3＝ロール規約の畳み込み・1.0.2 で実装）: 規約の位置引数が無いときの既定 */
   private rollMember(env: Env): Expr {
     const m = env.members.get('roll');
@@ -3047,6 +3206,17 @@ export class Evaluator {
       if (v.k === 'stream' && v.wins.length > 0) return v.wins[v.wins.length - 1].grain ?? null;
     }
     return null;
+  }
+
+  /** 窓列が市民日そのもの（幅 1d・位相 0・日内オフセット 0 の市民グリッドのセル）なら、その tz を返す（F144）。
+   *  month など日を束ねた窓は grain が同じ day グリッドを指すので、実体化済みの両端のセル幅で見分ける */
+  private civilDayGridOf(v: V, w: Iv[]): Tz | null {
+    if (!isObj(v) || v.k !== 'windows' || w.length === 0) return null;
+    const g = v.grain;
+    if (!g || g.kind !== 'civil' || g.step !== 1 || g.off !== 0 || !g.tz) return null;
+    const tz = getTz(g.tz);
+    const isDay = (x: Iv) => tz.floorToDay(x.start) === x.start && tz.addCivilDays(x.start, 1) === x.end;
+    return isDay(w[0]) && isDay(w[w.length - 1]) ? tz : null;
   }
 
   /** 対象窓列の実体化下限＝窓 tz の紀元の市民日開始（紀元は tz 相対＝ADR-33。F107）。

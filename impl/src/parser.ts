@@ -3,7 +3,7 @@
 //   stream-expr = pipe { (|,&,\) pipe }（同一優先度・左結合）
 //   pipe = atom { |> stage }
 //   value-expr = ternary > or > and > not > comparison > additive > multiplicative > unary > postfix
-import { lex, LexError } from './lexer.ts';
+import { lex, LexError, clipMessage } from './lexer.ts';
 import type { Token } from './lexer.ts';
 import type {
   Expr, Stage, Arg, Statement, Program, PremiseBlock, Member, Param, ListElem, NamedArgs,
@@ -12,7 +12,7 @@ import type {
 
 export class ParseError extends Error {
   constructor(msg: string, tok: Token) {
-    super(`構文エラー(${tok.line}:${tok.col}): ${msg}（'${tok.text || tok.kind}' の位置）`);
+    super(clipMessage(`構文エラー(${tok.line}:${tok.col}): ${msg}（'${tok.text || tok.kind}' の位置）`));
   }
 }
 
@@ -35,6 +35,7 @@ export function parseCoveringText(text: string): CoveringRange[] {
 class Parser {
   private i = 0;
   private toks: Token[];
+  private depth = 0;   // 式の入れ子深さ（括弧 1000 段で RangeError＝統治外だった。F131）
   constructor(toks: Token[]) { this.toks = toks; }
 
   private peek(o = 0): Token { return this.toks[Math.min(this.i + o, this.toks.length - 1)]; }
@@ -211,7 +212,8 @@ class Parser {
   // ---- 式 ----
 
   expression(): Expr {
-    return this.combineExpr();
+    if (++this.depth > 200) throw new ParseError('式の入れ子が深すぎる（上限 200 段。括弧やラムダの入れ子を減らす）', this.peek());
+    try { return this.combineExpr(); } finally { this.depth--; }
   }
 
   /** 結合子 | & \（同一優先度・左結合） */

@@ -16,7 +16,7 @@ Key facts:
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 681 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 730 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
 - Documentation language: Japanese documentation is canonical; the spec, the descriptor reference,
@@ -70,6 +70,47 @@ dates on any machine (the reference CLI prints them with `kairos list` / `kairos
     axis (write on:/unit: here, or declare axis: in the premise; §3.3 makes the declaration
     mandatory)". Nothing is defaulted silently; a misspelt named argument (`axis:` for `on:`)
     is rejected rather than ignored (ADR-39).
+
+## What an error looks like (the fix is in the parentheses)
+
+Every diagnostic has three parts: `operator: what is wrong（how to fix it. where the rule lives）`.
+The text is Japanese; the reference at the end (I3, ADR-38, §3.3) is the spec's own numbering, so
+the rule can be looked up in the English mirror. Three real ones from the reference CLI 1.0.5:
+
+- `roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言` — "roll: a
+  convention is required (I3) — write Following/Preceding as the positional argument, or declare
+  roll: in the premise". Raised by `… |> roll(on: bizDay)` with the convention omitted everywhere.
+  Fix: `roll(Preceding, on: bizDay)`, or once in the preamble, `@JP roll: Preceding`.
+- `strideBy: 幅は正の量（0 幅は前進しない＝無限ループ。1s・1d のような正の幅を書く。ADR-38 判断 12）` —
+  "strideBy: the width must be positive (a zero width never advances = an infinite loop; write a
+  positive width such as 1s or 1d. ADR-38 decision 12)". Raised by
+  `everyInstant |> strideBy(0s, from: 2026-01-01)`; rejected statically since 1.0.3. Fix: any positive
+  width, e.g. `strideBy(1d, from: 2026-01-01)`.
+- `stride: n は 1 以上の整数（0 は不可。ADR-38 判断 12）` — "stride: n is an integer of 1 or more (0 is
+  not allowed. ADR-38 decision 12)". Raised by `stride(0, from: …)`; it does not become a silent empty
+  stream. Fix: `stride(2, from: 2026-01-05)`.
+
+The CLI prints the message and exits with code 1; no result is emitted. A wrong date is never the
+failure mode of a mistake — the error is.
+
+## Limits (what it does not do)
+
+- **Calendar model**: the proleptic Gregorian calendar as an idealisation (the leap-year rule is applied to
+  every year; the 1582 reform is not modelled). Other calendars are built on top of it in the premise layer
+  (spec §3.6).
+- **No leap seconds**: the base axis (chronos) is uniform; `23:59:60` is a lexical error (spec §5, ADR-33).
+- **Years have four digits** (0000–9999); `10000-01-01` is a lexical error.
+- **DST**: civil widths (`1d`) keep wall-clock time, so a civil day may be 23–25 hours; a time literal that
+  falls into a DST gap or overlap is an error, not a guess (spec §3.6, §5; ADR-33, ADR-51). A civil width is
+  a whole number of days (`1.5d` is an error; write `36h`).
+- **Reference implementation only, not the language**: the evaluation range starts at 1970-01-01 (an earlier
+  `--from` is an explicit error); points are materialised up to `to` + 400 days and a `horizon-clip` warning
+  marks that edge; a point that a stage moves out of `[from, to)` is not in the output and gets a
+  `window-clip` warning; there is no cap on the number of points — memory grows with the output, and the
+  caller chooses the range (a service front end should bound the range; the language does not); the time
+  resolution is 1 ms (a finer width or seconds fraction is a lexical error, not a silent rounding).
+- **Out of scope**: firing, retries, logging and job execution belong to the host (spec §7.8); `Modified`
+  roll conventions and the general composition of `everyInstant` are unimplemented (impl/README).
 
 ## Specification (English mirror)
 

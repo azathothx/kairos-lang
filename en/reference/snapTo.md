@@ -1,5 +1,5 @@
 ---
-source_sha: da899f1dbe12
+source_sha: efa785153675
 ---
 
 # `snapTo` — map to the first point of the containing window (floor)
@@ -72,6 +72,11 @@ newMoons |> snapTo(day)
   shift; that is the chronos fact). The means of conformance are three: for the same **instant**,
   snapTo; for the same **date**, [`rebase`](rebase.md); for timed **membership**,
   [`coincides`](coincides.md) (for cross-tz, first unify the tz with rebase).
+
+- **A point moved across the edge of the evaluation range is not in the output** — evaluated over
+  `[2026-08-01, 2026-09-01)`, with a range starting on 8/15, 8/20 snaps to 8/1 under `snapTo(month)`, which is outside the range, so it disappears (the semantics are
+  range clipping, spec §7.8). The reference implementation emits the warning `window-clip: snapTo …` (1.0 addendum 22).
+  Evaluate over a wider range.
 
 ## Related
 

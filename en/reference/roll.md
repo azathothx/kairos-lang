@@ -1,5 +1,5 @@
 ---
-source_sha: 1741c115764a
+source_sha: f8b98a205232
 ---
 
 # `roll` — nudge invalid points to valid ones
@@ -86,6 +86,11 @@ month |> last |> roll(Preceding, on: (everyDay |> filter(d => weekday(d) == Fri)
   point vanish without an annotation** (the rule-derived = coverage-complete side does not become
   "drop and annotate" — the roll row of ADR-37 decision 4). To narrow to a specific period, `&`
   **after** the roll is the safe form.
+
+- **A point moved across the edge of the evaluation range is not in the output** — evaluated over
+  `[2026-08-01, 2026-09-01)`, 8/1 (Sat) rolls to 7/31 under `Preceding`, which is outside the range, so it disappears (the semantics are
+  range clipping, spec §7.8). The reference implementation emits the warning `window-clip: roll(Preceding) …` (1.0 addendum 22).
+  Evaluate over a wider range.
 
 ## Related
 

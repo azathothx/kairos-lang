@@ -45,6 +45,23 @@ the Japanese lunisolar calendar, and the 24 solar terms are all written with the
 - **Mistake-proofing as static checks** — timezone, granularity, and alignment mismatches, and missing
   declarations (week start, roll convention, calendar) are errors, not silent misfires.
 
+## What an error looks like
+
+Every diagnostic has three parts: `operator: what is wrong（how to fix it. where the rule lives）`. The text
+is Japanese (the canonical language); the trailing reference (I3, ADR-38, §3.3) is the spec's own numbering
+and can be looked up in the English mirror. Three real ones from the reference CLI 1.0.5:
+
+- `roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言` — "roll: a convention
+  is required (I3) — write Following/Preceding as the positional argument, or declare roll: in the premise".
+  Fix: `roll(Preceding, on: bizDay)`, or once in the preamble, `@JP roll: Preceding`.
+- `strideBy: 幅は正の量（0 幅は前進しない＝無限ループ。1s・1d のような正の幅を書く。ADR-38 判断 12）` — "strideBy:
+  the width must be positive (a zero width never advances = an infinite loop; write a positive width such as
+  1s or 1d. ADR-38 decision 12)". Fix: `strideBy(1d, from: 2026-01-01)`.
+- `stride: n は 1 以上の整数（0 は不可。ADR-38 判断 12）` — "stride: n is an integer of 1 or more (0 is not
+  allowed. ADR-38 decision 12)". It does not become a silent empty stream. Fix: `stride(2, from: 2026-01-05)`.
+
+The CLI prints the message and exits with code 1; no result is emitted.
+
 ## Comparison with cron, Quartz, and RRULE
 
 ✓ = expressible in the language/definition · △ = partial (hacks, add-ons, implementation-specific) ·
@@ -155,11 +172,30 @@ language-neutral.
 holiday table alone. `rokuyo.kairos` derives the rokuyō cycle (大安 and friends) from the lunisolar
 calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
+## Limits (what it does not do)
+
+- **Calendar model**: the proleptic Gregorian calendar as an idealisation (the leap-year rule is applied to
+  every year; the 1582 reform is not modelled). Other calendars are built on top of it in the premise layer
+  (spec §3.6).
+- **No leap seconds**: the base axis (chronos) is uniform; `23:59:60` is a lexical error (spec §5, ADR-33).
+- **Years have four digits** (0000–9999); `10000-01-01` is a lexical error.
+- **DST**: civil widths (`1d`) keep wall-clock time, so a civil day may be 23–25 hours; a time literal that
+  falls into a DST gap or overlap is an error, not a guess (spec §3.6, §5; ADR-33, ADR-51). A civil width is
+  a whole number of days (`1.5d` is an error; write `36h`).
+- **Reference implementation only, not the language**: the evaluation range starts at 1970-01-01 (an earlier
+  `--from` is an explicit error); points are materialised up to `to` + 400 days and a `horizon-clip` warning
+  marks that edge; a point that a stage moves out of `[from, to)` is not in the output and gets a
+  `window-clip` warning; there is no cap on the number of points — memory grows with the output, and the
+  caller chooses the range (a service front end should bound the range; the language does not); the time
+  resolution is 1 ms (a finer width or seconds fraction is a lexical error, not a silent rounding).
+- **Out of scope**: firing, retries, logging and job execution belong to the host (spec §7.8); `Modified`
+  roll conventions and the general composition of `everyInstant` are unimplemented (impl/README).
+
 ## Status and documentation
 
-**Version 1.0 (declared 2026-09-14; addenda through no. 21, 2026-09-29).** Semantics, the operator family, grammar (EBNF), and lexis are
+**Version 1.0 (declared 2026-09-14; addenda through no. 22, 2026-09-29).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (681 tests),
+is validated against 20 well-known schedule families and by a reference implementation (730 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |

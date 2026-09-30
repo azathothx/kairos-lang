@@ -1,5 +1,5 @@
 ---
-source_sha: e95b111fd654
+source_sha: 9a4f94009e76
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -181,7 +181,10 @@ named arg on the same word; `last(n,…)` = selector collision; `recent` = a rin
   time part's digit ranges are `hh` = 00..23 and `mm`/`ss` = 00..59 (**`23:59:60` is a lexical
   error** = leap seconds are out of scope. ADR-33). A timed literal that falls into a DST gap or
   overlap of the in-scope tz is an error (the "exists and is unique" requirement. ADR-33 —
-  relative to tz data, hence not necessarily static).
+  relative to tz data, hence not necessarily static). In the reference implementation the seconds
+  fraction has at most three digits (1 ms): any non-zero digit beyond the third is a lexical error
+  (no silent rounding; the time axis itself is continuous, and 1 ms is the resolution of the
+  reference implementation — the same holds for standalone time literals).
 - **Standalone time literals** (ADR-51): `Thh:mm(:ss(.f+)?)?` — a wall-clock time with no date
   part. The value is a time of day; it materializes into an instant **only in the
   `strideBy(1d, from:)` position** (anchored on the epoch anchor day 1970-01-01 in the resident
@@ -202,7 +205,10 @@ named arg on the same word; `last(n,…)` = selector collision; `recent` = a rin
 - **Width literals**: a `number + unit` sequence. `d` = civil day (a conventional width);
   `h`/`m`/`s` = elapsed time. Compounds (`24h39m35.244s`) exist within elapsed time only. Mixing
   civil time and elapsed time (`1d12h`) is a static error (a width straddling the convention sets
-  of ADR-12 is undefined).
+  of ADR-12 is undefined). **The number of civil days is an integer** — `1.5d` and `0.5d` are
+  static errors (a civil day is a conventional width of 23–25 hours, and a fraction of it is not
+  defined; write half a day as elapsed time, `12h`). In the reference implementation an elapsed
+  width is a whole number of milliseconds (`0.0004s` is a static error — no silent rounding).
 - **Numbers**: integers and decimals. **Identifiers and enumeration labels**: Unicode letters are
   allowed (kanji labels such as `甲` and `子` are fine). The reserved symbols
   (`|> . | & \ = => < > [ ] ( ) { } : , ? @ #`) and whitespace cannot appear in identifiers.

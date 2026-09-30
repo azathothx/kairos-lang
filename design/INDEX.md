@@ -16,7 +16,7 @@
 4. [30-syntax/00-syntax-draft.md](30-syntax/00-syntax-draft.md) — 構文の作業中ドラフト。設計を進める層（区切りで spec/ に反映）。
 5. [40-examples/](40-examples/README.md) — 表現力検証（既知スケジュールのサンプル集＝綻び出しの作業層）。判定マトリクスと綻びログ。
 6. [60-reviews/](60-reviews/README.md) — 外部レビューの受領と処置の記録。
-7. [90-open-questions.md](90-open-questions.md) — 宿題・保留事項。
+7. [90-open-questions.md](90-open-questions.md) — 宿題・保留事項（現役の項だけ。解消済みの項と経緯は [91-closed-questions.md](91-closed-questions.md)）。
 8. `../impl/` — リファレンス実装の試作（TypeScript。spec §7＋実データの実行検証。制約は impl/README）。
 
 ## ADR 一覧（20-adr/）

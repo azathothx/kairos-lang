@@ -1,5 +1,5 @@
 ---
-source_sha: 40a4169acdb9
+source_sha: ec77d2295d1c
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -302,6 +302,10 @@ dedicated new syntax: write a core pipe sequence on the right-hand side of the e
 `isLeap = y => …` and the §3.6 public word `monthStart = month |> first`, appearing with a
 different type on the right-hand side.
 
+Defining a binding of the same name twice is a static error (top-level bindings and bindings inside a premise block alike; a
+later definition never wins silently; overriding a base's public word through a derived `with` is unchanged). Applying a lambda
+whose parameter count differs from the argument count is an error (1.0 addendum 22).
+
 **Base form B (explicit lambda)** — bind the upstream stream with `s =>` and flow it into the core
 sequence with `s |>`. `|>` keeps its single meaning, "value → application of a transform".
 
@@ -467,6 +471,10 @@ on points; window + label: lambda = rule labels on windows; window + labels: lis
 windows. When merely pasting a data column, `labels:` is canonical; a `label:` lambda only for
 computations that need an index expression). The family's names (`ordinalIn`, `epochOrdinal`,
 `snapTo`, `label:`, `labels:`) were fixed at RC2 (§5.4).
+
+**Types in equality** — both sides of `==` / `!=` must be of the same type (number, string 〈label〉, boolean, point,
+time-of-day). Comparing different types is an error, not a silent false (1.0 addendum 22). The identifier form and the string
+form of a label are the same string value and therefore equal (§5.5). A zero on the right of `/`, `mod` or `div` is also an error.
 
 ## 4.10 Evaluation annotations — out-of-coverage origin (ADR-37, I6)
 

@@ -22,4 +22,5 @@ permalink: /design/
 | [30-syntax/00-syntax-draft.md](30-syntax/00-syntax-draft.md) | 構文の作業中ドラフト（区切りで spec/ に反映） |
 | [40-examples/](40-examples/) | 表現力検証（サンプル集・判定マトリクス・綻びログ） |
 | [60-reviews/](60-reviews/) | 外部レビューの受領と処置の記録 |
-| [90-open-questions.md](90-open-questions.md) | 宿題・保留事項（分類つき） |
+| [90-open-questions.md](90-open-questions.md) | 宿題・保留事項（現役の項だけ・状態別の一覧つき） |
+| [91-closed-questions.md](91-closed-questions.md) | 解消済みの宿題と経緯の記録（90 から移設） |

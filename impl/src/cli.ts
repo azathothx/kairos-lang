@@ -69,6 +69,24 @@ const addDays = (s: string, n: number) => {
 
 interface CmdOpts { from: string; to?: string; tz?: string; resolve?: ExternalResolver }
 
+/** 入力ファイル（定義・--supply）を UTF-8 の文字列で読む。Windows の導線で踏む 3 形を CLI 境界で受ける
+ *  （境界チェックリスト三巡目 2026-09-30・F142）:
+ *  - UTF-16（PowerShell 5 の `>`・Out-File の既定）は「不明な文字」「JSON が壊れている」へ誤誘導していた→保存し直しを案内
+ *  - UTF-8 の BOM（Set-Content -Encoding UTF8・古いメモ帳）は読み飛ばす（定義ファイルは字句解析側＝F119。JSON はここ）
+ *  - 読めないファイルは Node の英語文言（ENOENT: …）だけだった→どの引数のファイルかを添える */
+export function readInput(path: string, what: string): string {
+  let buf: Buffer;
+  try { buf = readFileSync(path); } catch (e) {
+    throw new KairosError(`${what}が読めない: ${path}（${(e as Error).message}）`);
+  }
+  if ((buf[0] === 0xFF && buf[1] === 0xFE) || (buf[0] === 0xFE && buf[1] === 0xFF)) {
+    throw new KairosError(`${what}が UTF-16 で保存されている: ${path}——UTF-8 で保存し直す`
+      + '（PowerShell 5 の > と Out-File は UTF-16 になる。Set-Content -Encoding utf8 か PowerShell 7 を使う）');
+  }
+  const text = buf.toString('utf8');
+  return text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+}
+
 /** --supply の静的束から external 解決子を作る（ADR-46 の RunOptions.resolve へ渡す形）。
  *  形: {キー: {dates|instants, covering, asof [, labels]}}——キーは束縛名または "premise.束縛名"
  *  （premise 修飾が優先。source は named-arg 上書きで多対一になり得るためキーにしない）。
@@ -136,8 +154,11 @@ function toReport(command: 'list' | 'next', r: RunResult, o: CmdOpts & { to: str
 
 /** list: 範囲 [from, to) の全発火＋註釈＋被覆サマリ */
 export function cmdList(source: string, o: CmdOpts & { to: string }): CliReport {
-  return toReport('list', run(source, { from: o.from, to: o.to,
-    ...(o.tz ? { tz: o.tz } : {}), ...(o.resolve ? { resolve: o.resolve } : {}) }), o);
+  const r = run(source, { from: o.from, to: o.to,
+    ...(o.tz ? { tz: o.tz } : {}), ...(o.resolve ? { resolve: o.resolve } : {}) });
+  // 本体式の無いファイル（空・premise だけ）は exit 0 の空出力だった（境界チェックリスト 2026-09-29・F126）
+  if (r.results.length === 0) throw new KairosError('本体式がない（評価する式を 1 行以上書く。premise だけのファイルは評価対象が無い）');
+  return toReport('list', r, o);
 }
 
 /** next: from 以降の次の N 発火。窓を 1 年から倍々に広げて探索し（上限＝horizon 年）、
@@ -150,7 +171,7 @@ export function cmdNext(source: string, o: CmdOpts & { n: number; horizonYears: 
   for (;;) {
     const to = addYears(o.from, years);
     const r = run(source, { from: o.from, to, ...runOpts });
-    if (r.results.length === 0) throw new KairosError('本体式がない');
+    if (r.results.length === 0) throw new KairosError('本体式がない（評価する式を 1 行以上書く。premise だけのファイルは評価対象が無い）');
     if (r.results.length > 1) throw new KairosError(
       `next は本体式 1 つのファイル向け（${r.results.length} 式ある——list を使うか式を 1 つに）`);
     const found = r.results[0];
@@ -182,6 +203,7 @@ const CLI_STRINGS = {
     warning: (w: string) => `警告: ${w}`,
     horizonShort: (rep: CliReport) =>
       `⚠ 地平線 ${rep.horizonYears} 年以内の発火は ${rep.found} 件（要求 ${rep.requested} 件）`,
+    empty: (rep: CliReport) => `# 0 点（[${rep.from}, ${rep.to}) に該当なし）`,
   },
   en: {
     exprHead: (i: number, n: number) => `# expression ${i} (${n} point${n === 1 ? '' : 's'})`,
@@ -191,6 +213,7 @@ const CLI_STRINGS = {
     warning: (w: string) => `warning: ${w}`,
     horizonShort: (rep: CliReport) =>
       `⚠ only ${rep.found} firing(s) within the ${rep.horizonYears}-year horizon (requested ${rep.requested})`,
+    empty: (rep: CliReport) => `# 0 points (nothing in [${rep.from}, ${rep.to}))`,
   },
 } as const;
 
@@ -200,6 +223,9 @@ export function renderHuman(rep: CliReport, lang: CliLang = 'ja'): string[] {
   const out: string[] = [];
   rep.results.forEach((res, i) => {
     if (rep.results.length > 1) out.push(T.exprHead(i + 1, res.dates.length));
+    // 単一式の 0 点は黙らない（複数式は見出し行が点数を出す・next は ⚠ 地平線行が出る）——# 接頭なので
+    // 機械処理はコメントとして落とせる。exit 0 は不変＝空は正当な結果（手当て (a)・2026-09-29 裁定・1.0 追補 22）
+    else if (rep.command === 'list' && res.dates.length === 0) out.push(T.empty(rep));
     for (const d of res.dates) out.push(d);
     // 区間註釈（ADR-37 判断 5/7 (a)）: 結果の後に表示——対処は呼び手の責務（判定は外部）
     for (const a of res.annotations) out.push(`# ⚠ ${formatAnnotation(a)}`);
@@ -275,8 +301,11 @@ export function main(argv: string[]): number {
   if (argv[0] === 'list' || argv[0] === 'next') {
     cmd = argv[0];
     rest = argv.slice(1);
-  } else if (argv.length > 0 && !argv[0].startsWith('-')) {
-    cmd = 'list';                     // 旧形式: kairos <file.kairos> --from … --to …
+  } else if (argv[0] === '--help' || argv[0] === '-h') {   // 使い方は求められたときは stdout・終了 0
+    console.log(pickUsage(argv));
+    return 0;
+  } else if (argv.length > 0) {
+    cmd = 'list';                     // サブコマンド省略は list——旧形式（ファイル先頭）もフラグ先頭も同じ（軽微 14）
   } else {
     console.error(pickUsage(argv));
     return 1;
@@ -291,13 +320,13 @@ export function main(argv: string[]): number {
     const lang: CliLang = langValue;
     const T = CLI_STRINGS[lang];
     if (positionals.length !== 1) throw new KairosError('ファイルを 1 つ指定する');
-    const source = readFileSync(positionals[0], 'utf8');
+    const source = readInput(positionals[0], '定義ファイル');
     const tz = (values.tz as string | undefined) ?? hostTz();   // 既定＝機械の tz（--tz で上書き）
     const from = (values.from as string | undefined) ?? todayIn(tz);
     const supplyPath = (values as { supply?: string }).supply;
     let resolve: ExternalResolver | undefined;
     if (supplyPath) {
-      const text = readFileSync(supplyPath, 'utf8');
+      const text = readInput(supplyPath, '--supply のファイル');
       let json: unknown;
       try { json = JSON.parse(text); } catch (e) {
         throw new KairosError(`--supply の JSON が壊れている（${supplyPath}）: ${(e as Error).message}`);
@@ -324,10 +353,19 @@ export function main(argv: string[]): number {
     }
     return 0;
   } catch (e) {
-    console.error(String(e instanceof Error ? e.message : e));
-    if (e instanceof Error && 'code' in e && String(e.code).startsWith('ERR_PARSE_ARGS')) {
-      console.error(pickUsage(argv));  // 引数の誤り（未知フラグ等）には使い方を添える
+    const code = e instanceof Error && 'code' in e ? String(e.code) : '';
+    if (code.startsWith('ERR_PARSE_ARGS')) {
+      // 引数の誤り（未知フラグ・値の欠落）は Node の parseArgs の英語文言のままだった（軽微 13）。--lang en は原文を出す
+      const opt = /'(-{1,2}[^'\s<]+)/.exec((e as Error).message)?.[1] ?? '';
+      const ja = code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION' ? `未知のオプション: ${opt}`
+        : code === 'ERR_PARSE_ARGS_INVALID_OPTION_VALUE'
+          ? `オプション ${opt} の値が無いか、- で始まっている（- で始まる値は ${opt.startsWith('--') ? `${opt}=値` : `${opt}値`} の形で書く）`
+          : (e as Error).message;
+      console.error(pickUsage(argv) === USAGE_EN ? (e as Error).message : ja);
+      console.error(pickUsage(argv));  // 使い方を添える
+      return 1;
     }
+    console.error(String(e instanceof Error ? e.message : e));
     return 1;
   }
 }

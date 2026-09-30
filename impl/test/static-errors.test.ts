@@ -103,3 +103,25 @@ describe('strideBy の幅（F112・2026-09-29 レッドチーム監査で実測:
       .toThrow(/strideBy: 幅は正の量/);
   });
 });
+
+describe('shift の n は整数（F116・2026-09-29 境界チェックリスト: 非整数は統治外エラーだった）', () => {
+  const CAL = `
+premise Cal { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon
+  nonWorking = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+}
+premise JP = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon }
+@JP
+`;
+  it('窓単位 shift(1.5, unit: month)（旧: TypeError Cannot read properties of undefined）', () => {
+    expect(() => run(CAL + 'everyDay |> within(month) |> nth(1) |> shift(1.5, unit: month)\n', Y2026))
+      .toThrow(/^shift: n は整数（1\.5 は不可。方向は符号で表す。§5\.2）$/);
+  });
+  it('点列軸 shift(1.5, unit: bizDay)（旧: NaN の日付が window-clip 警告に漏れて 0 点）', () => {
+    expect(() => run(CAL + 'everyDay |> within(month) |> nth(1) |> roll(Following, on: bizDay) |> shift(1.5, unit: bizDay)\n', Y2026))
+      .toThrow(/shift: n は整数/);
+  });
+  it('対照: shift(-1, unit: bizDay) は通る・shift(0) も通る（恒等）', () => {
+    expect(() => run(CAL + 'everyDay |> within(month) |> nth(1) |> roll(Following, on: bizDay) |> shift(-1, unit: bizDay)\n', Y2026)).not.toThrow();
+    expect(() => run(CAL + 'everyDay |> within(month) |> nth(1) |> roll(Following, on: bizDay) |> shift(0, unit: bizDay)\n', Y2026)).not.toThrow();
+  });
+});
