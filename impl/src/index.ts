@@ -4,7 +4,7 @@ import { parse } from './parser.ts';
 import { Runtime, Evaluator, KairosError } from './eval.ts';
 import { getTz } from './tz.ts';
 import type { RunOptions, RunResult } from './eval.ts';
-import type { Expr } from './ast.ts';
+import type { Expr, Statement } from './ast.ts';
 
 export { parse } from './parser.ts';
 export { lex } from './lexer.ts';
@@ -28,6 +28,7 @@ export function run(source: string, opts: RunOptions): RunResult {
   };
   const rt = new Runtime(d(opts.from), d(opts.to), tz);
   if (opts.resolve) rt.resolver = opts.resolve;   // external の解決子（ADR-46）
+  rt.explain = opts.explain === true;             // 段ごとの記録（軽量 explain・1.0 追補 23）
   const ev = new Evaluator(rt);
 
   const stdlib = parse(stdlibSource);
@@ -43,6 +44,24 @@ export function run(source: string, opts: RunOptions): RunResult {
 
   const defaultMembers = new Map<string, string | Expr>();
   const results = ev.runProgram(program, defaultMembers);
+  // CliReport の source（式の字面）と line（1 起点の行番号）: 本体式の行範囲を原文から切り出す（1.0 追補 23・設計者裁定 2026-10-06
+  // ＝同じ字面でも直前の前文で結果が変わるので line が要る）。結果は本体式の文書順（前文ブロックの内側も含め深さ優先）に並ぶ
+  const exprStmts: (Statement & { t: 'streamExpr' })[] = [];
+  const collect = (sts: Statement[]) => {
+    for (const st of sts) {
+      if (st.t === 'streamExpr') exprStmts.push(st);
+      else if (st.t === 'preamble' && st.block) collect(st.block);
+    }
+  };
+  collect(program.statements);
+  const lines = source.replace(/^\uFEFF/, '').split('\n').map(l => l.replace(/\r$/, ''));
+  results.forEach((r, i) => {
+    const st = exprStmts[i];
+    if (st?.line) {
+      r.line = st.line;
+      r.source = lines.slice(st.line - 1, st.endLine ?? st.line).join('\n').trim();
+    }
+  });
   // 被覆サマリ（ADR-37 判断 7 (b)）: クリップしない静的な監視面。残走路＝評価 to から覆域終端まで
   const coverage = [...rt.coverage.values()].map(c => ({
     source: c.source,

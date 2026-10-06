@@ -1,5 +1,5 @@
 ---
-source_sha: 4cddc0f4e25e
+source_sha: 1443f6647d2c
 ---
 
 # `first` — select the first in each window
@@ -48,6 +48,9 @@ everyDay |> within(quarter) |> within(month) |> first(of: quarter)
   selecting. The Nth business day is the former.
 - The public boundary words of primitive definitions are written as reuses of this selector
   (`monthStart = month |> first`; zero new mechanism; spec §3.6).
+- In the final window of a data-derived window sequence (closed at the coverage edge), an empty known part is not a "legitimate
+  empty": the whole window gets an out-of-coverage annotation (the first element may lie beyond the coverage. ADR-37 revision 6).
+  With an element in the known part, the start side is settled (no annotation).
 
 ## Related
 

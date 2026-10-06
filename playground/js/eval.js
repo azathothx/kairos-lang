@@ -97,6 +97,8 @@ export class Runtime {
     premises = new Map();
     topBindings = new Map();
     warnings = [];
+    /** 本体式の段ごとの記録を残す（RunOptions.explain） */
+    explain = false;
     /** external の解決子（ADR-46。RunOptions.resolve から） */
     resolver;
     /** 被覆サマリの収集（ADR-37 判断 7 (b)）: 評価が参照した各データ源・被覆主張 */
@@ -131,6 +133,29 @@ export class Runtime {
     fmt(ms) {
         return this.tz.format(ms);
     }
+}
+// ---- 補助: explain の字面（引数は名前・数値・文字列・日付だけ展開＝実行計画の見出し） ----
+function exprLabel(e) {
+    switch (e.t) {
+        case 'name': return e.name;
+        case 'qualified': return `${e.ns}.${e.name}`;
+        case 'num': return String(e.v);
+        case 'str': return JSON.stringify(e.v);
+        case 'call': return `${exprLabel(e.callee)}(${e.args.map(argLabel).join(', ')})`;
+        case 'pipe': return `(${exprLabel(e.head)} |> …)`;
+        case 'combine': return `(${exprLabel(e.l)} ${e.op} ${exprLabel(e.r)})`;
+        case 'list': return '[…]';
+        case 'lambda': return 'λ';
+        default: return '…';
+    }
+}
+function argLabel(a) {
+    const v = exprLabel(a.value);
+    return a.name ? `${a.name}: ${v}` : v;
+}
+function stageLabel(st) {
+    const name = `${st.ns ? `${st.ns}.` : ''}${st.name}`;
+    return st.args.length ? `${name}(${st.args.map(argLabel).join(', ')})` : name;
 }
 // ---- 補助: 区間・点列 ----
 /** start でソート済みの区間列から ms を含む区間の添字（なければ -1） */
@@ -504,8 +529,20 @@ export class Evaluator {
                         break;
                     }
                     case 'streamExpr': {
-                        const v = this.evalExpr(st.expr, cur);
+                        // explain（軽量形・1.0 追補 23）: 本体式が pipe なら段ごとに、さもなくば式全体で 1 段を記録
+                        let stages;
+                        let v;
+                        if (this.rt.explain && st.expr.t === 'pipe') {
+                            const tr = [];
+                            v = this.evalPipe(st.expr, cur, (label, sv) => tr.push(this.traceStage(label, sv)));
+                            stages = tr;
+                        }
+                        else {
+                            v = this.evalExpr(st.expr, cur);
+                        }
                         const s = this.toStream(v);
+                        if (this.rt.explain && !stages)
+                            stages = [this.traceStage(exprLabel(st.expr), s)];
                         const trimmed = s.pts.filter(p => p >= this.rt.fromMs && p < this.rt.toMs);
                         // 区間註釈は評価範囲 [from, to) にクリップして結果と同格に返す（表面で一度だけ＝ADR-37 判断 8）。
                         // 表示形は閉端→半開端変換の ε（+1ms。輸送の依存像で生じる）を正規化する——正規化しないと
@@ -516,7 +553,8 @@ export class Evaluator {
                             from: disp(a.from), to: disp(a.to), fromMs: a.from, toMs: a.to,
                             source: a.source, covering: a.covering, ...(a.asof ? { asof: a.asof } : {}),
                         }));
-                        results.push({ source: '', points: trimmed, dates: trimmed.map(p => this.rt.fmt(p)), annotations });
+                        results.push({ source: '', line: st.line ?? 0, points: trimmed, dates: trimmed.map(p => this.rt.fmt(p)), annotations,
+                            ...(stages ? { stages } : {}) });
                         break;
                     }
                 }
@@ -1671,23 +1709,7 @@ export class Evaluator {
                 return l[i];
             }
             case 'call': return this.evalCall(e, env);
-            case 'pipe': {
-                const v = this.evalExpr(e.head, env);
-                // everyInstant は連続基底の全点＝実体化できないので strideBy が直接受ける（§4.2）
-                if (isObj(v) && v.k === 'instant') {
-                    if (e.stages[0]?.name !== 'strideBy') {
-                        this.err('everyInstant は strideBy を直後に要する（プロトタイプ）');
-                    }
-                    let s = this.applyStage({ k: 'stream', pts: [], wins: [], align: null, ann: [], endless: true }, e.stages[0], env);
-                    for (const st of e.stages.slice(1))
-                        s = this.applyStage(s, st, env);
-                    return s;
-                }
-                let s = this.toStream(v, e.head.t === 'name' ? e.head.name : undefined);
-                for (const st of e.stages)
-                    s = this.applyStage(s, st, env);
-                return s;
-            }
+            case 'pipe': return this.evalPipe(e, env);
             case 'combine': {
                 const ls = this.toStream(this.evalExpr(e.l, env));
                 const rs = this.toStream(this.evalExpr(e.r, env));
@@ -2001,6 +2023,18 @@ export class Evaluator {
                 for (let i = ptUpperBound(S.pts, win.start - 1); i < S.pts.length && S.pts[i] < win.end; i++) {
                     if (annAt(S.ann, S.pts[i]).length === 0)
                         return true;
+                }
+                // (ii') 窓が覆域端で閉じた最終窓（終端未確定・ADR-37 改訂 6）なら、証人なしは偽と確定できない——真の窓は
+                //       覆域端の先へ続き得る（閏月検出 `not coincides(chukiDay, lunarMonth, p)` が最終月で偽の閏月を出す形）。
+                //       窓列自身の尾部註釈（覆域端に始まる）を運んで範囲外（読んだ窓を運び filter が逆像拡幅する）
+                if (win.openEnd === true) {
+                    const tail = this.winAnnOfV(wV).filter(a => a.from <= win.end && win.start < a.to);
+                    if (tail.length > 0) {
+                        const a = tail[0];
+                        throw new OutOfCoverageSignal(`範囲外（out-of-coverage）: coincides の窓 [${this.rt.fmt(Math.max(win.start, -8.64e15))}, `
+                            + `${this.rt.fmt(win.end)}) は覆域端で閉じた最終窓で終端が未確定——証人（非註釈区間の点）が無く偽と確定できない`
+                            + `（${a.source} covering ${a.covering}${a.asof ? `, asof ${a.asof}` : ''}——判定は外部・ADR-37 改訂 6・ADR-38 判断 4）`, tail, win);
+                    }
                 }
                 // (ii) 証人なし ∧ 窓 ∩ S の註釈区間 ≠ ∅ → 範囲外（読んだ窓を運び filter が逆像拡幅する＝F75）
                 const overlap = S.ann.filter(a => a.from < win.end && win.start < a.to);
@@ -2597,6 +2631,52 @@ export class Evaluator {
         take: new Set(['from']),
         takeLast: new Set(['until']),
     };
+    /** pipe 式の評価。onStage を渡すと先頭と各段の後のストリームを受け取れる（explain の軽量形＝1.0 追補 23。
+     *  評価そのものは不変——記録は本体式の段だけで、束縛・糖衣の内側の段は展開先の意味どおり黙って流れる） */
+    evalPipe(e, env, onStage) {
+        const v = this.evalExpr(e.head, env);
+        let s;
+        let rest = e.stages;
+        // everyInstant は連続基底の全点＝実体化できないので strideBy が直接受ける（§4.2）
+        if (isObj(v) && v.k === 'instant') {
+            if (e.stages[0]?.name !== 'strideBy') {
+                this.err('everyInstant は strideBy を直後に要する（プロトタイプ）');
+            }
+            const empty = { k: 'stream', pts: [], wins: [], align: null, ann: [], endless: true };
+            onStage?.(exprLabel(e.head), empty);
+            s = this.applyStage(empty, e.stages[0], env);
+            onStage?.(stageLabel(e.stages[0]), s);
+            rest = e.stages.slice(1);
+        }
+        else {
+            s = this.toStream(v, e.head.t === 'name' ? e.head.name : undefined);
+            onStage?.(exprLabel(e.head), s);
+        }
+        for (const st of rest) {
+            s = this.applyStage(s, st, env);
+            onStage?.(stageLabel(st), s);
+        }
+        return s;
+    }
+    /** explain の 1 段の記録（評価範囲 [from, to) で数える） */
+    traceStage(label, s) {
+        const lo = this.rt.fromMs, hi = this.rt.toMs;
+        let count = 0, first = -1, last = -1;
+        for (const p of s.pts) {
+            if (p < lo || p >= hi)
+                continue;
+            if (first < 0)
+                first = p;
+            last = p;
+            count++;
+        }
+        const top = s.wins.length > 0 ? s.wins[s.wins.length - 1] : undefined;
+        const windows = top ? top.iv.filter(w => w.start < hi && w.end > lo).length : undefined;
+        return { stage: label, count,
+            ...(first >= 0 ? { first: this.rt.fmt(first), last: this.rt.fmt(last) } : {}),
+            ...(windows !== undefined ? { windows } : {}),
+            annotations: clipAnn(s.ann, lo, hi).length };
+    }
     applyStage(stream, stage, env) {
         const named = (key) => stage.args.find(a => a.name === key)?.value;
         const positional = stage.args.filter(a => !a.name).map(a => a.value);
@@ -2710,8 +2790,14 @@ export class Evaluator {
                 const mLast = markers[markers.length - 1];
                 const tailCov = covOf(mLast);
                 const fEnd = Math.min(tailCov ? tailCov.end : mLast, this.rt.computeEnd);
-                if (fEnd > mLast)
-                    iv.push({ start: mLast, end: fEnd });
+                // 覆域端で閉じた最終窓の終端は未確定（ADR-37 改訂 6）: 所属・始端は覆域内で確定する（「範囲内は完全」＝最終マーカーと
+                // 覆域端の間に他のマーカーは無い）が、真の窓は覆域端の先へ続き得る。終端を読む段（last・既知部分に要素の足りない nth・
+                // 証人の無い coincides）は、この窓を覆域端に始まる註釈区間に接するものとして扱う（点集合は変えず註釈だけを足す＝
+                // 判断 4 の規範「過小近似は不可」の適用）。計算範囲（to+400 日）で切れた形は実装地平線（判断 8）の領分＝印は付けない
+                if (fEnd > mLast) {
+                    const openEnd = tailCov !== undefined && Number.isFinite(tailCov.end) && fEnd === tailCov.end;
+                    iv.push(openEnd ? { start: mLast, end: fEnd, openEnd: true } : { start: mLast, end: fEnd });
+                }
                 const defEnd = iv.length ? iv[iv.length - 1].end : mLast; // 確定窓の末端
                 // 頭側（覆域始端〜最初のマーカー）だけが edges: の領分。覆域外の点は範囲外＝註釈が引き受ける
                 if (edgesV === 'error') {
@@ -2805,10 +2891,6 @@ export class Evaluator {
                 const out = [];
                 let pi = 0;
                 for (const w of iv) {
-                    for (const a of combined) {
-                        if (a.from < w.end && w.start < a.to)
-                            widened.push({ ...a, from: w.start, to: w.end });
-                    }
                     const inWin = [];
                     while (pi < stream.pts.length && stream.pts[pi] < w.start)
                         pi++;
@@ -2816,6 +2898,15 @@ export class Evaluator {
                     while (pj < stream.pts.length && stream.pts[pj] < w.end)
                         inWin.push(stream.pts[pj++]);
                     pi = pj;
+                    // 覆域端で閉じた最終窓（終端未確定・ADR-37 改訂 6）: 終端を読む段——last・既知部分に要素の足りない nth・既知部分が
+                    // 空の first/nth——は、窓の終端に始まる註釈区間にも交差するものとして窓全域へ拡幅する。始端・所属を読む first と
+                    // 足りている nth は従来どおり（註釈なし）。点集合は変わらない（註釈の追加のみ＝過小近似の是正）
+                    const readsEnd = w.openEnd === true
+                        && (stage.name === 'last' || inWin.length === 0 || (stage.name === 'nth' && n > inWin.length));
+                    for (const a of combined) {
+                        if ((readsEnd ? a.from <= w.end : a.from < w.end) && w.start < a.to)
+                            widened.push({ ...a, from: w.start, to: w.end });
+                    }
                     if (inWin.length === 0)
                         continue; // 空は正当な値（I15/ADR-15）
                     if (stage.name === 'first')

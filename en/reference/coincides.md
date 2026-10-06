@@ -1,5 +1,5 @@
 ---
-source_sha: 78e0a1b297e8
+source_sha: 0d509108dd9c
 ---
 
 # `coincides` — the window-membership predicate
@@ -119,6 +119,11 @@ intervals; [table literals](table-literal.md)' `covering:`, ADR-37), never the r
   out-of-coverage.
 - **false**: the window lies entirely within the effective coverage (determining false depends on
   coverage completeness — the **asymmetry** with true is normative).
+- **The final window closed at the coverage edge** (the final window of a data-derived window sequence = its end undetermined) is
+  **always out-of-coverage** without a witness — never settled as false (the true window may continue past the edge. ADR-37
+  revision 6). This closes the shape where leap-month detection
+  `lunarMonth |> first |> filter(p => not coincides(chukiDay, lunarMonth, p))` reported a false leap month in the final month
+  (before: false → true under `not`).
 
 Points of the degenerate tail of `everyDay \ holidays` are **not witnesses** — no "confident true"
 is built on top of holidays that may not exist (the consumer-side face of the rule "annotations

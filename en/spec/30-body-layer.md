@@ -1,5 +1,5 @@
 ---
-source_sha: ec77d2295d1c
+source_sha: 7b3c2ed93014
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -306,6 +306,13 @@ Defining a binding of the same name twice is a static error (top-level bindings 
 later definition never wins silently; overriding a base's public word through a derived `with` is unchanged). Applying a lambda
 whose parameter count differs from the argument count is an error (1.0 addendum 22).
 
+Sugar **inherits the meaning of its expansion** — the transport rows for evaluation annotations (§4.10, ADR-37 decision 4) and the
+DST conventions are those of the core words that appear in the expansion. That the inner `filter` of the standard sugar `at` (§5.5)
+drops out-of-coverage points and annotates is a consequence; sugar gets no special treatment outside the transport table (ADR-51
+addendum 2). The difference between stages — combinators keep points whose existence is known, with an annotation; predicates drop
+points whose truth is unknown, with an annotation — is the difference between "the point's existence is known" and "the predicate's
+truth is unknown", not a per-stage convenience (settled 2026-10-01; the record is in design/91-closed-questions.md).
+
 **Base form B (explicit lambda)** — bind the upstream stream with `s =>` and flow it into the core
 sequence with `s |>`. `|>` keeps its single meaning, "value → application of a transform".
 
@@ -388,7 +395,7 @@ civil-time grid whose tz name disagrees with w's, it is a **static error** (prev
 one-day cross-tz slip — coincides is chronos membership, not "the same date label"; F69).
 Determination is the three-way **witness rule** (ADR-38 decision 4): if a point of S from an
 **unannotated interval** (a witness) is in the window, true; with no witness, if the window
-intersects an annotated interval of S, out-of-coverage (§4.10); if the window lies entirely within
+intersects an annotated interval of S, out-of-coverage (§4.10; the final window closed at the coverage edge has an undetermined end, so with no witness it is always out-of-coverage — never settled as false. ADR-37 revision 6); if the window lies entirely within
 the effective coverage, false — points of a degenerate computed value (the data-exhausted tail of
 `everyDay \ holidays`) are not witnesses. Choosing between the two: for exception days between
 day-aligned streams the combinator (`schedule \ blackoutDays`) is right — "same **point**:
@@ -399,7 +406,7 @@ flowchart TD
   Q["coincides(S, w, d) — is a point of S in the w window containing d"]
   Q --> W{"is a point of S from an unannotated<br/>interval (= a witness) in the window?"}
   W -- "yes" --> T["true — ∃ is monotone. A witness's existence<br/>depends on no unknown data (no annotation needed)"]
-  W -- "no" --> C{"does the window intersect an annotated interval of S?"}
+  W -- "no" --> C{"does the window intersect an annotated interval of S?<br/>(the final window closed at the coverage edge touches it = intersects)"}
   C -- "yes" --> O["out-of-coverage — in filter, drop the point and annotate<br/>(widened to the whole window read = F75)"]
   C -- "no (window within the effective coverage)" --> F["false — determining false depends on coverage completeness<br/>(the asymmetry with true is normative)"]
 ```
@@ -525,11 +532,11 @@ the governance table of ADR-36):
 | combinators <code>&#124;</code>, `&`, `\` | the **union** of both sides (no automatic cancellation) |
 | shift | input annotations ∪ the **translated image** of the annotated intervals |
 | roll | the image of the input annotations ∪ the **dependency image** of the axis's annotated intervals (extended against the convention's direction to the nearest known axis point before/after). Axis exhaustion is empty + annotation; but under a completed coverage (open end), an unannotated empty |
-| selectors | if the target window intersects an annotation, widened to the **whole window** |
+| selectors | if the target window intersects an annotation, widened to the **whole window**. The final window closed at the coverage edge (its end undetermined) counts as touching the annotation that starts at the coverage edge at the stages that read the end (`last`; `nth` with too few elements in the known part; `first`/`nth` on an empty known part) and is widened likewise — stages that read the start or membership are unchanged (ADR-37 revision 6) |
 | stride/strideBy | if the walk intersects, **everything from the first intersection onward** (phase contamination) |
 | take | the stride row's isomorph plus a **reduction**: once the nth point settles before any intersection, annotation intervals beginning after the settlement are not transported (the output depends only on the input's first n points — required for consistency with "after n, a legitimate empty with no annotation". ADR-49) |
 | takeLast | take's **mirror image**: if the backward count intersects an annotation interval, everything on the past side from the intersection point (head-widening (-∞, …]) — plus a **conditional reduction**: only when the backward count settles the nth point (the past end) without intersecting, annotation intervals that complete further in the past are not transported (the output depends only on the input in [nth point, until]. ADR-52 decision 4) |
-| segmentBy | the complement of the marker coverage. `edges:`/`empties:` fire at the **coverage edges** (not the sequence edges) — within the coverage, even the window starting at the final marker is determined up to the coverage edge (= the window sequence's **effective coverage**). Stretches where no window is laid (the head side under `edges: drop`/`error`; gaps under `empties: drop`) are out-of-coverage for the window sequence = annotated (ADR-37 revision 3) |
+| segmentBy | the complement of the marker coverage. `edges:`/`empties:` fire at the **coverage edges** (not the sequence edges) — within the coverage, even the window starting at the final marker is determined up to the coverage edge (= the window sequence's **effective coverage**). Stretches where no window is laid (the head side under `edges: drop`/`error`; gaps under `empties: drop`) are out-of-coverage for the window sequence = annotated (ADR-37 revision 3). **The end of the final window is undetermined** — the true window may continue past the coverage edge (how end-reading stages treat it: the selectors row and the witness rule in §4.9; the point set is unchanged, only annotations grow. ADR-37 revision 6) |
 | filter | points that demanded an out-of-coverage reference are **dropped**, and the annotation widens to the **preimage of the region (window) the predicate read** (ADR-37 revision 2 = F75; for predicates reading only d's neighborhood, as before: the dependency's annotated intervals ∩ the evaluation region) |
 | generators, within, snapTo | pass the input's annotations through (point transforms, via the image). A calendar-system-pure generator itself produces no annotations |
 | rebase | inflate the endpoints to the source's day windows by floor/ceil, then map by label correspondence (over-approximation allowed; ADR-40) |

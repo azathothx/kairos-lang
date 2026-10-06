@@ -28,24 +28,33 @@ node src/cli.ts next --json examples/payday.kairos           # 機械可読（�
 
 ### CLI サブコマンド
 
-- **`list [--from] [--to] [--tz] [--json] <file>`** — 範囲 `[from, to)` の全発火・区間註釈・
+- **`list [--from] [--to] [--tz] [--json] [--explain] <file>`** — 範囲 `[from, to)` の全発火・区間註釈・
   被覆サマリ。既定は**機械の tz**（`Intl` の解決値・`--tz` で上書き）の今日から 1 年。ラベルと `[from, to)` の
   端点はこの tz で読む——定義の premise tz と違うと日粒度の点は時刻付き（例 NY の 0 時＝JST 13:00）で印字される（1.0.1）。
-- **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--json] <file>`** — `from`（既定＝今日）以降の
-  次の N 発火（既定 1）。探索窓を 1 年から倍々に広げ（上限 `--horizon` 年・既定 10）、見つかったら
+- **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--json] [--explain] <file>`** — `from`（既定＝今日）以降の
+  次の N 発火（既定 1）。探索窓を 7 日から倍々に広げ（1 年以降は年単位・上限 `--horizon` 年・既定 10）、見つかったら
   **[from, 最終発火日の翌日) で確定再評価**——区間註釈・残走路が答えの範囲と整合する。
   本体式 1 つのファイル向け（複数は明示エラー。`list` を使う）。
-- **`--json`** — `CliReport`（`command`/`version`/`tz`/`from`/`to`/`results`〔`dates`・`points`＝
-  epoch ms・`annotations`＝`fromMs`/`toMs` 込み〕/`coverage`/`warnings`）を書き出す。人間表示と
-  同じ器から直列化するため両表示は乖離しない。`points`/`fromMs` は「判定は外部」（ADR-37）の
-  交差計算を呼び手が epoch ms のまま行うための器。
+- **`--json`** — `CliReport`（`command`/`version`/`tz`/`from`/`to`/`results`〔`source`＝式の字面・`line`＝1 起点の
+  行番号・`dates`・`points`＝epoch ms・`annotations`＝`fromMs`/`toMs` 込み・`stages`＝`--explain` のときだけ〕/`coverage`/
+  `warnings`）を書き出す。人間表示と同じ器から直列化するため両表示は乖離しない。`points`/`fromMs` は「判定は外部」（ADR-37）の
+  交差計算を呼び手が epoch ms のまま行うための器＝**点の同一性**。`dates` はその市民ラベルで、秒・ms は 0 でないときだけ
+  （`:ss`・`.SSS`）・DST の重複（同じ壁時計が二度ある瞬間）はオフセット `±HH:MM` 付き——**`points` と一対一**（1.0 追補 23）。
+  **エラーも JSON**（stdout に `{command, version, error: {kind: usage|supply|static, message}}`・終了コード 1 は不変）。
+  形の正本は **JSON Schema** `schema/cli-report.schema.json`（https://kairos-lang.org/schema/cli-report.schema.json・
+  draft 2020-12・後方互換の改訂のみ）。
+- **`--explain`** — 本体式の先頭と各段の後の点数・先頭と末尾の点・交差する窓数・註釈数を `# explain: everyDay 59 → within(month) 59
+  [窓 2] → last 2` の 1 行（`--json` では `results[].stages`）に出す——SQL の実行計画の対応物（軽量 explain・1.0 追補 23。点ごとの
+  出自〈roll の着地・shift の経路〉は将来）。記録は本体式の段だけ——束縛・糖衣の内側は展開先の意味どおり黙って流れる。
 - **`--supply <file.json>`** — `external`（ADR-46）の解決値を**静的束**で渡す。形は
   `{キー: {dates|instants, covering, asof [, labels]}}`——キーは**束縛名**または
   `"premise.束縛名"`（修飾が優先）。`dates` は `"YYYY-MM-DD"` の配列・`instants` は epoch ms の
   数値配列（`CliReport` の `points` と同じ規約）。CLI は JSON の**形**だけを検査し、覆域の包含・
   昇順・実在日などの**供給契約はそのまま評価器の検査**（ADR-46 の 12 種）に掛かる——被覆サマリの
   `asof`/残走路も供給値から出る。`--supply` 無しで `external` を解決しようとすると供給エラー
-  （ADR-46 の既定）。
+  （ADR-46 の既定）。形の正本は JSON Schema `schema/supply.schema.json`
+  （https://kairos-lang.org/schema/supply.schema.json）。`asof` は**版の識別子**（任意の非空文字列・同一性比較のみ・順序も日付と
+  しての意味も読まない。版を切る識別子が無ければ観測日 `YYYY-MM-DD` を推奨）。
 - **`--lang en`** — 人間表示の**枠組みだけ**英語化（見出し・被覆サマリ・残走路・USAGE・警告ラベル）。
   評価器メッセージ（エラー・註釈文）は**日本語が正**のまま・`--json` は言語中立——線引きは
   英語版 Playground（`/en/playground/`）と同一。
@@ -188,7 +197,7 @@ baseAlign・再実行の外側フレーム再記録〕）。
 
 ## テスト
 
-（33 ファイル・730 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（36 ファイル・763 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・

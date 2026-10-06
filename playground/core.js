@@ -3,12 +3,17 @@
 // （en＝米国連邦祝日版・cascade〈日本の振替休日導出〉だけは見せ場として日英共通。2026-09-01）。
 // 生成物 js/ はリファレンス実装のトランスパイル。ビルド: 非公開正本の tools/build-playground.mjs）
 import { run, formatAnnotation } from './js/index.js';
+import { IMPL_SOURCE_SHA, IMPL_VERSION } from './js/build-info.js';
+
+// CLI の list と同じ文言（本体式の無い定義は CLI では使い方エラー＝F126。Playground も同じ 1 行を出す・1.0 追補 23）
+const NO_BODY = '本体式がない（評価する式を 1 行以上書く。premise だけのファイルは評価対象が無い）';
 
 const STRINGS = {
   ja: {
     exprHead: (i, n) => `# 式 ${i}（${n} 件）`,
     empty: (from, to) => `# 0 点（[${from}, ${to}) に該当なし）`,
     noOutput: '（出力なし）',
+    build: (v, sha) => `参照実装 ${v}（指紋 ${sha}）——表示は CLI の list と同じ`,
     coverageHead: '# 被覆サマリ',
     concluded: '（完結主張）',
     runway: d => `残走路 ${d === null ? '∞' : `${d} 日`}`,
@@ -19,6 +24,7 @@ const STRINGS = {
     exprHead: (i, n) => `# expression ${i} (${n} point${n === 1 ? '' : 's'})`,
     empty: (from, to) => `# 0 points (nothing in [${from}, ${to}))`,
     noOutput: '(no output)',
+    build: (v, sha) => `reference implementation ${v} (fingerprint ${sha}) — the output is what the CLI's list prints`,
     coverageHead: '# coverage summary',
     concluded: '(concluded)',
     runway: d => `runway ${d === null ? '∞' : `${d} day${d === 1 ? '' : 's'}`}`,
@@ -182,6 +188,8 @@ export function init(lang) {
   const T = STRINGS[lang];
   const EX = lang === 'en' ? EXAMPLES_EN : EXAMPLES;
   const $ = id => document.getElementById(id);
+  const build = $('pg-build');
+  if (build) build.textContent = T.build(IMPL_VERSION, IMPL_SOURCE_SHA);   // 学習者が「同じ版」を画面で確かめる口（検定の追従の前提）
   const src = $('pg-src'), out = $('pg-out');
 
   function evaluate() {
@@ -207,7 +215,7 @@ export function init(lang) {
         }
       }
       for (const w of r.warnings) lines.push(T.warning(w));
-      out.textContent = lines.join('\n') || T.noOutput;
+      out.textContent = r.results.length === 0 ? NO_BODY : (lines.join('\n') || T.noOutput);
     } catch (e) {
       out.textContent = String(e && e.message ? e.message : e);
     }

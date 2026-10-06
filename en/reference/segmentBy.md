@@ -1,5 +1,5 @@
 ---
-source_sha: 0015ff84a1e7
+source_sha: d15043ab0276
 ---
 
 # `segmentBy` — interval-sequence windows (cut at markers)
@@ -219,6 +219,13 @@ page renamed its example).
   too that number labels are not unique keys (`lunarMonth(6)` includes the leap sixth month — a
   repeat of the preceding month's number — as the union of all matches; with the name label
   `kyuMonth("六月")` the leap sixth month stays distinct).
+- **The end of the final window closed at the coverage edge is undetermined** (ADR-37 revision 6) — the window starting at the
+  final marker is laid up to the coverage edge (membership and start are settled), but the true window may continue past the edge.
+  Stages that read the end (`last`; `nth` with too few elements in the known part; `first`/`nth` on an empty known part;
+  `coincides` without a witness) attach an out-of-coverage annotation over the whole window — the coverage's last day from
+  `lunarMonth |> last` stays as a candidate, and the annotation says the end is undetermined (before: the coverage's last day came
+  out as "month-end" with no annotation). Stages that read the start or membership (`first`, a satisfied `nth`, labels projections,
+  `ordinalIn`) are unchanged. Extending the coverage removes the annotation (stdlib/kyureki.md §7).
 
 ## Related
 

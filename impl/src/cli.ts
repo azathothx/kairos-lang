@@ -12,7 +12,7 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { run, formatAnnotation, KairosError, SupplyError } from './index.ts';
 import type { RunResult, ExternalData, ExternalResolver } from './index.ts';
-import type { ResultAnnotation, CoverageEntry } from './eval.ts';
+import type { ResultAnnotation, CoverageEntry, StageTrace } from './eval.ts';
 
 // 実装版（JSON 出力の版規律）。SEA 束ね時は build 側でリテラルへ差し替え（index.ts の stdlib と同型）
 const VERSION: string =
@@ -29,13 +29,25 @@ export interface CliReport {
   found?: number;                      // next: 実際に見つけた件数（< requested なら終了コード 2）
   horizonYears?: number;               // next: 探索地平線（年）
   results: {
-    source: string;
-    dates: string[];                   // 表示形（YYYY-MM-DD[Thh:mm[:ss]]・実行 tz の市民ラベル)
-    points: number[];                  // epoch ms——「判定は外部」の交差計算用の器
+    source: string;                    // 本体式の字面（1.0 追補 23。旧: 常に空文字列）
+    line: number;                      // 本体式の 1 行目（1 起点）。同じ字面でも直前の前文で結果が変わるので要る
+    dates: string[];                   // 表示形（YYYY-MM-DD[Thh:mm[:ss[.SSS]]][±HH:MM]・実行 tz の市民ラベル。DST の重複時刻は
+                                       // オフセット付き・秒未満は .SSS＝points と一対一。schema/cli-report.schema.json）
+    points: number[];                  // epoch ms——「判定は外部」の交差計算用の器（点の同一性）
     annotations: ResultAnnotation[];   // 区間註釈（fromMs/toMs 込み・ADR-37 判断 5/7 (a)）
+    stages?: StageTrace[];             // --explain のときだけ: 段ごとの途中値と点数（軽量 explain・1.0 追補 23）
   }[];
   coverage: CoverageEntry[];           // 被覆サマリ（ADR-37 判断 7 (b)。残走路は評価 to 起点）
   warnings: string[];
+}
+
+/** --json のエラー表面（1.0 追補 23）: stdout に JSON で返す（終了コード 1 は不変）。kind＝usage（引数・ファイル・--supply の
+ *  JSON 自体）／supply（供給契約の違反＝SupplyError）／static（定義の字句・構文・静的・評価のエラー＝KairosError）。
+ *  機械の消費側（MCP 等）が stderr を読まずに済む器 */
+export interface CliErrorReport {
+  command: 'list' | 'next';
+  version: string;
+  error: { kind: 'usage' | 'supply' | 'static'; message: string };
 }
 
 /** 機械（実行環境）の tz＝Intl の解決値。CLI の既定 tz はこれ（1.0.1——1.0.0 は Asia/Tokyo 固定で、非 JST の環境では
@@ -67,7 +79,7 @@ const addDays = (s: string, n: number) => {
   return new Date(Date.UTC(y, mo - 1, d + n)).toISOString().slice(0, 10);
 };
 
-interface CmdOpts { from: string; to?: string; tz?: string; resolve?: ExternalResolver }
+interface CmdOpts { from: string; to?: string; tz?: string; resolve?: ExternalResolver; explain?: boolean }
 
 /** 入力ファイル（定義・--supply）を UTF-8 の文字列で読む。Windows の導線で踏む 3 形を CLI 境界で受ける
  *  （境界チェックリスト三巡目 2026-09-30・F142）:
@@ -145,7 +157,8 @@ function toReport(command: 'list' | 'next', r: RunResult, o: CmdOpts & { to: str
     to: o.to,
     ...(next ? { requested: next.requested, found: next.found, horizonYears: next.horizonYears } : {}),
     results: r.results.map(res => ({
-      source: res.source, dates: res.dates, points: res.points, annotations: res.annotations,
+      source: res.source, line: res.line, dates: res.dates, points: res.points, annotations: res.annotations,
+      ...(res.stages ? { stages: res.stages } : {}),
     })),
     coverage: r.coverage,
     warnings: r.warnings,
@@ -155,21 +168,25 @@ function toReport(command: 'list' | 'next', r: RunResult, o: CmdOpts & { to: str
 /** list: 範囲 [from, to) の全発火＋註釈＋被覆サマリ */
 export function cmdList(source: string, o: CmdOpts & { to: string }): CliReport {
   const r = run(source, { from: o.from, to: o.to,
-    ...(o.tz ? { tz: o.tz } : {}), ...(o.resolve ? { resolve: o.resolve } : {}) });
+    ...(o.tz ? { tz: o.tz } : {}), ...(o.resolve ? { resolve: o.resolve } : {}), ...(o.explain ? { explain: true } : {}) });
   // 本体式の無いファイル（空・premise だけ）は exit 0 の空出力だった（境界チェックリスト 2026-09-29・F126）
   if (r.results.length === 0) throw new KairosError('本体式がない（評価する式を 1 行以上書く。premise だけのファイルは評価対象が無い）');
   return toReport('list', r, o);
 }
 
-/** next: from 以降の次の N 発火。窓を 1 年から倍々に広げて探索し（上限＝horizon 年）、
+/** next: from 以降の次の N 発火。窓を 7 日から倍々に広げて探索し（1 年以降は年単位・上限＝horizon 年）、
  *  見つかったら [from, 最終発火日の翌日) で確定再評価——註釈・残走路が答えの範囲と整合する。
  *  地平線まで探して不足なら見つかった分を返す（found < requested）。 */
 export function cmdNext(source: string, o: CmdOpts & { n: number; horizonYears: number }): CliReport {
   const meta = { requested: o.n, found: 0, horizonYears: o.horizonYears };
-  const runOpts = { ...(o.tz ? { tz: o.tz } : {}), ...(o.resolve ? { resolve: o.resolve } : {}) };
-  let years = Math.min(1, o.horizonYears);
-  for (;;) {
-    const to = addYears(o.from, years);
+  const runOpts = { ...(o.tz ? { tz: o.tz } : {}), ...(o.resolve ? { resolve: o.resolve } : {}), ...(o.explain ? { explain: true } : {}) };
+  // 探索窓は 7 日から倍々（〜224 日）→1 年から倍々→地平線（90-open 2-4・1.0 追補 23。旧: 1 年から——1 秒刻みの列では 1 点のために
+  // 約 3,100 万点を実体化して実用上止まった）。確定再評価の意味論は不変（見つかった窓で [from, 最終発火日の翌日) を再評価）
+  const steps: string[] = [];
+  for (let d = 7; d < 366; d *= 2) steps.push(addDays(o.from, d));
+  for (let y = 1; y < o.horizonYears; y *= 2) steps.push(addYears(o.from, y));
+  steps.push(addYears(o.from, o.horizonYears));
+  for (const to of steps) {
     const r = run(source, { from: o.from, to, ...runOpts });
     if (r.results.length === 0) throw new KairosError('本体式がない（評価する式を 1 行以上書く。premise だけのファイルは評価対象が無い）');
     if (r.results.length > 1) throw new KairosError(
@@ -184,11 +201,11 @@ export function cmdNext(source: string, o: CmdOpts & { n: number; horizonYears: 
       res.points = res.points.slice(0, o.n);
       return toReport('next', rf, { ...o, to: toFinal }, { ...meta, found: o.n });
     }
-    if (years >= o.horizonYears) {
+    if (to === steps[steps.length - 1]) {
       return toReport('next', r, { ...o, to }, { ...meta, found: found.dates.length });
     }
-    years = Math.min(years * 2, o.horizonYears);
   }
+  throw new Error('unreachable');
 }
 
 /** 表示言語（--lang en で定型出力の枠組みだけ英語化。評価器メッセージ＝エラー・註釈文は
@@ -204,6 +221,8 @@ const CLI_STRINGS = {
     horizonShort: (rep: CliReport) =>
       `⚠ 地平線 ${rep.horizonYears} 年以内の発火は ${rep.found} 件（要求 ${rep.requested} 件）`,
     empty: (rep: CliReport) => `# 0 点（[${rep.from}, ${rep.to}) に該当なし）`,
+    explain: (st: StageTrace[]) => '# explain: ' + st.map(s =>
+      `${s.stage} ${s.count}${s.windows !== undefined ? ` [窓 ${s.windows}]` : ''}${s.annotations ? ` ⚠${s.annotations}` : ''}`).join(' → '),
   },
   en: {
     exprHead: (i: number, n: number) => `# expression ${i} (${n} point${n === 1 ? '' : 's'})`,
@@ -214,6 +233,8 @@ const CLI_STRINGS = {
     horizonShort: (rep: CliReport) =>
       `⚠ only ${rep.found} firing(s) within the ${rep.horizonYears}-year horizon (requested ${rep.requested})`,
     empty: (rep: CliReport) => `# 0 points (nothing in [${rep.from}, ${rep.to}))`,
+    explain: (st: StageTrace[]) => '# explain: ' + st.map(s =>
+      `${s.stage} ${s.count}${s.windows !== undefined ? ` [${s.windows} window${s.windows === 1 ? '' : 's'}]` : ''}${s.annotations ? ` ⚠${s.annotations}` : ''}`).join(' → '),
   },
 } as const;
 
@@ -229,6 +250,8 @@ export function renderHuman(rep: CliReport, lang: CliLang = 'ja'): string[] {
     for (const d of res.dates) out.push(d);
     // 区間註釈（ADR-37 判断 5/7 (a)）: 結果の後に表示——対処は呼び手の責務（判定は外部）
     for (const a of res.annotations) out.push(`# ⚠ ${formatAnnotation(a)}`);
+    // --explain: 段ごとの途中値と点数（SQL の実行計画に相当・# 接頭でコメント扱い）
+    if (res.stages) out.push(T.explain(res.stages));
   });
   // 被覆サマリ（ADR-37 判断 7 (b)）: クリップしない・完結主張も常時表示
   if (rep.coverage.length > 0) {
@@ -243,20 +266,21 @@ export function renderHuman(rep: CliReport, lang: CliLang = 'ja'): string[] {
 }
 
 const USAGE_JA = `使い方（kairos ＝ node src/cli.ts）:
-  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
+  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] [--explain] [--lang en] <file.kairos>
       範囲 [from, to) の全発火・区間註釈・被覆サマリ（既定: 機械の tz の今日から 1 年）
-  kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
+  kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--supply data.json] [--json] [--explain] [--lang en] <file.kairos>
       from 以降の次の N 発火（既定: n=1・from=今日・地平線 10 年。本体式 1 つのファイル向け）
   --tz: ラベルと [from, to) の端点の tz（既定＝機械の tz。定義の premise tz と違うと日粒度の点は時刻付きで印字される）
   --supply: external の解決値を静的束で渡す——{束縛名: {dates|instants, covering, asof [, labels]}}
   --lang en: 定型出力の枠組みを英語表示（エラー・註釈文は日本語が正のまま・--json は言語中立）
+  --explain: 本体式の段ごとの点数と途中値を # explain: 行（--json では results[].stages）に出す
 サブコマンド省略時は list・--version で実装版。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達`;
 
 const USAGE_EN = `Usage (kairos = node src/cli.ts):
-  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
+  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] [--explain] [--lang en] <file.kairos>
       All firings in [from, to) plus interval annotations and the coverage summary
       (default: one year from today in the machine's time zone)
-  kairos next [-n count] [--from YYYY-MM-DD] [--horizon years] [--tz Zone] [--supply data.json] [--json] [--lang en] <file.kairos>
+  kairos next [-n count] [--from YYYY-MM-DD] [--horizon years] [--tz Zone] [--supply data.json] [--json] [--explain] [--lang en] <file.kairos>
       The next N firings at or after from (default: n=1, from=today, horizon 10 years;
       intended for files with a single body expression)
   --tz: zone for labels and the [from, to) endpoints (default: the machine's time zone; if it differs from
@@ -265,6 +289,7 @@ const USAGE_EN = `Usage (kairos = node src/cli.ts):
   --lang en: English framing for the human-readable output. Evaluator messages (errors and
       annotation texts) stay in Japanese — the implementation's canonical output language;
       --json output is language-neutral.
+  --explain: print per-stage point counts and intermediate values as a # explain: line (results[].stages with --json).
 Without a subcommand, list is assumed. --version prints the implementation version.
 Exit codes: 0=success, 1=error, 2=next found fewer firings than requested within the horizon`;
 
@@ -276,12 +301,12 @@ const OPTS = {
   list: {
     from: { type: 'string' }, to: { type: 'string' },
     tz: { type: 'string' }, supply: { type: 'string' }, json: { type: 'boolean' },
-    lang: { type: 'string' },
+    lang: { type: 'string' }, explain: { type: 'boolean' },
   },
   next: {
     n: { type: 'string', short: 'n' }, from: { type: 'string' }, horizon: { type: 'string' },
     tz: { type: 'string' }, supply: { type: 'string' }, json: { type: 'boolean' },
-    lang: { type: 'string' },
+    lang: { type: 'string' }, explain: { type: 'boolean' },
   },
 } as const;
 
@@ -291,6 +316,11 @@ const posInt = (s: string, name: string) => {
 };
 
 /** 入口（SEA ビルドのエントリスタブからも呼ぶ）。戻り値＝終了コード */
+/** --json のエラー表面を組む（テストと main が共有） */
+export function errorReport(command: 'list' | 'next', kind: CliErrorReport['error']['kind'], message: string): CliErrorReport {
+  return { command, version: VERSION, error: { kind, message } };
+}
+
 export function main(argv: string[]): number {
   if (argv[0] === '--version' || argv[0] === '-v') {   // 配布バイナリの身元確認（単体で 0 終了）
     console.log(VERSION);
@@ -310,6 +340,8 @@ export function main(argv: string[]): number {
     console.error(pickUsage(argv));
     return 1;
   }
+  const jsonMode = rest.includes('--json');           // エラーも JSON で返す（CliErrorReport・1.0 追補 23）
+  let phase: 'usage' | 'supply' | 'eval' = 'usage';   // cmdList/cmdNext に入る前の失敗は usage（--supply の形の検査だけ supply）
   try {
     const { values, positionals } = parseArgs(
       { args: rest, options: OPTS[cmd], allowPositionals: true, strict: true });
@@ -331,17 +363,22 @@ export function main(argv: string[]): number {
       try { json = JSON.parse(text); } catch (e) {
         throw new KairosError(`--supply の JSON が壊れている（${supplyPath}）: ${(e as Error).message}`);
       }
+      phase = 'supply';                               // JSON は読めた——以降の形の検査は供給契約の違反（kind supply）
       resolve = supplyResolver(json, supplyPath);
+      phase = 'usage';
     }
 
+    const explain = (values as { explain?: boolean }).explain === true;
     let rep: CliReport;
     if (cmd === 'list') {
       const to = (values as { to?: string }).to ?? addYears(from, 1);
-      rep = cmdList(source, { from, to, tz, ...(resolve ? { resolve } : {}) });
+      phase = 'eval';
+      rep = cmdList(source, { from, to, tz, ...(resolve ? { resolve } : {}), ...(explain ? { explain } : {}) });
     } else {
       const n = posInt((values as { n?: string }).n ?? '1', '-n');
       const horizonYears = posInt((values as { horizon?: string }).horizon ?? '10', '--horizon');
-      rep = cmdNext(source, { from, n, horizonYears, tz, ...(resolve ? { resolve } : {}) });
+      phase = 'eval';
+      rep = cmdNext(source, { from, n, horizonYears, tz, ...(resolve ? { resolve } : {}), ...(explain ? { explain } : {}) });
     }
 
     if (values.json) console.log(JSON.stringify(rep, null, 2));
@@ -361,11 +398,20 @@ export function main(argv: string[]): number {
         : code === 'ERR_PARSE_ARGS_INVALID_OPTION_VALUE'
           ? `オプション ${opt} の値が無いか、- で始まっている（- で始まる値は ${opt.startsWith('--') ? `${opt}=値` : `${opt}値`} の形で書く）`
           : (e as Error).message;
-      console.error(pickUsage(argv) === USAGE_EN ? (e as Error).message : ja);
+      const msg = pickUsage(argv) === USAGE_EN ? (e as Error).message : ja;
+      if (jsonMode) { console.log(JSON.stringify(errorReport(cmd, 'usage', msg), null, 2)); return 1; }
+      console.error(msg);
       console.error(pickUsage(argv));  // 使い方を添える
       return 1;
     }
-    console.error(String(e instanceof Error ? e.message : e));
+    const message = String(e instanceof Error ? e.message : e);
+    if (jsonMode) {
+      // --json のエラーは stdout の JSON（CliErrorReport）——機械の消費側が stderr を読まずに済む（1.0 追補 23）
+      const kind = e instanceof SupplyError || phase === 'supply' ? 'supply' : phase === 'usage' ? 'usage' : 'static';
+      console.log(JSON.stringify(errorReport(cmd, kind, message), null, 2));
+      return 1;
+    }
+    console.error(message);
     return 1;
   }
 }

@@ -16,7 +16,7 @@ Key facts:
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 730 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 763 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
 - Documentation language: Japanese documentation is canonical; the spec, the descriptor reference,
@@ -26,6 +26,10 @@ Key facts:
   (README.ja.md). Code examples and the EBNF grammar are language-neutral.
 - License: Apache-2.0.
 - Repository: https://github.com/azathothx/kairos-lang
+- Machine-readable contract (1.0.6): JSON Schema (draft 2020-12) for the CLI's `--json` output including its
+  error form at https://kairos-lang.org/schema/cli-report.schema.json, and for `--supply` input at
+  https://kairos-lang.org/schema/supply.schema.json. Points (epoch ms) are the identity; dates are
+  one-to-one civil labels. `--explain` prints per-stage point counts (results[].stages).
 - Disambiguation: this Kairos is the schedule definition language at https://kairos-lang.org (npm package
   `kairos-lang`, GitHub azathothx/kairos-lang). It is unrelated to other projects that share the name
   (an edge/Kubernetes OS, AI products, frameworks, companies).

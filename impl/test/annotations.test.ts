@@ -261,7 +261,9 @@ everyDay |> segmentBy(lunarStart2, edges: drop, empties: keep) |> last
     expect(r.results[0].dates).toEqual(['2026-02-16', '2026-03-31']);
     expect(r.results[0].annotations).toEqual([
       expect.objectContaining({ from: '2026-01-01', to: '2026-01-19', source: 'newMoons2' }),  // 覆域始端の前
-      expect.objectContaining({ from: '2026-04-01', to: '2026-05-01', source: 'newMoons2' }),  // 覆域端の先
+      // 覆域端の先 [04-01, …) に、最終窓の終端を読む last の拡幅 [02-17, 04-01) が併合（ADR-37 改訂 6・追補 23。
+      // 旧: 2026-04-01 から。点集合は不変——12/31 級の「月末」は候補として残り、註釈が「終端は未確定」を言う）
+      expect.objectContaining({ from: '2026-02-17', to: '2026-05-01', source: 'newMoons2' }),
     ]);
   });
 

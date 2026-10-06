@@ -241,7 +241,7 @@ chronos grid 1d anchor: 2026-01-01T02:30
   it('二度ある市民日（秋戻し）は最初の出現に目盛り（01:30 は EDT 側）', () => {
     const r = run(NY + 'chronos grid 1d anchor: 2026-01-01T01:30\n',
       { from: '2026-10-31', to: '2026-11-03', tz: 'America/New_York' });
-    expect(r.results[0].dates).toEqual(['2026-10-31T01:30', '2026-11-01T01:30', '2026-11-02T01:30']);
+    expect(r.results[0].dates).toEqual(['2026-10-31T01:30', '2026-11-01T01:30-04:00', '2026-11-02T01:30']);
     const p = r.results[0].points;
     expect(p[1] - p[0]).toBe(24 * 3600e3);   // 最初の出現（EDT）——EST 側なら 25h になる
     expect(p[2] - p[1]).toBe(25 * 3600e3);

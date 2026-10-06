@@ -5,6 +5,7 @@
 // - 市民日は「その日付になる最初の瞬間」からの半開区間（ADR-33 判断 4——DST の隙間・重複も同規則）
 // - DST 切替日の市民日は 23/25 時間（幅規約 ADR-11/12: 1d は市民日であって 86400s ではない）
 import { KairosError } from './eval.js';
+const HOUR_MS = 3_600_000;
 const MIN_MS = 60_000;
 const DAY_MS = 86_400_000;
 /** 遷移タイムラインの構築範囲（プロトタイプの実体化はこの中に収まる） */
@@ -177,10 +178,29 @@ export class Tz {
         const f = this.localFields(ms);
         const p = (n) => String(n).padStart(2, '0');
         const date = `${f.y}-${p(f.mo)}-${p(f.d)}`;
+        let label = date;
         if (f.h || f.mi || f.s || f.ms) {
-            return `${date}T${p(f.h)}:${p(f.mi)}` + (f.s ? `:${p(f.s)}` : '');
+            // 秒・ms は 0 でないときだけ（秒と同じ適応表示。秒未満の粒度の是非は言語の裁定でない＝実装の表示規約。1.0 追補 23）
+            label = `${date}T${p(f.h)}:${p(f.mi)}` + (f.s || f.ms ? `:${p(f.s)}` : '') + (f.ms ? `.${String(f.ms).padStart(3, '0')}` : '');
         }
-        return date;
+        // DST の重複（同じ壁時計が二度ある瞬間）はオフセットを添えて一意にする——1 回目・2 回目とも（表示は点の射影であって
+        // 同一性ではない。相異なる点は併合しない＝ADR-33 判断 7。ラベル→点の解決規約〈最初の出現〉とは別の層。1.0 追補 23）
+        return this.isAmbiguous(ms) ? `${label}${this.offsetLabel(ms)}` : label;
+    }
+    /** 瞬間 ms の壁時計ラベルが同じ tz の別の瞬間にも写るか（DST の重複）。遷移の近傍だけ逆写像を試す */
+    isAmbiguous(ms) {
+        if (this.t.length <= 1)
+            return false; // 固定オフセット
+        const o = this.offsetAt(ms);
+        if (this.offsetAt(ms - 3 * HOUR_MS) === o && this.offsetAt(ms + 3 * HOUR_MS) === o)
+            return false; // 遷移の近傍でない
+        return this.anchor(ms + o * MIN_MS).kind === 'overlap';
+    }
+    /** ±HH:MM（ISO 8601 のオフセット表記） */
+    offsetLabel(ms) {
+        const o = this.offsetAt(ms);
+        const a = Math.abs(o);
+        return `${o < 0 ? '-' : '+'}${String(Math.floor(a / 60)).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`;
     }
 }
 const TZ_CACHE = new Map();

@@ -92,7 +92,10 @@ class Parser {
             }
             this.i = save;
         }
-        return { t: 'streamExpr', expr: this.expression() };
+        const first = this.peek();
+        const expr = this.expression();
+        const last = this.toks[Math.max(0, this.i - 1)];
+        return { t: 'streamExpr', expr, line: first.line, endLine: last.line };
     }
     /** 束縛の仮引数 (a, b, on: p)。パターン外なら null（呼び出し式だった） */
     tryParams() {

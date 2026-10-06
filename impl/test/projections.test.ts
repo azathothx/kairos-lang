@@ -107,7 +107,7 @@ premise JP2 { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
 everyInstant |> strideBy(24h39m35.244s, from: 2026-01-01)
 `, { from: '2026-01-01', to: '2026-01-03' });
     expect(r.results[0].dates[0]).toBe('2026-01-01');
-    expect(r.results[0].dates[1]).toBe('2026-01-02T00:39:35');   // +24h39m35.244s
+    expect(r.results[0].dates[1]).toBe('2026-01-02T00:39:35.244');   // +24h39m35.244s
   });
 });
 

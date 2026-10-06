@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kairos-lang.org/schema/cli-report.schema.json",
+  "title": "Kairos CliReport (kairos list|next --json)",
+  "description": "Output of the reference CLI with --json. Success: command/version/tz/from/to/results/coverage/warnings. Failure (exit code 1): command/version/error. Points are instants on the base time axis (epoch ms = identity); dates are their civil labels in the report's tz and correspond one-to-one to points. Published with kairos-lang 1.0.6 (1.0 addendum 23); later revisions are backward compatible.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command",
+    "version"
+  ],
+  "properties": {
+    "command": {
+      "enum": [
+        "list",
+        "next"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "description": "reference implementation version (semver, from package.json)"
+    },
+    "tz": {
+      "type": "string",
+      "description": "the tz the labels and [from, to) are read in (--tz, else the machine tz). A premise tz: in scope governs evaluation"
+    },
+    "from": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "evaluation range [from, to): civil day start in tz"
+    },
+    "to": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "exclusive end. For next: the day after the last found firing (or the horizon end)"
+    },
+    "requested": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "next only: -n"
+    },
+    "found": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "next only: firings actually found (< requested means exit code 2)"
+    },
+    "horizonYears": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "next only: --horizon"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/result"
+      },
+      "description": "one entry per body expression, in document order"
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/coverageEntry"
+      },
+      "description": "coverage summary (ADR-37 decision 7 (b)): every data source the evaluation consulted, not clipped to [from, to)"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "implementation warnings (horizon-clip, window-clip, I5 ...); also written to stderr"
+    },
+    "error": {
+      "$ref": "#/$defs/error"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "tz",
+        "from",
+        "to",
+        "results",
+        "coverage",
+        "warnings"
+      ],
+      "properties": {
+        "error": false
+      }
+    },
+    {
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "tz": false,
+        "from": false,
+        "to": false,
+        "requested": false,
+        "found": false,
+        "horizonYears": false,
+        "results": false,
+        "coverage": false,
+        "warnings": false
+      }
+    }
+  ],
+  "$defs": {
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "line",
+        "dates",
+        "points",
+        "annotations"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "the body expression as written (trimmed; multi-line pipes keep their newlines)"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-based line of the expression's first token. Needed to tell apart identical expressions under different preambles"
+        },
+        "dates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\d{4,6}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?)?([+-]\\d{2}:\\d{2})?$"
+          },
+          "description": "civil labels of the points in tz: YYYY-MM-DD, or YYYY-MM-DDThh:mm[:ss[.SSS]]; seconds and milliseconds appear only when non-zero; when the wall-clock time occurs twice (DST overlap) the UTC offset ±HH:MM is appended to both occurrences, so labels are unique and correspond one-to-one to points. Same length and order as points"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "epoch milliseconds, strictly ascending, within [from, to). The identity of each point ('judgement is external': intersect these with your own data)"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/annotation"
+          },
+          "description": "out-of-coverage intervals (ADR-37), clipped to [from, to)"
+        },
+        "stages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stage"
+          },
+          "description": "only with --explain: the pipe's head and each stage, with the point count after it (the lightweight explain)"
+        }
+      }
+    },
+    "annotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "from",
+        "to",
+        "fromMs",
+        "toMs",
+        "source",
+        "covering"
+      ],
+      "properties": {
+        "kind": {
+          "const": "out-of-coverage"
+        },
+        "from": {
+          "type": "string",
+          "pattern": "^\\d{4,6}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?)?([+-]\\d{2}:\\d{2})?$"
+        },
+        "to": {
+          "type": "string",
+          "pattern": "^\\d{4,6}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?)?([+-]\\d{2}:\\d{2})?$"
+        },
+        "fromMs": {
+          "type": "integer"
+        },
+        "toMs": {
+          "type": "integer"
+        },
+        "source": {
+          "type": "string",
+          "description": "premise.binding (or the binding name) whose data coverage the interval depends on"
+        },
+        "covering": {
+          "type": "string",
+          "description": "the covering claim as declared/supplied"
+        },
+        "asof": {
+          "type": "string",
+          "description": "version identifier of the data (compared by identity only)"
+        }
+      }
+    },
+    "coverageEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "covering",
+        "concluded",
+        "runwayDays"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "covering": {
+          "type": "string"
+        },
+        "asof": {
+          "type": "string",
+          "description": "version identifier of the data (compared by identity only); '(宣言 asof … と不一致)' is appended when it differs from the premise's asof:"
+        },
+        "concluded": {
+          "type": "boolean",
+          "description": "true when the covering is open-ended (claims completeness forever)"
+        },
+        "runwayDays": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "days from `to` to the end of the coverage (negative when already past); null when concluded"
+        }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "count",
+        "annotations"
+      ],
+      "properties": {
+        "stage": {
+          "type": "string",
+          "description": "the head expression or the stage as written (names, numbers and strings expanded; lambdas shown as λ)"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "points within [from, to) after this stage"
+        },
+        "first": {
+          "type": "string",
+          "pattern": "^\\d{4,6}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?)?([+-]\\d{2}:\\d{2})?$"
+        },
+        "last": {
+          "type": "string",
+          "pattern": "^\\d{4,6}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?)?([+-]\\d{2}:\\d{2})?$"
+        },
+        "windows": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "windowed streams only: windows intersecting [from, to)"
+        },
+        "annotations": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "out-of-coverage intervals within [from, to) after this stage"
+        }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "message"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "usage",
+            "supply",
+            "static"
+          ],
+          "description": "usage: arguments, files, or the --supply JSON itself; supply: the supply contract (external) was violated; static: the definition (lexical, syntactic, static or evaluation error)"
+        },
+        "message": {
+          "type": "string",
+          "description": "the diagnostic (Japanese is canonical)"
+        }
+      }
+    }
+  }
+}

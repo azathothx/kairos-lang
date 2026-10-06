@@ -1,6 +1,6 @@
 {
   "name": "kairos-lang",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Kairos schedule definition language — reference implementation (CLI + evaluator, zero runtime dependencies)",
   "keywords": [
     "schedule",
@@ -55,6 +55,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
+    "ajv": "^8.20.0",
     "esbuild": "^0.28.1",
     "postject": "^1.0.0-alpha.6",
     "typescript": "^6.0.3",

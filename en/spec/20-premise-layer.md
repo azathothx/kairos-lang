@@ -1,5 +1,5 @@
 ---
-source_sha: 4bb8ee9d2d62
+source_sha: 52865d4495a7
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -383,7 +383,10 @@ premise JPGazette {
   premise). The resolved value is a table value itself, and the same governance checks as for
   literals apply as the **supply contract**: covering and asof are always carried by the resolved
   value (absence = contract violation); containment / ascending order / same length / date
-  existence are likewise checked at resolution. `kind:` is the **alignment claim** (`dates` = the
+  existence are likewise checked at resolution. **asof is a version identifier**: used only for
+  identity (detecting a mismatch with the declared `asof:`), never ordered or read as a date (its
+  format is a convention of the supply contract — the language's as-of mechanism is not tied to the
+  notation of the Gregorian premise, which is just one premise. 1.0 addendum 23). `kind:` is the **alignment claim** (`dates` = the
   civil-day grid of the definition side's tz; `instants` = none — the declaration stands in for the
   literal text; even when empty, as declared = independent of the resolved value's row count).
   `labels:` is the **enumeration of the value domain** (static knowledge for bare-name label

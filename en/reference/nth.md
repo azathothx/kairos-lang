@@ -1,5 +1,5 @@
 ---
-source_sha: ddb0d7a64101
+source_sha: c32021d62bc7
 ---
 
 # `nth` — select the Nth in each window
@@ -66,6 +66,9 @@ bizDay |> within(month) |> nth(2)
   WKST-independent. "The Friday of the 2nd week" (WKST-dependent) is a different thing
   (stdlib/gregorian.md §4.4).
 - Multiple ordinals (`nth([1, 3])`) are not introduced — enumerate with a union (open item F11).
+- In the final window of a data-derived window sequence (closed at the coverage edge), when the known part has fewer than `n`
+  elements the result stays empty and the whole window gets an out-of-coverage annotation (the nth may lie beyond the coverage.
+  ADR-37 revision 6). With enough elements it is settled (no annotation).
 
 ## Related
 

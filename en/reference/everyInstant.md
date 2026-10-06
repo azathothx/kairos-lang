@@ -1,5 +1,5 @@
 ---
-source_sha: b761cd000ae9
+source_sha: 6573117edc8e
 ---
 
 # `everyInstant` — streams every point of the continuous base
@@ -30,7 +30,7 @@ Every Martian sol (24 hours 39 minutes 35.244 seconds):
 # eval: 2026-01-01..2026-01-03
 @JP
 everyInstant |> strideBy(24h39m35.244s, from: 2026-01-01)
-#=> 2026-01-01 2026-01-02T00:39:35
+#=> 2026-01-01 2026-01-02T00:39:35.244
 ```
 
 The sol is given as a composite width of **elapsed time**, not civil time (`d`). Civil time and

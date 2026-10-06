@@ -1,5 +1,5 @@
 ---
-source_sha: 3c8b06899159
+source_sha: 8f946578ce43
 ---
 
 # `last` — select the last in each window
@@ -50,6 +50,10 @@ everyDay |> within(week) |> last
 - "3 business days before month-end" cannot be written with `last` alone — nudge onto a business
   day with `roll(Preceding, on: bizDay)`, then `shift(-3, unit: bizDay)`
   ([representative example §7.1](../spec/90-examples.md)).
+- **The final window of a data-derived window sequence** (a lunisolar calendar cut at new moons, etc.): the `last` of the final
+  window closed at the coverage edge returns the coverage's last day as a candidate, with an out-of-coverage annotation over the
+  whole window — the end depends on the next marker (outside the coverage) and is undetermined (ADR-37 revision 6; pitfalls of
+  [`segmentBy`](segmentBy.md)). Do not use it as a month-end without reading the annotation.
 
 ## Related
 

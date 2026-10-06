@@ -35,7 +35,7 @@ export type Statement =
   | { t: 'premiseDef'; name: string; block?: PremiseBlock; expr?: PremiseExpr }
   | { t: 'preamble'; form: 'light' | 'inline'; name?: string; members: Member[]; block?: Statement[] }
   | { t: 'binding'; name: string; params: Param[]; rhs: Expr; covering?: CoveringRange[] }
-  | { t: 'streamExpr'; expr: Expr };
+  | { t: 'streamExpr'; expr: Expr; line?: number; endLine?: number };   // 行範囲＝CliReport の source/line（1.0 追補 23）
 
 export interface PremiseExpr { base: string; withBlock?: PremiseBlock; stages: Stage[] }
 export interface PremiseBlock {
