@@ -3,6 +3,7 @@
 // （en＝米国連邦祝日版・cascade〈日本の振替休日導出〉だけは見せ場として日英共通。2026-09-01）。
 // 生成物 js/ はリファレンス実装のトランスパイル。ビルド: 非公開正本の tools/build-playground.mjs）
 import { run, formatAnnotation } from './js/index.js';
+import { toIcs, icsEventCount, titleFromSource } from './js/ics.js';
 import { IMPL_SOURCE_SHA, IMPL_VERSION } from './js/build-info.js';
 
 // CLI の list と同じ文言（本体式の無い定義は CLI では使い方エラー＝F126。Playground も同じ 1 行を出す・1.0 追補 23）
@@ -19,6 +20,11 @@ const STRINGS = {
     runway: d => `残走路 ${d === null ? '∞' : `${d} 日`}`,
     warning: w => `警告: ${w}`,
     shared: url => 'この URL に式と評価範囲を固定した。そのまま共有できる。\n\n' + url,
+    // series（既定）では 1 式が 1 つの繰り返し予定＝カレンダー上の件数は式の数・回数は点の数（2026-10-07 公開前レビュー）
+    icsSaved: (name, n, m, series) => series
+      ? `${name} を保存した（繰り返し予定 ${m} 件・${n} 回分）——カレンダーアプリで開くか取り込む`
+      : `${name} を保存した（予定 ${n} 件）——カレンダーアプリで開くか取り込む`,
+    icsEmpty: '予定が 0 件——.ics は作らない',
   },
   en: {
     exprHead: (i, n) => `# expression ${i} (${n} point${n === 1 ? '' : 's'})`,
@@ -30,10 +36,53 @@ const STRINGS = {
     runway: d => `runway ${d === null ? '∞' : `${d} day${d === 1 ? '' : 's'}`}`,
     warning: w => `warning: ${w}`,
     shared: url => 'The expression and evaluation range are pinned to this URL — share it as is.\n\n' + url,
+    icsSaved: (name, n, m, series) => series
+      ? `Saved ${name} (${m} recurring event${m === 1 ? '' : 's'}, ${n} occurrence${n === 1 ? '' : 's'}) — open or import it in your calendar app`
+      : `Saved ${name} (${n} event${n === 1 ? '' : 's'}) — open or import it in your calendar app`,
+    icsEmpty: 'No events in range — nothing to export',
   },
 };
 
+// 暮らしの例（2026-10-06 設計者裁定「エンジニアでない一般の人向けの入口」）: 式を読まずに「カレンダーに入れる」まで行ける
+// 最短経路。先頭のコメント行が予定の名前（.ics の SUMMARY）になる。ブログ第 30・31 弾の例と同じ定義
+const JP_PREMISE = `premise JP {
+  calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon
+  national = [2026-01-01, 2026-01-12, 2026-02-11, 2026-02-23, 2026-03-20, 2026-04-29, 2026-05-03..2026-05-06,
+              2026-07-20, 2026-08-11, 2026-09-21..2026-09-23, 2026-10-12, 2026-11-03, 2026-11-23] covering: 2026..2026
+  satSun = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+  bizDay = everyDay \\ (satSun | national)
+}`;
 const EXAMPLES = {
+  garbage: {
+    from: '2026-01-01', to: '2027-01-01',
+    code: `# 資源ごみ（第 1・第 3 水曜）
+${JP_PREMISE}
+
+@JP
+wed = everyDay |> filter(d => weekday(d) == Wed)
+(wed |> within(month) |> nth(1)) | (wed |> within(month) |> nth(3))`,
+  },
+  pay15: {
+    from: '2026-01-01', to: '2027-01-01',
+    code: `# 給料日（15 日と月末・休日なら前営業日）
+${JP_PREMISE}
+
+@JP
+d15 = everyDay |> within(month) |> nth(15)
+eom = everyDay |> within(month) |> last
+(d15 | eom) |> roll(Preceding, on: bizDay)`,
+  },
+  alarm: {
+    window: 28,   // 選んだ日から 4 週間＝今日から先の有視界の窓（設計者裁定 2026-10-07。固定の範囲だと 11 月以降は過去の予定だけになる）
+    code: `# 目覚まし（平日 6:30・土曜と祝日 8:00）
+${JP_PREMISE}
+
+@JP
+sat = everyDay |> filter(d => weekday(d) == Sat)
+sun = everyDay |> filter(d => weekday(d) == Sun)
+lateDay = (sat | national) \\ sun
+(bizDay |> at(T06:30)) | (lateDay |> at(T08:00))`,
+  },
   payday: {
     from: '2026-07-01', to: '2026-11-01',
     code: `premise JP {
@@ -120,7 +169,44 @@ bizDay`,
 // 英語ページのプリセット（2026-09-01 言語別化）: payday/monthend3/friday13/empty は米国連邦祝日
 //（observed）・America/New_York 版。cascade（日本の振替休日・国民の休日の導出）だけは言語の
 // 見せ場として日英共通——「法定表から規則で導く」の実演は日本の暦がいちばん濃い。
+const US_PREMISE = `premise US {
+  calendar-system: Gregorian; tz: "America/New_York"; wkst: Sun
+  federal2026 = [2026-01-01, 2026-01-19, 2026-02-16, 2026-05-25, 2026-06-19, 2026-07-03, 2026-09-07, 2026-10-12,
+                 2026-11-11, 2026-11-26, 2026-12-25] covering: 2026..2026
+  satSun = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+  bizDay = everyDay \\ (satSun | federal2026)
+}`;
 const EXAMPLES_EN = {
+  garbage: {
+    from: '2026-01-01', to: '2027-01-01', tz: 'America/New_York',
+    code: `# Recycling pickup (1st and 3rd Wednesday)
+${US_PREMISE}
+
+@US
+wed = everyDay |> filter(d => weekday(d) == Wed)
+(wed |> within(month) |> nth(1)) | (wed |> within(month) |> nth(3))`,
+  },
+  pay15: {
+    from: '2026-01-01', to: '2027-01-01', tz: 'America/New_York',
+    code: `# Payday (15th and month-end; previous business day on holidays)
+${US_PREMISE}
+
+@US
+d15 = everyDay |> within(month) |> nth(15)
+eom = everyDay |> within(month) |> last
+(d15 | eom) |> roll(Preceding, on: bizDay)`,
+  },
+  alarm: {
+    window: 28, tz: 'America/New_York',
+    code: `# Alarm clock (weekdays 6:30, Saturdays and holidays 8:00)
+${US_PREMISE}
+
+@US
+sat = everyDay |> filter(d => weekday(d) == Sat)
+sun = everyDay |> filter(d => weekday(d) == Sun)
+lateDay = (sat | federal2026) \\ sun
+(bizDay |> at(T06:30)) | (lateDay |> at(T08:00))`,
+  },
   payday: {
     from: '2026-07-01', to: '2026-11-01', tz: 'America/New_York',
     code: `premise US {
@@ -184,6 +270,30 @@ bizDay`,
   },
 };
 
+/** 「カレンダーに入れる」の本体（純関数・ブラウザ API を使わない＝テストから直接呼べる）。
+ *  同じ評価結果（run）を toIcs へ渡す——Playground と CLI の .ics は同じ関数から出る。 */
+export function buildIcs(source, { from, to, tz, lang, series }) {
+  const r = run(source, { from, to, tz: tz || undefined });
+  const rep = { version: IMPL_VERSION, tz: tz || 'Asia/Tokyo', from, to,
+    results: r.results.map(res => ({ source: res.source, dates: res.dates, points: res.points, annotations: res.annotations })) };
+  const title = titleFromSource(source);
+  // ファイル名＝予定の名前（使えない文字は -）。上限 80 字（40 字だと英語の暮らしの例の題が語の途中で切れた＝2026-10-07）
+  const name = (title ? title.replace(/[\\/:*?"<>|]+/g, '-').slice(0, 80) : `kairos-${from}_${to}`) + '.ics';
+  const count = icsEventCount(rep);                                                   // 点の総数（註釈の予定は数えない）
+  const events = series === true ? rep.results.filter(r => r.dates.length > 0).length : count;   // カレンダー上の件数（series は式ごと 1）
+  return { text: toIcs(rep, { lang, source, series: series === true }), name, count, events };
+}
+
+/** 今日（tz の市民日）から days 日の半開区間 [from, to) を YYYY-MM-DD で返す——例の「有視界の窓」用。
+ *  評価そのものは from/to の値だけで決まる（共有 URL は範囲を固定する）ので決定性は保つ。now はテスト用 */
+export function rollingWindow(tz, days, now = new Date()) {
+  const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  const [y, m, d] = ymd.split('-').map(Number);
+  const to = new Date(Date.UTC(y, m - 1, d + days));
+  const p = n => String(n).padStart(2, '0');
+  return { from: ymd, to: `${to.getUTCFullYear()}-${p(to.getUTCMonth() + 1)}-${p(to.getUTCDate())}` };
+}
+
 export function init(lang) {
   const T = STRINGS[lang];
   const EX = lang === 'en' ? EXAMPLES_EN : EXAMPLES;
@@ -191,8 +301,11 @@ export function init(lang) {
   const build = $('pg-build');
   if (build) build.textContent = T.build(IMPL_VERSION, IMPL_SOURCE_SHA);   // 学習者が「同じ版」を画面で確かめる口（検定の追従の前提）
   const src = $('pg-src'), out = $('pg-out');
+  const msg = $('pg-msg');
+  const say = t => { if (msg) msg.textContent = t; };   // 「カレンダーに入れる」の保存メッセージ。評価のたびに消す（前回の「保存した」が残らない）
 
   function evaluate() {
+    say('');
     const from = $('pg-from').value, to = $('pg-to').value, tz = $('pg-tz').value.trim();
     try {
       const r = run(src.value, { from, to, tz: tz || undefined });
@@ -257,13 +370,39 @@ export function init(lang) {
     const ex = EX[e.target.value];
     if (!ex) return;
     src.value = ex.code;
-    $('pg-from').value = ex.from;
-    $('pg-to').value = ex.to;
+    // window: N の例は選んだ日から N 日の有視界の窓（目覚まし＝今日から先の予定が出る）。他の例は固定の範囲
+    const w = ex.window ? rollingWindow(ex.tz || 'Asia/Tokyo', ex.window) : ex;
+    $('pg-from').value = w.from;
+    $('pg-to').value = w.to;
     $('pg-tz').value = ex.tz || 'Asia/Tokyo';
     evaluate();
   });
   $('pg-run').addEventListener('click', evaluate);
   $('pg-share').addEventListener('click', share);
+  // カレンダーに入れる（.ics）——ブラウザ内で作って保存する（送信なし）。予定 0 件なら作らない
+  const icsBtn = $('pg-ics');
+  if (icsBtn) icsBtn.addEventListener('click', () => {
+    try {
+      evaluate();   // 結果欄を同じ式・同じ範囲で更新してから書き出す（編集後に評価せず押しても画面と .ics が食い違わない）
+      const from = $('pg-from').value, to = $('pg-to').value, tz = $('pg-tz').value.trim();
+      // 既定は series（1 式 1 つの繰り返し予定＝Google／Apple 向け・設計者裁定 2026-10-06「一般の人は Playground から取り込む」）。
+      // 「1 点ずつ別の予定にする」は RDATE を読まないアプリ（Outlook 系）向けの逃がし
+      const split = $('pg-ics-split') ? $('pg-ics-split').checked === true : false;
+      const r = buildIcs(src.value, { from, to, tz, lang, series: !split });
+      if (r.count === 0) { say(T.icsEmpty); return; }
+      const blob = new Blob([r.text], { type: 'text/calendar;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = r.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      say(T.icsSaved(r.name, r.count, r.events, !split));
+    } catch (e) {
+      out.textContent = String(e && e.message ? e.message : e);
+    }
+  });
   src.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); evaluate(); }
   });

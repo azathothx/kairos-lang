@@ -31,7 +31,7 @@ describe('Playground: 本体式の無い定義は CLI と同じ文言・画面�
     const mk = (value = '') => ({ value, textContent: '', h: {} as Record<string, (e?: unknown) => void>,
       addEventListener(t: string, f: (e?: unknown) => void) { this.h[t] = f; }, dispatchEvent() { /* プリセット読込は不要 */ } });
     const els: Record<string, ReturnType<typeof mk>> = Object.fromEntries(
-      ['pg-src', 'pg-out', 'pg-from', 'pg-to', 'pg-tz', 'pg-example', 'pg-run', 'pg-share', 'pg-build'].map(id => [id, mk()]));
+      ['pg-src', 'pg-out', 'pg-from', 'pg-to', 'pg-tz', 'pg-example', 'pg-run', 'pg-share', 'pg-build', 'pg-ics', 'pg-ics-split', 'pg-msg'].map(id => [id, mk()]));
     const g = globalThis as Record<string, unknown>;
     const saved = { document: g.document, location: g.location };
     g.document = { getElementById: (id: string) => els[id] };

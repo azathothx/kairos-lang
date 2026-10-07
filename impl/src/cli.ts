@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Kairos CLI — サブコマンド: list（範囲の点列）・next（次の N 発火）
 // 使い方（kairos ＝ node src/cli.ts。配布名は 1.0 で npm bin / SEA に載せる）:
-//   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--json] <file.kairos>
-//   kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--json] <file.kairos>
+//   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--json|--ics] <file.kairos>
+//   kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--json|--ics] <file.kairos>
 // サブコマンド省略時（先頭引数がファイル）は list——旧形式の実行例を全て生かす後方互換。
 // 終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数を見つけられず（部分結果は表示する）。
 // external() は --supply <file.json> の静的束で解決できる（supplyResolver → RunOptions.resolve）。
@@ -10,7 +10,9 @@
 import { readFileSync, realpathSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { basename } from 'node:path';
 import { run, formatAnnotation, KairosError, SupplyError } from './index.ts';
+import { toIcs, icsEventCount } from './ics.ts';
 import type { RunResult, ExternalData, ExternalResolver } from './index.ts';
 import type { ResultAnnotation, CoverageEntry, StageTrace } from './eval.ts';
 
@@ -221,6 +223,8 @@ const CLI_STRINGS = {
     horizonShort: (rep: CliReport) =>
       `⚠ 地平線 ${rep.horizonYears} 年以内の発火は ${rep.found} 件（要求 ${rep.requested} 件）`,
     empty: (rep: CliReport) => `# 0 点（[${rep.from}, ${rep.to}) に該当なし）`,
+    icsEmpty: (rep: CliReport, ann: number) =>
+      `⚠ 予定 0 件（[${rep.from}, ${rep.to}) に点がない${ann ? `・範囲外の註釈 ${ann} 件` : ''}）——.ics は書き出さない`,
     explain: (st: StageTrace[]) => '# explain: ' + st.map(s =>
       `${s.stage} ${s.count}${s.windows !== undefined ? ` [窓 ${s.windows}]` : ''}${s.annotations ? ` ⚠${s.annotations}` : ''}`).join(' → '),
   },
@@ -233,6 +237,8 @@ const CLI_STRINGS = {
     horizonShort: (rep: CliReport) =>
       `⚠ only ${rep.found} firing(s) within the ${rep.horizonYears}-year horizon (requested ${rep.requested})`,
     empty: (rep: CliReport) => `# 0 points (nothing in [${rep.from}, ${rep.to}))`,
+    icsEmpty: (rep: CliReport, ann: number) =>
+      `⚠ no events (no points in [${rep.from}, ${rep.to})${ann ? `; ${ann} out-of-coverage annotation(s)` : ''}) — no .ics written`,
     explain: (st: StageTrace[]) => '# explain: ' + st.map(s =>
       `${s.stage} ${s.count}${s.windows !== undefined ? ` [${s.windows} window${s.windows === 1 ? '' : 's'}]` : ''}${s.annotations ? ` ⚠${s.annotations}` : ''}`).join(' → '),
   },
@@ -266,21 +272,24 @@ export function renderHuman(rep: CliReport, lang: CliLang = 'ja'): string[] {
 }
 
 const USAGE_JA = `使い方（kairos ＝ node src/cli.ts）:
-  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] [--explain] [--lang en] <file.kairos>
+  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json|--ics] [--explain] [--lang en] <file.kairos>
       範囲 [from, to) の全発火・区間註釈・被覆サマリ（既定: 機械の tz の今日から 1 年）
-  kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--supply data.json] [--json] [--explain] [--lang en] <file.kairos>
+  kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--supply data.json] [--json|--ics] [--explain] [--lang en] <file.kairos>
       from 以降の次の N 発火（既定: n=1・from=今日・地平線 10 年。本体式 1 つのファイル向け）
   --tz: ラベルと [from, to) の端点の tz（既定＝機械の tz。定義の premise tz と違うと日粒度の点は時刻付きで印字される）
   --supply: external の解決値を静的束で渡す——{束縛名: {dates|instants, covering, asof [, labels]}}
   --lang en: 定型出力の枠組みを英語表示（エラー・註釈文は日本語が正のまま・--json は言語中立）
   --explain: 本体式の段ごとの点数と途中値を # explain: 行（--json では results[].stages）に出す
-サブコマンド省略時は list・--version で実装版。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達`;
+  --ics: 結果を iCalendar（.ics）で書き出す——1 点＝1 予定（時刻付きは 0 分で通知つき・範囲外の区間も予定として載る。--json と排他・--explain は出ない）
+      予定 0 件なら何も書かず終了コード 2。日粒度の点を終日の予定にするには --tz を定義の premise tz に合わせる（違うと時刻付きになる）
+  --ics-series: 同じく .ics だが 1 式＝1 つの繰り返し予定（RDATE）にまとめる（Google／Apple カレンダー向け。RDATE を読まないアプリでは初回だけになる）
+サブコマンド省略時は list・--version で実装版。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達／--ics で予定 0 件`;
 
 const USAGE_EN = `Usage (kairos = node src/cli.ts):
-  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json] [--explain] [--lang en] <file.kairos>
+  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json|--ics] [--explain] [--lang en] <file.kairos>
       All firings in [from, to) plus interval annotations and the coverage summary
       (default: one year from today in the machine's time zone)
-  kairos next [-n count] [--from YYYY-MM-DD] [--horizon years] [--tz Zone] [--supply data.json] [--json] [--explain] [--lang en] <file.kairos>
+  kairos next [-n count] [--from YYYY-MM-DD] [--horizon years] [--tz Zone] [--supply data.json] [--json|--ics] [--explain] [--lang en] <file.kairos>
       The next N firings at or after from (default: n=1, from=today, horizon 10 years;
       intended for files with a single body expression)
   --tz: zone for labels and the [from, to) endpoints (default: the machine's time zone; if it differs from
@@ -290,8 +299,14 @@ const USAGE_EN = `Usage (kairos = node src/cli.ts):
       annotation texts) stay in Japanese — the implementation's canonical output language;
       --json output is language-neutral.
   --explain: print per-stage point counts and intermediate values as a # explain: line (results[].stages with --json).
+  --ics: write the result as iCalendar (.ics) — one event per point (timed points are 0 minutes long with an alarm;
+      out-of-coverage intervals appear as events; exclusive with --json; --explain is not printed). With zero events
+      nothing is written and the exit code is 2. Day-granular points become all-day events only when --tz equals the
+      definition's premise tz (otherwise they are timed).
+  --ics-series: same, but one recurring event per expression (RDATE) — for Google/Apple Calendar; apps that ignore
+      RDATE show only the first occurrence.
 Without a subcommand, list is assumed. --version prints the implementation version.
-Exit codes: 0=success, 1=error, 2=next found fewer firings than requested within the horizon`;
+Exit codes: 0=success, 1=error, 2=next found fewer firings than requested within the horizon / --ics with zero events`;
 
 /** USAGE の言語選択——パース失敗経路でも使えるよう argv の素朴な走査で決める */
 const pickUsage = (argv: string[]) =>
@@ -300,12 +315,12 @@ const pickUsage = (argv: string[]) =>
 const OPTS = {
   list: {
     from: { type: 'string' }, to: { type: 'string' },
-    tz: { type: 'string' }, supply: { type: 'string' }, json: { type: 'boolean' },
+    tz: { type: 'string' }, supply: { type: 'string' }, json: { type: 'boolean' }, ics: { type: 'boolean' }, 'ics-series': { type: 'boolean' },
     lang: { type: 'string' }, explain: { type: 'boolean' },
   },
   next: {
     n: { type: 'string', short: 'n' }, from: { type: 'string' }, horizon: { type: 'string' },
-    tz: { type: 'string' }, supply: { type: 'string' }, json: { type: 'boolean' },
+    tz: { type: 'string' }, supply: { type: 'string' }, json: { type: 'boolean' }, ics: { type: 'boolean' }, 'ics-series': { type: 'boolean' },
     lang: { type: 'string' }, explain: { type: 'boolean' },
   },
 } as const;
@@ -369,6 +384,10 @@ export function main(argv: string[]): number {
     }
 
     const explain = (values as { explain?: boolean }).explain === true;
+    // --ics: 同じ CliReport を iCalendar に展開する（出力形式のみ・1.0 追補 24）。--json とは排他＝stdout は 1 つの形
+    const icsSeries = (values as { 'ics-series'?: boolean })['ics-series'] === true;
+    const ics = (values as { ics?: boolean }).ics === true || icsSeries;
+    if (ics && values.json) throw new KairosError('--ics と --json はどちらか一方（stdout は 1 つの形）');
     let rep: CliReport;
     if (cmd === 'list') {
       const to = (values as { to?: string }).to ?? addYears(from, 1);
@@ -381,7 +400,17 @@ export function main(argv: string[]): number {
       rep = cmdNext(source, { from, n, horizonYears, tz, ...(resolve ? { resolve } : {}), ...(explain ? { explain } : {}) });
     }
 
-    if (values.json) console.log(JSON.stringify(rep, null, 2));
+    if (ics) {
+      // 予定 0 件なら何も書かない（VEVENT の無い VCALENDAR は RFC 5545 §3.6 違反）＝Playground「0 件なら作らない」と同じ。
+      // stderr に知らせて終了コード 2（next の要求件数未達と同じ「結果はあるが器を満たせない」の段）——公開前レビュー 2026-10-07
+      if (icsEventCount(rep) === 0) {
+        console.error(T.icsEmpty(rep, rep.results.reduce((n, r) => n + r.annotations.length, 0)));
+        for (const w of rep.warnings) console.error(T.warning(w));
+        return 2;
+      }
+      process.stdout.write(toIcs(rep, { lang, source, series: icsSeries, fallbackTitle: basename(positionals[0]).replace(/\.[^.]+$/, '') }));
+    }
+    else if (values.json) console.log(JSON.stringify(rep, null, 2));
     else for (const line of renderHuman(rep, lang)) console.log(line);
     for (const w of rep.warnings) console.error(T.warning(w));
     if (rep.command === 'next' && rep.found! < rep.requested!) {

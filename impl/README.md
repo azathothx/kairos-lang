@@ -24,14 +24,15 @@ node src/cli.ts list examples/jp-holidays.kairos --from 2026-01-01 --to 2027-01-
 node src/cli.ts list examples/rokuyo.kairos      --from 2026-01-01 --to 2027-01-01   # 旧暦・六曜（大安など）
 node src/cli.ts next -n 3 examples/payday.kairos             # 今日から次の 3 発火
 node src/cli.ts next --json examples/payday.kairos           # 機械可読（下記 CliReport）
+node src/cli.ts list --ics examples/payday.kairos > payday.ics   # カレンダーアプリに取り込む（1.0 追補 24）
 ```
 
 ### CLI サブコマンド
 
-- **`list [--from] [--to] [--tz] [--json] [--explain] <file>`** — 範囲 `[from, to)` の全発火・区間註釈・
+- **`list [--from] [--to] [--tz] [--json|--ics] [--explain] <file>`** — 範囲 `[from, to)` の全発火・区間註釈・
   被覆サマリ。既定は**機械の tz**（`Intl` の解決値・`--tz` で上書き）の今日から 1 年。ラベルと `[from, to)` の
   端点はこの tz で読む——定義の premise tz と違うと日粒度の点は時刻付き（例 NY の 0 時＝JST 13:00）で印字される（1.0.1）。
-- **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--json] [--explain] <file>`** — `from`（既定＝今日）以降の
+- **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--json|--ics] [--explain] <file>`** — `from`（既定＝今日）以降の
   次の N 発火（既定 1）。探索窓を 7 日から倍々に広げ（1 年以降は年単位・上限 `--horizon` 年・既定 10）、見つかったら
   **[from, 最終発火日の翌日) で確定再評価**——区間註釈・残走路が答えの範囲と整合する。
   本体式 1 つのファイル向け（複数は明示エラー。`list` を使う）。
@@ -43,6 +44,27 @@ node src/cli.ts next --json examples/payday.kairos           # 機械可読（�
   **エラーも JSON**（stdout に `{command, version, error: {kind: usage|supply|static, message}}`・終了コード 1 は不変）。
   形の正本は **JSON Schema** `schema/cli-report.schema.json`（https://kairos-lang.org/schema/cli-report.schema.json・
   draft 2020-12・後方互換の改訂のみ）。
+- **`--ics`** — 結果を iCalendar（.ics・RFC 5545）で stdout に書き出す（`--json` と排他・1.0 追補 24）。**1 点＝1 `VEVENT`**:
+  日粒度の点は終日（`DTSTART;VALUE=DATE`。終日になるのは表示ラベルが日付形のとき＝**`--tz` が定義の premise tz と同じとき**。
+  違うと時刻付きの予定になる。`at(T00:00)` の点は日粒度と同じ点なので終日・通知なし）・時刻付きの点は UTC の瞬間（`points` そのもの・
+  秒未満は切り捨て）の **0 分の予定**（`DTEND`＝`DTSTART`。RFC 5545 では DTEND 無し＝0 分だが Google カレンダーは 1 時間と見なす
+  ＝2026-10-06 取り込み実測。§3.8.2.2〈DTEND は DTSTART より後〉からの意図的な逸脱）で `VALARM`（`TRIGGER:PT0M`＝その時刻に表示通知）
+  つき＝目覚まし・リマインダーの器。予定は `TRANSP:TRANSPARENT`（空き時間を塞がない）。区間註釈は終日の予定（表示形の半開
+  `[from, to)` を `DTSTART`/`DTEND` に・表示形が同じ 1 日なら `DTEND` を省く〔＝1 日〕・`TRANSP:TRANSPARENT`）として載る＝表の外は黙らない。
+  **RRULE は書かない**（展開点列のみ。規則の近似を出さない）。予定の名前（`SUMMARY`）は定義の先頭コメント行（`# …`）→ファイル名の順。
+  `DTSTAMP` は各予定の `DTSTART` と同じ瞬間・`UID` は式の字面・ファイル内の順番・tz・点から決定的（同じ定義の再取り込みで重複しない・
+  表〈前文〉だけの更新では同じ予定として置き換わる・同じ字面の式が 2 つあっても衝突しない・時計を読まない）。
+  CRLF・75 オクテット折り返し・TEXT 値のエスケープ（`\` `;` `,` 改行）。**予定 0 件なら何も書かず** stderr に知らせて終了コード 2
+  （`VEVENT` の無い `VCALENDAR` は出さない）。`--explain` は `--ics` では出力されない。
+  Playground の「カレンダーに入れる（.ics）」は同じ関数（`src/ics.ts`）でブラウザ内に作る。
+- **`--ics-series`** — 同じく .ics だが **1 式＝1 つの繰り返し予定**（先頭の点が `DTSTART`・残りは `RDATE`＝展開点列のままで
+  規則は書かない）。カレンダーでは 1 つの繰り返し予定として見え、再生成の取り込みで丸ごと置き換わる（`UID` は式ごと）。
+  Google／Apple カレンダー向け——**RDATE を読まないアプリ（Outlook 系）では初回の 1 回だけになる**ため既定にしない。
+  **Playground は既定で series**（一般の人の経路＝Google／Apple が大半・1 件の削除で片付く。設計者裁定 2026-10-06）・「1 点ずつ別の予定にする
+  （Outlook 向け）」で 1 点 1 予定に。Google カレンダーでの実測（2026-10-06）＝1 件の予定として取り込まれ全回が出る・
+  詳細欄の繰り返しは「繰り返さない」と表示されるが、削除・編集は「定期的な予定」として扱われる（「すべての予定」で全回が消える）。
+  時刻付きと日粒度の点が 1 式に混在するときは全点を時刻付きとして出す（日粒度の点は 0:00 に通知）——1 つの予定の `DTSTART` と
+  `RDATE` は値型を揃えるため。
 - **`--explain`** — 本体式の先頭と各段の後の点数・先頭と末尾の点・交差する窓数・註釈数を `# explain: everyDay 59 → within(month) 59
   [窓 2] → last 2` の 1 行（`--json` では `results[].stages`）に出す——SQL の実行計画の対応物（軽量 explain・1.0 追補 23。点ごとの
   出自〈roll の着地・shift の経路〉は将来）。記録は本体式の段だけ——束縛・糖衣の内側は展開先の意味どおり黙って流れる。
@@ -69,6 +91,9 @@ import { run } from './src/index.ts';
 const r = run(source, { from: '2026-01-01', to: '2027-01-01' });
 r.results[0].dates;   // ['2026-01-23', …]
 ```
+
+パッケージとしては `kairos-lang`（`run` ほか）に加えて `kairos-lang/cli`（1.0.7）が CLI のコマンド関数（`cmdList`／`cmdNext`／
+`supplyResolver`／`errorReport`／`todayIn`）と `CliReport` の型を公開する——埋め込み用（別パッケージ kairos-lang-mcp が使う）。
 
 ## 設計（仕様との対応）
 
@@ -197,7 +222,7 @@ baseAlign・再実行の外側フレーム再記録〕）。
 
 ## テスト
 
-（36 ファイル・763 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（37 ファイル・778 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・
@@ -263,6 +288,10 @@ baseAlign・再実行の外側フレーム再記録〕）。
   市民日開始一致）・旧形式互換の黄金出力・next の倍々探索窓と確定再評価・被覆の切れ目をまたぐ答えへの
   註釈併走・終了コード契約（0/1/2）・`--lang en`（枠組み英語化・註釈は日本語のまま・USAGE の言語
   選択・不正値拒否）をサブプロセス実走で検査。
+- `test/ics.test.ts` — `.ics` 書き出し（1.0 追補 24・15 本）。終日／時刻付き（VALARM）／註釈の予定（ε 区間は DTEND を省く）・RRULE なし・
+  決定性（DTSTAMP＝DTSTART・UID は式の字面と順番と点から＝同じ字面の式 2 つでも別）・名前の優先順・CRLF と 75 オクテット折り返し
+  （多バイト文字を割らない）・TEXT のエスケープ（`;` を含む）・CLI `--ics`（`--json` と排他・予定 0 件は書かず終了コード 2）と
+  Playground の `buildIcs` が同じ文字列を出すこと・暮らしの例 3 本の日英の揃い。
 - `test/doc-consistency.test.ts` — 文書の整合性（機械検査）。ADR 範囲表記 vs 実ファイル数・改名済み
   旧名の残存・仮称印・stdlib の .kairos↔解説 md の label: 同期。
 - `test/doctest.test.ts` — [`../reference/`](../reference/) と [`../stdlib/`](../stdlib/) の実行例

@@ -17,11 +17,18 @@ layout: default
     <label>例:
       <select id="pg-example" style="max-width:100%">
         <option value="">——選ぶ——</option>
-        <option value="payday">給料日（毎月 25 日・休日なら前営業日）</option>
-        <option value="monthend3">月末の 3 営業日前</option>
-        <option value="cascade">振替休日・国民の休日の導出</option>
-        <option value="friday13">13 日の金曜日（積）</option>
-        <option value="empty">空テーブルと被覆サマリ（運用信号）</option>
+        <optgroup label="暮らしの例（そのままカレンダーに入れられる）">
+          <option value="garbage">資源ごみ（第 1・第 3 水曜）</option>
+          <option value="pay15">給料日（15 日と月末・休日なら前営業日）</option>
+          <option value="alarm">目覚まし（平日 6:30・土曜と祝日 8:00）</option>
+        </optgroup>
+        <optgroup label="業務の例">
+          <option value="payday">給料日（毎月 25 日・休日なら前営業日）</option>
+          <option value="monthend3">月末の 3 営業日前</option>
+          <option value="cascade">振替休日・国民の休日の導出</option>
+          <option value="friday13">13 日の金曜日（積）</option>
+          <option value="empty">空テーブルと被覆サマリ（運用信号）</option>
+        </optgroup>
       </select>
     </label>
   </div>
@@ -33,6 +40,9 @@ layout: default
     <label>tz <input id="pg-tz" type="text" value="Asia/Tokyo" size="14"></label>
     <button id="pg-run" type="button" style="padding:4px 20px;font-weight:bold">評価（Ctrl+Enter）</button>
     <button id="pg-share" type="button" style="padding:4px 12px">URL に固定</button>
+    <button id="pg-ics" type="button" style="padding:4px 12px">カレンダーに入れる（.ics）</button>
+    <label style="font-size:90%"><input id="pg-ics-split" type="checkbox"> 1 点ずつ別の予定にする（Outlook 向け）</label>
+    <span id="pg-msg" style="color:#57606a;font-size:90%"></span>
   </div>
   <pre id="pg-out" style="min-height:8em;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow-x:auto;white-space:pre">ここに結果が出る。</pre>
   <p id="pg-build" style="color:#57606a;font-size:90%;margin:6px 0 0"></p>
@@ -40,6 +50,10 @@ layout: default
 
 <p style="font-size:0.85em;color:#57606a">評価範囲は <code>[from, to)</code> の右開区間。出力の
 <code># ⚠</code> は範囲外出自の註釈・<code># 被覆サマリ</code> はデータの残走路
-（<a href="../spec/30-body-layer.html">仕様 §4.10</a>）。「URL に固定」で式込みのリンクを共有できる。</p>
+（<a href="../spec/30-body-layer.html">仕様 §4.10</a>）。「URL に固定」で式込みのリンクを共有できる。
+「カレンダーに入れる（.ics）」は結果をカレンダーアプリ用のファイルにする——式ごとに 1 つの繰り返し予定（全回を列挙した RDATE）・
+時刻付きの点は 0 分の予定に通知つき・範囲外の区間も予定として載る。先頭のコメント行（<code># …</code>）が予定の名前になる。
+Google／Apple カレンダーではそのまま取り込める（Google では詳細欄が「繰り返さない」と出ても、削除は「すべての予定」でまとめて消せる）。
+RDATE を読まないアプリ（Outlook 系）では初回の 1 回しか出ないので、「1 点ずつ別の予定にする」を選ぶ。ファイルはブラウザ内で作る（送信なし）。</p>
 
 <script type="module" src="app.js"></script>

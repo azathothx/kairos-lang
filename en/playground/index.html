@@ -19,11 +19,18 @@ are in Japanese.</p>
     <label>Examples:
       <select id="pg-example" style="max-width:100%">
         <option value="">— choose —</option>
-        <option value="payday">Payday (25th of each month; previous business day on holidays)</option>
-        <option value="monthend3">3 business days before month-end</option>
-        <option value="cascade">Deriving Japan's substitute &amp; sandwiched holidays</option>
-        <option value="friday13">Friday the 13th (intersection)</option>
-        <option value="empty">Empty table &amp; coverage summary (operational signals)</option>
+        <optgroup label="Everyday examples (calendar-ready)">
+          <option value="garbage">Recycling pickup (1st and 3rd Wednesday)</option>
+          <option value="pay15">Payday (15th and month-end; previous business day on holidays)</option>
+          <option value="alarm">Alarm clock (weekdays 6:30, Saturdays and holidays 8:00)</option>
+        </optgroup>
+        <optgroup label="Business examples">
+          <option value="payday">Payday (25th of each month; previous business day on holidays)</option>
+          <option value="monthend3">3 business days before month-end</option>
+          <option value="cascade">Deriving Japan's substitute &amp; sandwiched holidays</option>
+          <option value="friday13">Friday the 13th (intersection)</option>
+          <option value="empty">Empty table &amp; coverage summary (operational signals)</option>
+        </optgroup>
       </select>
     </label>
   </div>
@@ -35,6 +42,9 @@ are in Japanese.</p>
     <label>tz <input id="pg-tz" type="text" value="Asia/Tokyo" size="14"></label>
     <button id="pg-run" type="button" style="padding:4px 20px;font-weight:bold">Run (Ctrl+Enter)</button>
     <button id="pg-share" type="button" style="padding:4px 12px">Pin to URL</button>
+    <button id="pg-ics" type="button" style="padding:4px 12px">Add to calendar (.ics)</button>
+    <label style="font-size:90%"><input id="pg-ics-split" type="checkbox"> one event per point (for Outlook)</label>
+    <span id="pg-msg" style="color:#57606a;font-size:90%"></span>
   </div>
   <pre id="pg-out" style="min-height:8em;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow-x:auto;white-space:pre">Results appear here.</pre>
   <p id="pg-build" style="color:#57606a;font-size:90%;margin:6px 0 0"></p>
@@ -45,7 +55,13 @@ are in Japanese.</p>
 output, <code># ⚠</code> marks annotations of out-of-range provenance and
 <code># coverage summary</code> reports the data runway
 (<a href="../spec/30-body-layer.html">spec §4.10</a>). "Pin to URL" produces a shareable link
-carrying the expression and range. Messages produced by the evaluator itself — syntax errors and
+carrying the expression and range. "Add to calendar (.ics)" turns the result into a file for your
+calendar app — one recurring event per expression (every occurrence listed as RDATE), timed points are
+zero-length events with an alarm, out-of-coverage intervals appear as events, and the leading comment line
+(<code># …</code>) becomes the event name. Google and Apple Calendar import it as is (in Google Calendar
+the repeat field reads "does not repeat", yet deleting offers "all events"). Apps that ignore RDATE
+(Outlook) show only the first occurrence — choose "one event per point" for them. The file is built in
+the browser (nothing is sent). Messages produced by the evaluator itself — syntax errors and
 annotation texts — appear in Japanese, the implementation's canonical output language; the
 <a href="../spec/">English spec</a> defines their exact semantics.</p>
 

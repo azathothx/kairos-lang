@@ -1,0 +1,33 @@
+{
+  "name": "kairos-lang-mcp",
+  "version": "1.0.7",
+  "description": "MCP server for the Kairos schedule definition language — evaluate definitions (list/next), validate them, and look up the descriptor reference, from any MCP client",
+  "keywords": ["mcp", "model-context-protocol", "schedule", "scheduling", "calendar", "business-days", "holidays", "kairos"],
+  "homepage": "https://kairos-lang.org/",
+  "repository": { "type": "git", "url": "git+https://github.com/azathothx/kairos-lang.git", "directory": "mcp" },
+  "bugs": { "url": "https://github.com/azathothx/kairos-lang/issues" },
+  "license": "Apache-2.0",
+  "author": "azathothx",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "bin": { "kairos-lang-mcp": "dist/bin.js" },
+  "exports": { ".": { "types": "./dist/server.d.ts", "default": "./dist/server.js" } },
+  "files": ["dist", "docs", "README.md", "LICENSE", "NOTICE"],
+  "scripts": {
+    "build": "node scripts/bundle-docs.mjs && tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "pretest": "node scripts/bundle-docs.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "kairos-lang": "^1.0.7",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

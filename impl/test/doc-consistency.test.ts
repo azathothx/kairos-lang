@@ -122,8 +122,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
   });
 
   it('playground/js が impl/src・stdlib と同期している（焼き込み指紋の一致——2026-08-03 外部レビュー第 7 回 K1。割れたら正本で tools/build-playground.mjs を再実行）', () => {
-    // 式は tools/build-playground.mjs と一字一句同一: sha256(SRC 6 ファイル連結 + stdlib 3 ファイル連結) 先頭 12 桁
-    const SRC = ['ast.ts', 'lexer.ts', 'parser.ts', 'tz.ts', 'eval.ts', 'index.ts'];
+    // 式は tools/build-playground.mjs と一字一句同一: sha256(SRC 7 ファイル連結 + stdlib 3 ファイル連結) 先頭 12 桁（ics.ts は 1.0 追補 24）
+    const SRC = ['ast.ts', 'lexer.ts', 'parser.ts', 'tz.ts', 'eval.ts', 'ics.ts', 'index.ts'];
     const STDLIB_FILES = ['gregorian.kairos', 'fiscal.kairos', 'isoweek.kairos'];
     const actual = createHash('sha256')
       .update(SRC.map(f => read(`impl/src/${f}`)).join('')
@@ -157,9 +157,10 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
   it('対話痕跡の役割語が文書に残っていない（公式体裁への正規化・2026-07-12）', () => {
     // 裁定・判断の主体は「設計者」、機械検証は「N 観点レビュー」（凡例は design/README）。
     // 「ユーザー」単独は言語の利用者の意（ユーザー定義 等）で正当——複合語だけを検査する。
-    const banned = /ユーザー(裁定|判断|確認|指示|指摘|提案|要望|決定|協働|レビュー|の洞察|の直観|の読み)|エージェント|チャット|AskUserQuestion|SendMessage|Claude(?! (Fable|Opus|Sonnet|Haiku)\b| の ?(\d+ |各)?モデル)/;
+    const banned = /ユーザー(裁定|判断|確認|指示|指摘|提案|要望|決定|協働|レビュー|の洞察|の直観|の読み)|エージェント|チャット|AskUserQuestion|SendMessage|Claude(?! (Fable|Opus|Sonnet|Haiku)\b| models\b| の ?(\d+ |各)?モデル)/;
     // 「Claude」はモデル名（Claude Fable 5.1 等＝外部ベンチの対象モデル・収蔵 27）としての出現は役割語でないため除外（2026-09-10）。
     // 「Claude の 4 モデル」「Claude の各モデル」（モデル群の呼称＝供給側ベンチページの文言・収蔵 32 の逐語複写と回答節）も同じ理由で除外（2026-10-05）
+    // 「five Claude models」（英語の差し替え案の逐語複写）も同じ理由で除外（2026-10-07）
     // 規約自体を説明する行は対象外
     const legend = /役割語|正規化|対話痕跡/;
     const designDocs = readdirSync(new URL('design/', root), { recursive: true })
@@ -199,11 +200,15 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
       ['README.ja.md', /(\d+) テスト/],
       ['llms.txt', /(\d+) tests/],
       ['en/spec/README.md', /(\d+) tests/],
+      ['impl/README.md', /(\d+) 本〔doctest 込み〕/],               // テスト節の集計（2026-10-07: 1.0.6 の値のまま残っていた）
     ];
     const found = entries.map(([p, re]) => {
       const m = read(p).match(re);
       return { p, n: m ? m[1] : '記載なし' };
     });
+    // CHANGELOG の最新追補が書くテスト数とも一致する（入口 4 箇所が揃って古いままだと、互いの一致だけでは見つからない＝2026-10-07 公開前レビュー）
+    const changelog = [...read('spec/CHANGELOG.md').matchAll(/\*\*(\d+) テスト\*\*/g)].map(m => m[1]);
+    found.push({ p: 'spec/CHANGELOG.md（最新追補）', n: changelog.length ? changelog[changelog.length - 1] : '記載なし' });
     const nums = new Set(found.map(f => f.n));
     expect(nums.size, `テスト数が入口間で不一致: ${found.map(f => `${f.p}=${f.n}`).join('・')}`).toBe(1);
   });
@@ -376,7 +381,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
         const p = `${dir}${e.name}`;
         if (e.isDirectory()) {
           // hn/＝Show HN 用の短縮リダイレクト（redirect_to のスタブ・sitemap 除外）——404.md と同じくリンク到達の外（2026-09-05）
-          if (['.git', 'node_modules', 'hn'].includes(e.name) || isPrivate(p)) continue;
+          // mcp/docs・mcp/dist＝kairos-lang-mcp の生成物（bundle-docs の複写と tsc の出力・git 管理外）——公開ツリーの文書ではない（2026-10-06）
+          if (['.git', 'node_modules', 'hn'].includes(e.name) || p === 'mcp/docs' || p === 'mcp/dist' || isPrivate(p)) continue;
           walk(`${p}/`);
         } else if (p.endsWith('.md') && !isPrivate(p) && p !== '404.md') all.add(p);   // 404.md はインフラページ（リンク到達の外・Pages が自動配信）
       }
