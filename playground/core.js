@@ -294,6 +294,15 @@ export function rollingWindow(tz, days, now = new Date()) {
   return { from: ymd, to: `${to.getUTCFullYear()}-${p(to.getUTCMonth() + 1)}-${p(to.getUTCDate())}` };
 }
 
+/** スマホらしさの判定（タッチ主体のポインタか狭い画面）。判定できない環境（テスト・古いブラウザ）では false＝PC 扱い */
+export function isPhoneLike(env = globalThis) {
+  try {
+    const coarse = typeof env.matchMedia === 'function' && env.matchMedia('(pointer: coarse)').matches === true;
+    const narrow = typeof env.innerWidth === 'number' && env.innerWidth > 0 && env.innerWidth < 700;
+    return Boolean(coarse || narrow);
+  } catch { return false; }
+}
+
 export function init(lang) {
   const T = STRINGS[lang];
   const EX = lang === 'en' ? EXAMPLES_EN : EXAMPLES;
@@ -381,6 +390,10 @@ export function init(lang) {
   $('pg-share').addEventListener('click', share);
   // カレンダーに入れる（.ics）——ブラウザ内で作って保存する（送信なし）。予定 0 件なら作らない
   const icsBtn = $('pg-ics');
+  // 既定: PC は series（1 つの繰り返し予定）・スマホ（タッチ操作か狭い画面）は「1 点ずつ」——スマホの Google カレンダーアプリは RDATE を読まず
+  // 初回だけの単発予定になり、以後その UID の繰り返し予定を PC からも取り込めなくなる（設計者実測 2026-10-08・裁定同日）
+  const splitBox = $('pg-ics-split');
+  if (splitBox && isPhoneLike()) splitBox.checked = true;
   if (icsBtn) icsBtn.addEventListener('click', () => {
     try {
       evaluate();   // 結果欄を同じ式・同じ範囲で更新してから書き出す（編集後に評価せず押しても画面と .ics が食い違わない）

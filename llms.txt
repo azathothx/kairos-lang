@@ -16,7 +16,7 @@ Key facts:
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 778 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 779 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
 - Documentation language: Japanese documentation is canonical; the spec, the descriptor reference,
@@ -34,7 +34,8 @@ Key facts:
   points are all-day events when `--tz` equals the definition's premise tz, timed points are zero-length events
   with a VALARM at the point itself, out-of-coverage intervals appear as events, and no RRULE is emitted (expanded
   points only); with zero events nothing is written (exit code 2). `--ics-series` groups each expression into one
-  recurring event (DTSTART + RDATE) for Google/Apple Calendar. The Playground's "Add to calendar (.ics)" builds the same file in the browser;
+  recurring event (DTSTART + RDATE) for Google/Apple Calendar on a PC (phone calendar apps ignore RDATE — use one
+  event per point there). The Playground's "Add to calendar (.ics)" builds the same file in the browser;
   its everyday examples (recycling pickup, payday, alarm clock) are calendar-ready.
 - Disambiguation: this Kairos is the schedule definition language at https://kairos-lang.org (npm package
   `kairos-lang`, GitHub azathothx/kairos-lang). It is unrelated to other projects that share the name

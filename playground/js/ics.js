@@ -18,6 +18,18 @@ export function foldLine(line) {
         let j = Math.min(i + limit, enc.length);
         while (j < enc.length && j > i && (enc[j] & 0xC0) === 0x80)
             j--;
+        // エスケープ列（\n・\;・\,・\\）も割らない——RFC 5545 §3.1 は任意の位置で折り返せるが、行末が孤立した「\」になる形
+        // （`…@JP\` + 継続行 `n…`）を Google カレンダーの取り込みが「処理できません」で拒んだ（設計者実測 2026-10-08・1.0.7 の目覚まし）。
+        // 行末に奇数個の \ が続くなら、その \ を次の行へ送る
+        if (j < enc.length && j - i > 1) {
+            let k = j, bs = 0;
+            while (k > i && enc[k - 1] === 0x5C) {
+                bs++;
+                k--;
+            }
+            if (bs % 2 === 1)
+                j--;
+        }
         out.push((out.length === 0 ? '' : ' ') + dec.decode(enc.subarray(i, j)));
         i = j;
     }

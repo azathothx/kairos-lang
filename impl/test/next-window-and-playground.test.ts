@@ -55,4 +55,30 @@ describe('Playground: 本体式の無い定義は CLI と同じ文言・画面�
       }
     } finally { g.document = saved.document; g.location = saved.location; }
   });
+  it('「1 点ずつ別の予定にする」の既定＝スマホ（タッチ主体か狭い画面）ではオン・PC ではオフ（設計者裁定 2026-10-08＝スマホのアプリは RDATE を読まず、series は単発になり以後取り込めない）', async () => {
+    const { isPhoneLike } = await import(new URL('../../playground/core.js', import.meta.url).href) as
+      { isPhoneLike: (env?: Record<string, unknown>) => boolean };
+    expect(isPhoneLike({ matchMedia: () => ({ matches: true }), innerWidth: 1200 })).toBe(true);     // タッチ主体
+    expect(isPhoneLike({ matchMedia: () => ({ matches: false }), innerWidth: 390 })).toBe(true);     // 狭い画面
+    expect(isPhoneLike({ matchMedia: () => ({ matches: false }), innerWidth: 1200 })).toBe(false);   // PC
+    expect(isPhoneLike({})).toBe(false);                                                            // 判定できない環境は PC 扱い
+    const mk = (value = '') => ({ value, textContent: '', checked: false, h: {} as Record<string, (e?: unknown) => void>,
+      addEventListener(t: string, f: (e?: unknown) => void) { this.h[t] = f; }, dispatchEvent() { /* no-op */ } });
+    const els: Record<string, ReturnType<typeof mk>> = Object.fromEntries(
+      ['pg-src', 'pg-out', 'pg-from', 'pg-to', 'pg-tz', 'pg-example', 'pg-run', 'pg-share', 'pg-build', 'pg-ics', 'pg-ics-split', 'pg-msg'].map(id => [id, mk()]));
+    const g = globalThis as Record<string, unknown>;
+    const saved = { document: g.document, location: g.location, matchMedia: g.matchMedia };
+    g.document = { getElementById: (id: string) => els[id] };
+    g.location = { hash: '', href: '' };
+    try {
+      const { init } = await import(new URL('../../playground/core.js', import.meta.url).href) as { init: (lang: string) => void };
+      g.matchMedia = () => ({ matches: true });
+      init('ja');
+      expect(els['pg-ics-split'].checked).toBe(true);     // スマホ＝既定で 1 点ずつ
+      els['pg-ics-split'].checked = false;
+      g.matchMedia = () => ({ matches: false });
+      init('ja');
+      expect(els['pg-ics-split'].checked).toBe(false);    // PC＝既定は series のまま
+    } finally { g.document = saved.document; g.location = saved.location; g.matchMedia = saved.matchMedia; }
+  });
 });

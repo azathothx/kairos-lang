@@ -41,7 +41,7 @@ layout: default
     <button id="pg-run" type="button" style="padding:4px 20px;font-weight:bold">評価（Ctrl+Enter）</button>
     <button id="pg-share" type="button" style="padding:4px 12px">URL に固定</button>
     <button id="pg-ics" type="button" style="padding:4px 12px">カレンダーに入れる（.ics）</button>
-    <label style="font-size:90%"><input id="pg-ics-split" type="checkbox"> 1 点ずつ別の予定にする（Outlook 向け）</label>
+    <label style="font-size:90%"><input id="pg-ics-split" type="checkbox"> 1 点ずつ別の予定にする（Outlook・スマホのアプリ向け。スマホでは最初からオン）</label>
     <span id="pg-msg" style="color:#57606a;font-size:90%"></span>
   </div>
   <pre id="pg-out" style="min-height:8em;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow-x:auto;white-space:pre">ここに結果が出る。</pre>
@@ -53,7 +53,9 @@ layout: default
 （<a href="../spec/30-body-layer.html">仕様 §4.10</a>）。「URL に固定」で式込みのリンクを共有できる。
 「カレンダーに入れる（.ics）」は結果をカレンダーアプリ用のファイルにする——式ごとに 1 つの繰り返し予定（全回を列挙した RDATE）・
 時刻付きの点は 0 分の予定に通知つき・範囲外の区間も予定として載る。先頭のコメント行（<code># …</code>）が予定の名前になる。
-Google／Apple カレンダーではそのまま取り込める（Google では詳細欄が「繰り返さない」と出ても、削除は「すべての予定」でまとめて消せる）。
-RDATE を読まないアプリ（Outlook 系）では初回の 1 回しか出ないので、「1 点ずつ別の予定にする」を選ぶ。ファイルはブラウザ内で作る（送信なし）。</p>
+PC の Google／Apple カレンダーではそのまま取り込める（Google では詳細欄が「繰り返さない」と出ても、削除は「すべての予定」でまとめて消せる。
+期間を延ばして作り直したファイルを取り込み直すと、同じ予定が更新される）。<strong>スマホのカレンダーアプリで開くときは「1 点ずつ別の予定にする」</strong>
+（スマホでは最初からオン）——アプリは繰り返しの回を読まず初回の 1 件だけになり、しかもその後は同じ定義を PC からも取り込めなくなる
+（Google カレンダーで実測 2026-10-08）。Outlook 系も「1 点ずつ」。ファイルはブラウザ内で作る（送信なし）。</p>
 
 <script type="module" src="app.js"></script>

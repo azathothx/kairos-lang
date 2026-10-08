@@ -43,7 +43,7 @@ are in Japanese.</p>
     <button id="pg-run" type="button" style="padding:4px 20px;font-weight:bold">Run (Ctrl+Enter)</button>
     <button id="pg-share" type="button" style="padding:4px 12px">Pin to URL</button>
     <button id="pg-ics" type="button" style="padding:4px 12px">Add to calendar (.ics)</button>
-    <label style="font-size:90%"><input id="pg-ics-split" type="checkbox"> one event per point (for Outlook)</label>
+    <label style="font-size:90%"><input id="pg-ics-split" type="checkbox"> one event per point (for Outlook and phone apps; preselected on phones)</label>
     <span id="pg-msg" style="color:#57606a;font-size:90%"></span>
   </div>
   <pre id="pg-out" style="min-height:8em;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow-x:auto;white-space:pre">Results appear here.</pre>
@@ -58,10 +58,12 @@ output, <code># ⚠</code> marks annotations of out-of-range provenance and
 carrying the expression and range. "Add to calendar (.ics)" turns the result into a file for your
 calendar app — one recurring event per expression (every occurrence listed as RDATE), timed points are
 zero-length events with an alarm, out-of-coverage intervals appear as events, and the leading comment line
-(<code># …</code>) becomes the event name. Google and Apple Calendar import it as is (in Google Calendar
-the repeat field reads "does not repeat", yet deleting offers "all events"). Apps that ignore RDATE
-(Outlook) show only the first occurrence — choose "one event per point" for them. The file is built in
-the browser (nothing is sent). Messages produced by the evaluator itself — syntax errors and
+(<code># …</code>) becomes the event name. Google and Apple Calendar on a PC import it as is (in Google Calendar
+the repeat field reads "does not repeat", yet deleting offers "all events", and re-importing a regenerated file
+updates the same event). <strong>On a phone choose "one event per point"</strong> (preselected on phones): the
+Google Calendar app ignores RDATE, keeps only the first occurrence as a single event, and after that Google refuses
+the recurring import of the same definition even from a PC (observed 2026-10-08). Outlook also needs "one event
+per point". The file is built in the browser (nothing is sent). Messages produced by the evaluator itself — syntax errors and
 annotation texts — appear in Japanese, the implementation's canonical output language; the
 <a href="../spec/">English spec</a> defines their exact semantics.</p>
 

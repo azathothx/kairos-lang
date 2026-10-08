@@ -200,6 +200,13 @@ describe('.ics 書き出し: 行の形（CRLF・75 オクテット折り返し�
     expect(foldLine('x'.repeat(76))).toEqual(['x'.repeat(75), ' x']);
     expect(foldLine('x'.repeat(75 + 74 + 1))).toEqual(['x'.repeat(75), ' ' + 'x'.repeat(74), ' x']);
     expect(foldLine('x'.repeat(74) + 'あ')).toEqual(['x'.repeat(74), ' あ']);    // 3 バイト文字は丸ごと次行へ
+    // エスケープ列も割らない（行末の孤立した \ を Google カレンダーが拒んだ＝設計者実測 2026-10-08）: \n は丸ごと次行へ・\\ は 2 本で完結するので割ってよい
+    expect(foldLine('x'.repeat(74) + '\\ny')).toEqual(['x'.repeat(74), ' \\ny']);
+    expect(foldLine('x'.repeat(73) + '\\\\y')).toEqual(['x'.repeat(73) + '\\\\', ' y']);
+    expect(foldLine('x'.repeat(74) + '\\\\\\ny')).toEqual(['x'.repeat(74), ' \\\\\\ny']);   // 75 文字目が \ で奇数本→その \ から次行へ（行末は x）
+    const srcLong = '# 目覚まし\n' + JP + 'sat = everyDay |> filter(d => weekday(d) == Sat)\n(sat |> at(T08:00))\n';
+    const folded = toIcs(cmdList(srcLong, { from: '2026-10-08', to: '2026-11-05', tz: 'Asia/Tokyo' }), { source: srcLong, series: true });
+    for (const l of lines(folded)) expect(l, l).not.toMatch(/(^|[^\\])(\\\\)*\\$/);   // どの物理行も奇数個の \ で終わらない
     expect(icsUtc(Date.UTC(2026, 9, 4, 21, 30, 0, 999))).toBe('20261004T213000Z');
     expect(fnv1a64('')).toBe('cbf29ce484222325');
     expect(fnv1a64('a')).toBe('af63dc4c8601ec8c');
