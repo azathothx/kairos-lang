@@ -37,7 +37,8 @@ node src/cli.ts list --ics examples/payday.kairos > payday.ics   # カレンダ�
   **[from, 最終発火日の翌日) で確定再評価**——区間註釈・残走路が答えの範囲と整合する。
   本体式 1 つのファイル向け（複数は明示エラー。`list` を使う）。
 - **`--json`** — `CliReport`（`command`/`version`/`tz`/`from`/`to`/`results`〔`source`＝式の字面・`line`＝1 起点の
-  行番号・`dates`・`points`＝epoch ms・`annotations`＝`fromMs`/`toMs` 込み・`stages`＝`--explain` のときだけ〕/`coverage`/
+  行番号・`uid`＝式の指紋（`.ics` の series の `UID` と同一・1 点の `UID` は `-series@` を `-<ms>@` に・同一性ではなく指紋・
+  1.0 追補 26）・`dates`・`points`＝epoch ms・`annotations`＝`fromMs`/`toMs` 込み・`stages`＝`--explain` のときだけ〕/`coverage`/
   `warnings`）を書き出す。人間表示と同じ器から直列化するため両表示は乖離しない。`points`/`fromMs` は「判定は外部」（ADR-37）の
   交差計算を呼び手が epoch ms のまま行うための器＝**点の同一性**。`dates` はその市民ラベルで、秒・ms は 0 でないときだけ
   （`:ss`・`.SSS`）・DST の重複（同じ壁時計が二度ある瞬間）はオフセット `±HH:MM` 付き——**`points` と一対一**（1.0 追補 23）。
@@ -225,7 +226,7 @@ baseAlign・再実行の外側フレーム再記録〕）。
 
 ## テスト
 
-（37 ファイル・779 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（37 ファイル・783 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・
@@ -291,10 +292,11 @@ baseAlign・再実行の外側フレーム再記録〕）。
   市民日開始一致）・旧形式互換の黄金出力・next の倍々探索窓と確定再評価・被覆の切れ目をまたぐ答えへの
   註釈併走・終了コード契約（0/1/2）・`--lang en`（枠組み英語化・註釈は日本語のまま・USAGE の言語
   選択・不正値拒否）をサブプロセス実走で検査。
-- `test/ics.test.ts` — `.ics` 書き出し（1.0 追補 24・15 本）。終日／時刻付き（VALARM）／註釈の予定（ε 区間は DTEND を省く）・RRULE なし・
+- `test/ics.test.ts` — `.ics` 書き出し（1.0 追補 24・15 本＋追補 25・26）。終日／時刻付き（VALARM）／註釈の予定（ε 区間は DTEND を省く）・RRULE なし・
   決定性（DTSTAMP＝DTSTART・UID は式の字面と順番と点から＝同じ字面の式 2 つでも別）・名前の優先順・CRLF と 75 オクテット折り返し
   （多バイト文字を割らない）・TEXT のエスケープ（`;` を含む）・CLI `--ics`（`--json` と排他・予定 0 件は書かず終了コード 2）と
-  Playground の `buildIcs` が同じ文字列を出すこと・暮らしの例 3 本の日英の揃い。
+  Playground の `buildIcs` が同じ文字列を出すこと・暮らしの例 3 本の日英の揃い・`--json` の `results[].uid` が .ics の 3 形の UID と
+  同じ鍵（1.0 追補 26）。
 - `test/doc-consistency.test.ts` — 文書の整合性（機械検査）。ADR 範囲表記 vs 実ファイル数・改名済み
   旧名の残存・仮称印・stdlib の .kairos↔解説 md の label: 同期。
 - `test/doctest.test.ts` — [`../reference/`](../reference/) と [`../stdlib/`](../stdlib/) の実行例

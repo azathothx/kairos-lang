@@ -12,7 +12,7 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { basename } from 'node:path';
 import { run, formatAnnotation, KairosError, SupplyError } from './index.ts';
-import { toIcs, icsEventCount } from './ics.ts';
+import { toIcs, icsEventCount, uidKey, seriesUid } from './ics.ts';
 import type { RunResult, ExternalData, ExternalResolver } from './index.ts';
 import type { ResultAnnotation, CoverageEntry, StageTrace } from './eval.ts';
 
@@ -33,6 +33,8 @@ export interface CliReport {
   results: {
     source: string;                    // 本体式の字面（1.0 追補 23。旧: 常に空文字列）
     line: number;                      // 本体式の 1 行目（1 起点）。同じ字面でも直前の前文で結果が変わるので要る
+    uid: string;                       // 式の指紋＝.ics の series の UID と同一（kairos-<12 hex>-series@kairos-lang.org・鍵は順番・字面・tz）。
+                                       // 1 点の UID は -series@ を -<ms>@ に。同一性ではなく指紋（1.0 追補 26・設計者裁定 2026-10-08）
     dates: string[];                   // 表示形（YYYY-MM-DD[Thh:mm[:ss[.SSS]]][±HH:MM]・実行 tz の市民ラベル。DST の重複時刻は
                                        // オフセット付き・秒未満は .SSS＝points と一対一。schema/cli-report.schema.json）
     points: number[];                  // epoch ms——「判定は外部」の交差計算用の器（点の同一性）
@@ -158,8 +160,9 @@ function toReport(command: 'list' | 'next', r: RunResult, o: CmdOpts & { to: str
     from: o.from,
     to: o.to,
     ...(next ? { requested: next.requested, found: next.found, horizonYears: next.horizonYears } : {}),
-    results: r.results.map(res => ({
-      source: res.source, line: res.line, dates: res.dates, points: res.points, annotations: res.annotations,
+    results: r.results.map((res, idx) => ({
+      source: res.source, line: res.line, uid: seriesUid(uidKey(idx, res.source, o.tz ?? 'Asia/Tokyo')),
+      dates: res.dates, points: res.points, annotations: res.annotations,
       ...(res.stages ? { stages: res.stages } : {}),
     })),
     coverage: r.coverage,

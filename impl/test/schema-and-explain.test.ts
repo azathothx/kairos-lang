@@ -72,6 +72,8 @@ describe('JSON Schema の witness（schema/cli-report.schema.json・schema/suppl
     const ok = cmdList(JP + 'everyDay |> within(month) |> last\n', { ...W, tz: 'Asia/Tokyo' });
     const mut = (f: (r: CliReport) => void) => { const c = JSON.parse(JSON.stringify(ok)) as CliReport; f(c); return validReport(c); };
     expect(mut(r => { delete (r.results[0] as Partial<CliReport['results'][0]>).line; })).toBe(false);
+    expect(mut(r => { delete (r.results[0] as Partial<CliReport['results'][0]>).uid; })).toBe(false);     // 1.0 追補 26: uid は必須
+    expect(mut(r => { r.results[0].uid = 'kairos-xyz-series@kairos-lang.org'; })).toBe(false);         // 形＝12 桁 hex
     expect(mut(r => { r.results[0].dates[0] = '2026/01/31'; })).toBe(false);
     expect(mut(r => { (r.results[0].points as unknown[])[0] = '1769785200000'; })).toBe(false);
     expect(mut(r => { (r as unknown as Record<string, unknown>).extra = 1; })).toBe(false);

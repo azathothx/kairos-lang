@@ -1,0 +1,26 @@
+# 例の祝日表の鮮度（2026-10-09 新設・設計者裁定「1、2 両方ともやろう」）: Playground の暮らしの例と業務の例が埋める祝日表は
+# 年で尽きる（表の外は ⚠ の範囲外註釈＝黙らないが、式を読まない人の入口としては壊れたのと同じ）。push が無い月でも、
+# 表の終端が「今日＋4 週間（目覚ましの例の有視界の窓）＋余裕 60 日」より手前になったら赤にする。赤になったら翌年分を
+# 上流（内閣府「国民の祝日について」の CSV・OPM の Federal Holidays）から足す＝年次作業（毎年 2 月の公示後）。
+name: Freshness
+on:
+  schedule:
+    - cron: '0 21 1 * *'   # 毎月 1 日 21:00 UTC＝2 日 06:00 JST
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  holiday-table:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: impl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: impl/package-lock.json
+      - run: npm ci
+      - run: npx vitest run test/next-window-and-playground.test.ts -t "鮮度"

@@ -17,7 +17,8 @@
 //    ＝表の外は黙らない（ADR-37 判断 5）。「表を更新して再生成する」の一文を DESCRIPTION に。
 //  - 決定性: DTSTAMP は各 VEVENT の DTSTART と同じ瞬間（UTC）。UID は式の字面・ファイル内の順番・tz・点（ms）から決定的（FNV-1a 64）
 //    ＝同じ定義の再取り込みで予定が重複しない（取り込み側は同じ UID を同じ予定として更新する）・式を変えれば別の予定になる・前文〈表〉だけの
-//    更新では UID は変わらない（＝表を更新して再生成すれば同じ予定が更新される）。
+//    更新では UID は変わらない（＝表を更新して再生成すれば同じ予定が更新される）。鍵（uidKey）は `--json` の `results[].uid`
+//    （series の UID と同一）と共有＝.ics を経由しない実装が同じ鍵で予定を更新できる（1.0 追補 26）。
 //    時計を読まない（評価は不変に決定的）。
 //  - SUMMARY（予定の名前）: opts.title → 定義の先頭コメント行（# …）→ opts.fallbackTitle → 式の 1 行目。式が複数なら「名前 · 式」。
 //  - 行は CRLF・75 オクテットで折り返す（RFC 5545 §3.1。UTF-8 の多バイト文字の途中では切らない）。TEXT 値は \ ; , 改行をエスケープ。
@@ -133,7 +134,7 @@ export function toIcs(rep: IcsInput, opts: IcsOptions = {}): string {
     const name = title === undefined ? (srcLine || 'Kairos') : many ? `${title} · ${srcLine}` : title;
     // UID の鍵＝式の字面・ファイル内の順番（idx）・tz。順番を含めるのは、同じ字面の式が 2 つ（別の前文の下など）あっても
     // UID が衝突しない（RFC 5545 §3.8.4.7 の MUST）ため——字面だけだと series で別の点列の 2 予定が 1 つに潰れる（公開前レビュー 2026-10-07）
-    const key = fnv1a64(`${idx}\u0000${res.source}\u0000${rep.tz}`).slice(0, 12);
+    const key = uidKey(idx, res.source, rep.tz);
     const alarm = () => {
       push('BEGIN', 'VALARM');
       push('ACTION', 'DISPLAY');
@@ -147,7 +148,7 @@ export function toIcs(rep: IcsInput, opts: IcsOptions = {}): string {
         const allDay = res.dates.every(isDateLabel);
         const ms0 = res.points[0];
         push('BEGIN', 'VEVENT');
-        push('UID', `kairos-${key}-series@kairos-lang.org`);
+        push('UID', seriesUid(key));
         push('DTSTAMP', icsUtc(ms0));
         if (allDay) lines.push(`DTSTART;VALUE=DATE:${dateValue(res.dates[0])}`);
         else { push('DTSTART', icsUtc(ms0)); push('DTEND', icsUtc(ms0)); }
@@ -169,7 +170,7 @@ export function toIcs(rep: IcsInput, opts: IcsOptions = {}): string {
         const ms = res.points[i];
         const allDay = isDateLabel(label);
         push('BEGIN', 'VEVENT');
-        push('UID', `kairos-${key}-${ms}@kairos-lang.org`);
+        push('UID', pointUid(key, ms));
         push('DTSTAMP', icsUtc(ms));
         if (allDay) lines.push(`DTSTART;VALUE=DATE:${dateValue(label)}`);
         else { push('DTSTART', icsUtc(ms)); push('DTEND', icsUtc(ms)); }
@@ -184,7 +185,7 @@ export function toIcs(rep: IcsInput, opts: IcsOptions = {}): string {
     }
     for (const a of res.annotations) {
       push('BEGIN', 'VEVENT');
-      push('UID', `kairos-${key}-ann-${a.fromMs}-${a.toMs}@kairos-lang.org`);
+      push('UID', annotationUid(key, a.fromMs, a.toMs));
       push('DTSTAMP', icsUtc(a.fromMs));
       // 表示形が同じ（ε＝1 ms の区間が同じ日付ラベルに畳まれた形）なら DTEND を書かない——DTEND は DTSTART より後でなければ
       // ならない（RFC 5545 §3.8.2.2）。DTEND 無しの終日は 1 日（§3.6.1）＝半開 [from, from+1 日) と同じ意味
@@ -204,6 +205,19 @@ export function toIcs(rep: IcsInput, opts: IcsOptions = {}): string {
   push('END', 'VCALENDAR');
   return lines.join(CRLF) + CRLF;
 }
+
+/** UID の鍵（12 桁 hex）＝式の字面・ファイル内の順番・tz の指紋（FNV-1a 64）。.ics の全 UID と `--json` の `results[].uid` が共有する
+ *  （1.0 追補 26・設計者裁定 2026-10-08）。順番を含めるのは同じ字面の式が 2 つあっても衝突しないため（RFC 5545 §3.8.4.7）。字面・順番・tz の
+ *  どれかを変えれば別の鍵＝「同じ定義か」の指紋であって、編集をまたぐ同一性はアプリ側の記録 id が持つ */
+export function uidKey(idx: number, source: string, tz: string): string {
+  return fnv1a64(`${idx}\u0000${source}\u0000${tz}`).slice(0, 12);
+}
+/** 式ごとの UID（series の VEVENT・`--json` の `results[].uid`） */
+export function seriesUid(key: string): string { return `kairos-${key}-series@kairos-lang.org`; }
+/** 点ごとの UID（1 点 1 予定の VEVENT）＝seriesUid の `-series@` を `-<ms>@` に */
+export function pointUid(key: string, ms: number): string { return `kairos-${key}-${ms}@kairos-lang.org`; }
+/** 区間註釈の予定の UID＝`-ann-<fromMs>-<toMs>@` */
+export function annotationUid(key: string, fromMs: number, toMs: number): string { return `kairos-${key}-ann-${fromMs}-${toMs}@kairos-lang.org`; }
 
 /** 予定の件数（dates の総数）——Playground の保存メッセージと CLI の検査で共有 */
 export function icsEventCount(rep: IcsInput): number {

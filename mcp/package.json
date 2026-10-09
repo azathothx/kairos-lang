@@ -1,6 +1,6 @@
 {
   "name": "kairos-lang-mcp",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "MCP server for the Kairos schedule definition language — evaluate definitions (list/next), validate them, and look up the descriptor reference, from any MCP client",
   "keywords": [
     "mcp",
@@ -52,7 +52,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
-    "kairos-lang": "^1.0.7",
+    "kairos-lang": "^1.0.9",
     "zod": "^4.0.0"
   },
   "devDependencies": {

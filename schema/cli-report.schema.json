@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://kairos-lang.org/schema/cli-report.schema.json",
   "title": "Kairos CliReport (kairos list|next --json)",
-  "description": "Output of the reference CLI with --json. Success: command/version/tz/from/to/results/coverage/warnings. Failure (exit code 1): command/version/error. Points are instants on the base time axis (epoch ms = identity); dates are their civil labels in the report's tz and correspond one-to-one to points. Published with kairos-lang 1.0.6 (1.0 addendum 23); later revisions are backward compatible.",
+  "description": "Output of the reference CLI with --json. Success: command/version/tz/from/to/results/coverage/warnings. Failure (exit code 1): command/version/error. Points are instants on the base time axis (epoch ms = identity); dates are their civil labels in the report's tz and correspond one-to-one to points. Published with kairos-lang 1.0.6 (1.0 addendum 23); later revisions are backward compatible. 1.0.9 (addendum 26) adds results[].uid.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -112,6 +112,7 @@
       "required": [
         "source",
         "line",
+        "uid",
         "dates",
         "points",
         "annotations"
@@ -125,6 +126,11 @@
           "type": "integer",
           "minimum": 1,
           "description": "1-based line of the expression's first token. Needed to tell apart identical expressions under different preambles"
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^kairos-[0-9a-f]{12}-series@kairos-lang\\.org$",
+          "description": "fingerprint of the expression (1.0.9, addendum 26): FNV-1a 64 of (index in results, source, tz) as 12 hex digits — identical to the UID of the expression's recurring VEVENT in --ics-series. In the one-event-per-point form (--ics) each point's UID is this value with '-series@' replaced by '-<ms>@' (ms = the point), and each annotation event's with '-ann-<fromMs>-<toMs>@'. A fingerprint, not a durable identity: editing the expression text, its order in the file, or tz yields a different value — keep your own record id and use uid to tell whether the definition is the same"
         },
         "dates": {
           "type": "array",

@@ -444,3 +444,24 @@ iCal/CSV ファイルを処理できません」・削除してもゴミ箱を�
 「既定 series」を改める）・チェックの文言「（Outlook・スマホのアプリ向け。スマホでは最初からオン）」・説明文に注意書き（日英）。
 ④ 文書の訂正（impl/README・Playground 日英・llms.txt・1.0.7 の Release 本文）。witness 1 本（スマホの既定）＋折り返しの境界 3 形と全行検査を
 既存 witness に追加（退行版で赤を実測）＝**779 テスト**。参照実装 npm `kairos-lang` **1.0.8**。
+
+## 1.0 追補 26（2026-10-10）——`--json` の `results[].uid`（式の指紋＝.ics の UID と同じ鍵）・Playground の例の祝日表を 2027 年まで
+
+言語は不変。設計者裁定 2026-10-08「1.0.9 で入れる」（1.0.8 の実機知見の帰結＝取り込み側の RDATE／RRULE の解釈に依らず、.ics を経由しない実装が
+同じ鍵で予定を更新できるように）。① **`results[].uid`**＝式の指紋（FNV-1a 64 の 12 桁 hex・鍵は results 内の順番・式の字面・報告の tz）を
+`kairos-<指紋>-series@kairos-lang.org` の形で `--json` に出す＝**`--ics-series` の繰り返し予定の UID と一字違わず同一**。1 点 1 予定（`--ics`）の
+UID は `-series@` を `-<ms>@` に（ms は `points` の値）・区間註釈の予定は `-ann-<fromMs>-<toMs>@`。**指紋であって同一性ではない**＝式の字面・
+順番・tz のどれかを変えれば別の値（アプリは自前の記録 id を正とし、uid は「同じ定義か」の判定に使う。束縛名や前文の id を鍵にする案は言語の
+変更になるので見送り＝実装者の要望待ち）。鍵の計算は `ics.ts` の `uidKey`／`seriesUid`／`pointUid`／`annotationUid` に一本化（.ics の出力は
+不変＝既存 witness で確認）。mcp の報告は CliReport そのまま＝`uid` が付く。② JSON Schema `schema/cli-report.schema.json` に `uid`（必須・
+形の pattern・説明）を追加（後方互換＝追加のみ。additionalProperties: false の厳格な検証器は schema の更新が要る）。文書＝impl/README・llms.txt。
+③ **Playground の例の祝日表を 2027 年まで延長**（設計者裁定 2026-10-09「1、2 両方ともやろう」＝例は資産として毎年延ばす。言語が年で腐るデータを
+配布しない線引き〈2026-10-07〉は不変）＝表 7 箇所（暮らしの例の `national`／`federal`・業務の例の `holidays`／`federal`・cascade の `statutory`〈祝日のみ〉）を
+`covering: 2026..2027` に。出所＝内閣府「国民の祝日について」CSV（2026-10-09 取得・休日 3/22 を含む 17 件）と OPM Federal Holidays（observed・11 件）
+＝暮らしの例の前文にコメント行で明記。binding 名から年を外す（`holidays2026`→`holidays`・`federal2026`→`federal`）。表を延ばしても `.ics` の UID は
+不変（鍵は本体式の字面・順番・tz）＝取り込み直しは更新。目覚ましの例（有視界 4 週間）が 12 月に ⚠ だらけになる前の手当て。**鮮度の witness**
+（表の終端が「今日＋28 日＋余裕 60 日」より手前なら赤＝時計を読む唯一の witness）と**内容の witness**（2027 年分が上流と一致・名前に年を含めない）
+＝変異 4 系統で赤を実測。`.github/workflows/freshness.yml`（毎月 1 日・手動実行可）で push の無い月も鮮度を検査。CLI の例（`impl/examples`）は
+⚠ を見せる教材のまま 2026 年の表。年次更新の手順は非公開の手順書に。
+witness 2 本（.ics の 3 形の UID と `uid` の一致・同じ字面 2 式／tz 違い／字面違いで別と決定性）＋schema の必須と形（既存 witness に追加）＋
+祝日表の witness 2 本＝変異で赤を実測＝**783 テスト**。参照実装 npm `kairos-lang` **1.0.9**。

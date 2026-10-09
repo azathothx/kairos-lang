@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, afterAll } from 'vitest';
-import { toIcs, foldLine, escapeText, icsUtc, fnv1a64, titleFromSource, icsEventCount } from '../src/ics.ts';
+import { toIcs, foldLine, escapeText, icsUtc, fnv1a64, titleFromSource, icsEventCount, uidKey, seriesUid } from '../src/ics.ts';
 import { cmdList } from '../src/cli.ts';
 
 const IMPL = fileURLToPath(new URL('..', import.meta.url));
@@ -293,5 +293,30 @@ describe('.ics 書き出し: CLI --ics と Playground の「カレンダーに�
       expect(h).toContain('id="pg-ics"');
       expect(h).toContain('id="pg-ics-split"');   // 既定は series・逃がしは「1 点ずつ別の予定にする」
     }
+  });
+});
+
+describe('results[].uid（1.0 追補 26・設計者裁定 2026-10-08「1.0.9 で入れる」）: --json の式の指紋は .ics の UID と同じ鍵', () => {
+  const o = { from: '2026-01-01', to: '2026-03-01', tz: 'Asia/Tokyo' };
+  const SRC = JP + 'd15 = everyDay |> within(month) |> nth(15)\neom = everyDay |> within(month) |> last\n(d15 | eom) |> roll(Preceding, on: bizDay)\n';
+  it('uid は series の VEVENT の UID と同一・1 点 1 予定の UID は -series@ を -<ms>@ に・註釈の予定は -ann-<fromMs>-<toMs>@', () => {
+    const rep = cmdList(SRC, o);
+    const res = rep.results[0];
+    expect(res.uid).toMatch(/^kairos-[0-9a-f]{12}-series@kairos-lang\.org$/);
+    expect(res.uid).toBe(seriesUid(uidKey(0, res.source, rep.tz)));
+    expect(/UID:(\S+)/.exec(events(toIcs(rep, { series: true }))[0])![1]).toBe(res.uid);   // 繰り返し予定の UID と一字違わず同じ
+    const uids = events(toIcs(rep)).map(e => /UID:(\S+)/.exec(e)![1]);
+    res.points.forEach(ms => expect(uids).toContain(res.uid.replace('-series@', `-${ms}@`)));
+    const a = res.annotations[0];
+    expect(uids).toContain(res.uid.replace('-series@', `-ann-${a.fromMs}-${a.toMs}@`));
+    expect(uids.length).toBe(res.points.length + res.annotations.length);
+  });
+  it('同じ字面の式が 2 つでも uid は別（順番が鍵）・tz や字面を変えれば別・同じ入力なら同じ（決定性）', () => {
+    const src2 = JP + 'everyDay |> within(month) |> first\neveryDay |> within(month) |> first\n';
+    const rep = cmdList(src2, o);
+    expect(rep.results[0].uid).not.toBe(rep.results[1].uid);
+    expect(rep.results[0].uid).toBe(cmdList(src2, o).results[0].uid);
+    expect(cmdList(src2, { ...o, tz: 'UTC' }).results[0].uid).not.toBe(rep.results[0].uid);
+    expect(cmdList(src2.replace('first\n', 'last\n'), o).results[0].uid).not.toBe(rep.results[0].uid);
   });
 });

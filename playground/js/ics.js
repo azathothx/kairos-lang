@@ -92,7 +92,7 @@ export function toIcs(rep, opts = {}) {
         const name = title === undefined ? (srcLine || 'Kairos') : many ? `${title} · ${srcLine}` : title;
         // UID の鍵＝式の字面・ファイル内の順番（idx）・tz。順番を含めるのは、同じ字面の式が 2 つ（別の前文の下など）あっても
         // UID が衝突しない（RFC 5545 §3.8.4.7 の MUST）ため——字面だけだと series で別の点列の 2 予定が 1 つに潰れる（公開前レビュー 2026-10-07）
-        const key = fnv1a64(`${idx}\u0000${res.source}\u0000${rep.tz}`).slice(0, 12);
+        const key = uidKey(idx, res.source, rep.tz);
         const alarm = () => {
             push('BEGIN', 'VALARM');
             push('ACTION', 'DISPLAY');
@@ -106,7 +106,7 @@ export function toIcs(rep, opts = {}) {
                 const allDay = res.dates.every(isDateLabel);
                 const ms0 = res.points[0];
                 push('BEGIN', 'VEVENT');
-                push('UID', `kairos-${key}-series@kairos-lang.org`);
+                push('UID', seriesUid(key));
                 push('DTSTAMP', icsUtc(ms0));
                 if (allDay)
                     lines.push(`DTSTART;VALUE=DATE:${dateValue(res.dates[0])}`);
@@ -136,7 +136,7 @@ export function toIcs(rep, opts = {}) {
                 const ms = res.points[i];
                 const allDay = isDateLabel(label);
                 push('BEGIN', 'VEVENT');
-                push('UID', `kairos-${key}-${ms}@kairos-lang.org`);
+                push('UID', pointUid(key, ms));
                 push('DTSTAMP', icsUtc(ms));
                 if (allDay)
                     lines.push(`DTSTART;VALUE=DATE:${dateValue(label)}`);
@@ -156,7 +156,7 @@ export function toIcs(rep, opts = {}) {
         }
         for (const a of res.annotations) {
             push('BEGIN', 'VEVENT');
-            push('UID', `kairos-${key}-ann-${a.fromMs}-${a.toMs}@kairos-lang.org`);
+            push('UID', annotationUid(key, a.fromMs, a.toMs));
             push('DTSTAMP', icsUtc(a.fromMs));
             // 表示形が同じ（ε＝1 ms の区間が同じ日付ラベルに畳まれた形）なら DTEND を書かない——DTEND は DTSTART より後でなければ
             // ならない（RFC 5545 §3.8.2.2）。DTEND 無しの終日は 1 日（§3.6.1）＝半開 [from, from+1 日) と同じ意味
@@ -179,6 +179,18 @@ export function toIcs(rep, opts = {}) {
     push('END', 'VCALENDAR');
     return lines.join(CRLF) + CRLF;
 }
+/** UID の鍵（12 桁 hex）＝式の字面・ファイル内の順番・tz の指紋（FNV-1a 64）。.ics の全 UID と `--json` の `results[].uid` が共有する
+ *  （1.0 追補 26・設計者裁定 2026-10-08）。順番を含めるのは同じ字面の式が 2 つあっても衝突しないため（RFC 5545 §3.8.4.7）。字面・順番・tz の
+ *  どれかを変えれば別の鍵＝「同じ定義か」の指紋であって、編集をまたぐ同一性はアプリ側の記録 id が持つ */
+export function uidKey(idx, source, tz) {
+    return fnv1a64(`${idx}\u0000${source}\u0000${tz}`).slice(0, 12);
+}
+/** 式ごとの UID（series の VEVENT・`--json` の `results[].uid`） */
+export function seriesUid(key) { return `kairos-${key}-series@kairos-lang.org`; }
+/** 点ごとの UID（1 点 1 予定の VEVENT）＝seriesUid の `-series@` を `-<ms>@` に */
+export function pointUid(key, ms) { return `kairos-${key}-${ms}@kairos-lang.org`; }
+/** 区間註釈の予定の UID＝`-ann-<fromMs>-<toMs>@` */
+export function annotationUid(key, fromMs, toMs) { return `kairos-${key}-ann-${fromMs}-${toMs}@kairos-lang.org`; }
 /** 予定の件数（dates の総数）——Playground の保存メッセージと CLI の検査で共有 */
 export function icsEventCount(rep) {
     return rep.results.reduce((n, r) => n + r.dates.length, 0);
