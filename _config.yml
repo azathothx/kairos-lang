@@ -54,6 +54,8 @@ defaults:
     values: { lang: "en" }
   - scope: { path: "mcp" }        # mcp/README.md（英語）→ /mcp/
     values: { lang: "en" }
+  - scope: { path: "mcp/README.ja.md" }   # 日本語版
+    values: { lang: "ja" }
 
 exclude:
   - impl/node_modules/

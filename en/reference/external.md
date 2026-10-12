@@ -1,5 +1,5 @@
 ---
-source_sha: 75e92e77799f
+source_sha: 2c566ac96bae
 ---
 
 # external — the external supply declaration (a table literal resolved at run time)
@@ -10,6 +10,9 @@ source_sha: 75e92e77799f
 
 **Category**: declaration in a premise binding / Form:
 `name = external(kind: dates | instants [, labels: [domain]] [, source: "…"])` / settled (ADR-46)
+
+<p align="center"><img src="../../assets/figures/external-socket.svg" width="880"
+  alt="The external socket. Left: the expression (static) — premise HRDB only declares holidays = external(kind: dates). Right: the data arriving at run time (the resolved value), carrying dates, covering 2026-01-01..2026-01-31 and asof 2026-01-15. The socket in the middle states the contract (covering and asof are always carried); the three cards below are the checks (a point outside covering or a non-existent date is a contract violation; no supply is a supply error). The last line shows the out-of-coverage annotation and the coverage summary (runway -28 days) that ride along with the answer."></p>
 
 ## Meaning
 

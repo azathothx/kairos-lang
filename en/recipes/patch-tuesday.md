@@ -1,5 +1,5 @@
 ---
-source_sha: 21a92a8e1640
+source_sha: c0128f05bcee
 ---
 
 # Patch Tuesday: the second Tuesday at 10:00 Pacific, shown in any time zone
@@ -19,28 +19,36 @@ producing the *scheduled* points, in any time zone, from a single definition.
 
 ## What happens with the tools you already have
 
-- cron has no notion of a time zone. Read the rule as "second Wednesday, 3 am" in Tokyo and write
-  `0 3 8-14 * 3`, and 2026 is wrong in 10 months out of 12 — eight of them by an hour (daylight saving),
-  and in April and July the month starts on a Wednesday, so the right day is the **third** Wednesday and the
-  line is off by a full week (see the wrong example below).
-- iCalendar can express it: `DTSTART;TZID=America/Los_Angeles` plus `FREQ=MONTHLY;BYDAY=2TU`. What breaks
-  is translating that point by hand into each site's scheduler (cron, Task Scheduler) — a translation that
-  has to be redone at every daylight-saving switch.
-- Windows Task Scheduler can pick "the Nth weekday" in a monthly trigger (`schtasks /sc monthly /mo SECOND /d TUE`),
-  but the time of day is the machine's local time or UTC ("Synchronize across time zones") — nothing else. Register
-  "second Wednesday, 3 am" in local time on a Tokyo machine and first of all **the date is off by a full week in April
-  and July**: the release does land on a Wednesday in Tokyo, but in a month that starts on a Wednesday the day after
-  the second Tuesday is the **third** Wednesday, and a monthly trigger has no "the day after the second Tuesday" — so
-  no single simple trigger expresses it. An hour of daylight-saving drift can be absorbed with a margin; a week cannot.
-  Register "second Tuesday, 17:00" with UTC synchronization and the date holds, but now the hour moves between
-  17:00 and 18:00 with daylight saving.
-- Group Policy's "Configure Automatic Updates" (auto download and schedule the install) knows a weekday and a time
-  (local; every day at 3:00 AM by default) — neither "the second Tuesday" nor "the day after the release". Windows
-  Update for Business deferrals (quality updates up to 30 days; the ring example is 0/5/10 days) are "release date +
-  N days", the same idea as the relative-date section below — but that is an installation rule, not a way to produce
-  the release points themselves ([Microsoft Learn: Use Group Policy to configure Windows Update](https://learn.microsoft.com/windows/deployment/update/waas-wufb-group-policy)).
-- Running machines in Pacific Time "for Windows Update" is a workaround for not being able to put the time
-  zone into the definition. Once the definition carries it, the workaround is unnecessary.
+- cron has no notion of a time zone.
+  - Read the rule as "second Wednesday, 3 am" in Tokyo and write `0 3 8-14 * 3`, and 2026 is wrong in
+    10 months out of 12.
+  - Eight of them are off by an hour (daylight saving).
+  - In April and July the month starts on a Wednesday, so the right day is the **third** Wednesday and the
+    line is off by a full week (see the wrong example below).
+- iCalendar can express it.
+  - `DTSTART;TZID=America/Los_Angeles` plus `FREQ=MONTHLY;BYDAY=2TU`.
+  - What breaks is translating that point by hand into each site's scheduler (cron, Task Scheduler).
+  - That translation has to be redone at every daylight-saving switch.
+- Windows Task Scheduler can pick "the Nth weekday", but it holds the time of day in only two ways.
+  - A monthly trigger can pick "the Nth weekday" (`schtasks /sc monthly /mo SECOND /d TUE`).
+  - The time of day is the machine's local time or UTC ("Synchronize across time zones") — nothing else.
+  - Register "second Wednesday, 3 am" in local time on a Tokyo machine and first of all **the date is off by a
+    full week in April and July**. The release does land on a Wednesday in Tokyo, but in a month that starts
+    on a Wednesday the day after the second Tuesday is the **third** Wednesday.
+  - A monthly trigger has no "the day after the second Tuesday", so no single simple trigger expresses it.
+  - An hour of daylight-saving drift can be absorbed with a margin; a week cannot.
+  - Register "second Tuesday, 17:00" with UTC synchronization and the date holds, but now the hour moves
+    between 17:00 and 18:00 with daylight saving.
+- Group Policy knows only a weekday and a time.
+  - "Configure Automatic Updates" (auto download and schedule the install) knows a weekday and a time (local;
+    every day at 3:00 AM by default). Neither "the second Tuesday" nor "the day after the release" can be written.
+  - Windows Update for Business deferrals (quality updates up to 30 days; the ring example is 0/5/10 days) are
+    "release date + N days", the same idea as the relative-date section below.
+  - But that is an installation rule, not a way to produce the release points themselves
+    ([Microsoft Learn: Use Group Policy to configure Windows Update](https://learn.microsoft.com/windows/deployment/update/waas-wufb-group-policy)).
+- Some sites run their machines in Pacific Time "for Windows Update".
+  - That is a workaround for not being able to put the time zone into the definition.
+  - Once the definition carries it, the workaround is unnecessary.
 
 ## Writing it in Kairos
 

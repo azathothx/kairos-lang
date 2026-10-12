@@ -1,5 +1,5 @@
 ---
-source_sha: 52865d4495a7
+source_sha: 29694594f5a2
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -81,24 +81,18 @@ nor at a stage is a static error.
 
 ### Folding axes and rolls (scope defaults)
 
-`on:` (roll, filter) and `unit:` (shift) name, premise-relative, the **axis** being operated on
-(`bizDay` / `day` / `hour` …; a cycle name (`weekday`) is a label and does not resolve to a stream,
-so it cannot stand as an axis; `stride` is input-relative = takes no axis — ADR-38).
-The axis resolves against the in-scope `calendar:` (`bizDay` under `@JP` is TSE's business days).
-Because axis names resolve, in the in-scope premise, to a **stream of valid points**, a derived
-stream may be passed directly as an axis (e.g. `roll(Following, on: nonHoliday)` for substitute
-holidays. ADR-26). When a **premise name** stands in the axis position (`on: TSE`), the identity
-check requires it to be a calendar entity, and it is reinterpreted as "override `calendar:` for
-that stage only and read the standard derivation `bizDay`" (§3.9, ADR-35).
-The redundancy of several stages writing the same axis can be folded by declaring the axis once as
-the preamble member `axis:`; a stage that omits it resolves from the in-scope `axis:`. This is a
-lexical scope default (default → evaluation context → block declaration → stage argument, innermost
-wins), not back-stage inference, so each stage's locality is preserved. The same mechanism lets a
-roll convention be declared once as the preamble member `roll:` (in a bundle definition, or
-postfixed to the lightweight form) and inherited by stages. Being a dangerous member, however, the
-convention is recommended to stay explicit. A preamble member's value is a convention name, the name of a
-point stream or premise, a string, a number or a date; **a preamble member name is not a value** (`roll: roll`,
-`axis: axis` or the mutual `axis: roll; roll: axis` is a self-reference error; 1.0 addendum 21).
+`on:` (roll, filter) and `unit:` (shift) name, premise-relative, the **axis** being operated on (`bizDay` / `day` / `hour` …).
+
+- A cycle name (`weekday`) is a label and does not resolve to a stream, so it cannot stand as an axis. `stride` is input-relative and takes no axis (ADR-38).
+- The axis resolves against the in-scope `calendar:` (`bizDay` under `@JP` is TSE's business days).
+- Because axis names resolve, in the in-scope premise, to a **stream of valid points**, a derived stream may be passed directly as an axis (e.g. `roll(Following, on: nonHoliday)` for substitute holidays. ADR-26).
+- When a **premise name** stands in the axis position (`on: TSE`), the identity check requires it to be a calendar entity, and it is reinterpreted as "override `calendar:` for that stage only and read the standard derivation `bizDay`" (§3.9, ADR-35).
+
+The redundancy of several stages writing the same axis can be folded by declaring the axis once as the preamble member `axis:`. A stage that omits it resolves from the in-scope `axis:`.
+
+- This is a lexical scope default (default → evaluation context → block declaration → stage argument, innermost wins), not back-stage inference, so each stage's locality is preserved.
+- The same mechanism lets a roll convention be declared once as the preamble member `roll:` (in a bundle definition, or postfixed to the lightweight form) and inherited by stages. Being a dangerous member, however, the convention is recommended to stay explicit.
+- A preamble member's value is a convention name, the name of a point stream or premise, a string, a number or a date; **a preamble member name is not a value** (`roll: roll`, `axis: axis` or the mutual `axis: roll; roll: axis` is a self-reference error; 1.0 addendum 21).
 
 ```text
 # explicit (write the axis at each stage)
@@ -180,6 +174,12 @@ that `month` into `year` (`month` is the basic grouping). Only `year`'s dependen
 | `split(g) by: u` | Variable division (top-down) | Divides a parent window into contiguous subwindows. `g = y => [widths…]` binds the parent's **running window-sequence ordinal** `y` (the F60 coordinate) and returns the list of subwindow widths. `by: u` makes the width unit explicit. Parent and `u` accept, beyond partition windows, **effective partitions from rule markers** (segmentBy-built window sequences without coverage annotations) — data-borne (covering-carrying) parents, `empties: drop` parents, and cycles are rejected (ADR-48). Two per-instance checks: **boundary alignment** (both parent ends on `u` window boundaries — misaligned pairs 〈calendar year × week〉 are rejected here) and the **I5 sum** (widths sum = `u` count inside the parent; mismatch is an **error**). Used for dependent windows |
 | `cycle(labels) anchor:` | Parallel labels | Attaches repeating labels to the target partition windows. Produces labels, not windows. The period length is arbitrary (7, 10, 12, 60, …) and so is the target window (not just `day`'s weekdays — `month` and `year` work too; the sexagenary cycle is `year cycle […]`). `anchor:` is an instant meaning "the target window it belongs to takes the first label". The binding name reads, in value expressions, as a point → label value function (`filter(d => weekday(d) == Mon)`; resolution is two steps: point → containing window → label. ADR-27) |
 
+<p align="center"><img src="../../assets/figures/cycle-grid.svg" width="880"
+  alt="A five-week grid from 2026-01-05. Days when team A (anchor 1/5) is On and days when team B (anchor 1/9) is On alternate in blocks of four, and every day has one team On. Day 1 of each A cycle drifts one weekday later: 1/5 (Mon), 1/13 (Tue), 1/21 (Wed), 1/29 (Thu), 2/6 (Fri)."></p>
+
+<p align="center"><img src="../../assets/figures/civil-day-dst.svg" width="880"
+  alt="New York's civil days from 2026-03-06 to 03-09 laid on one physical time axis (evaluation range 2026-03-06..2026-03-10, tz America/New_York). On Sunday, March 8, the clocks jump from 02:00 to 03:00, so that civil day is 23 hours; the other three days are 24 hours. Stepping by 1d, everyInstant |&gt; strideBy(1d, from: 2026-01-01T09:00) sticks to 09:00 on 3/6, 3/7, 3/8 and 3/9 (3/7 09:00 to 3/8 09:00 is 23 hours). Stepping by 24h, strideBy(24h, from: 2026-01-01T09:00) gives 3/6 09:00 and 3/7 09:00, then 3/8 10:00 and 3/9 10:00, staying one hour late from the transition day on."></p>
+
 ### Leap is a value, not a window (the pivot that fixes the dependency direction)
 
 "Does February have 28 or 29 days?" looks like a dependency on the **window** `year`, but it is in
@@ -259,14 +259,16 @@ definition of TZ (mapping, civil day, gaps/overlaps, leap seconds, versions) is 
 
 ## 3.7 Derived definitions of calendar systems
 
-A derived definition makes a new premise by overriding or extending an existing premise's public
-words (the `premise → premise` closure). The core is `with` override — on top of the base, only the
-named public words are replaced; the rest is inherited.
-**Premise members** (all 10 words: `calendar-system:`, `calendar:`, `axis:`, `roll:`, `granularity:`, `tz:`, `wkst:`, `asof:`,
-`source:`, `epoch:` — the list was made precise in 1.0 addendum 21) are inherited along the base chain
-as well, and the block's declarations override them — the entry premise's body sees the same set that the inside of a public
-word sees (the member resolution rule of §3.9; ADR-35 revision 3, 1.0.2). That a derivation overriding `nonWorking` should also
-override `source:` (§3.9, declaration leaning towards required) is unchanged.
+A derived definition makes a new premise by overriding or extending an existing premise's public words (the `premise → premise` closure). The core is `with` override: on top of the base, only the named public words are replaced; the rest is inherited.
+
+<p align="center"><img src="../../assets/figures/premise-derivation.svg" width="880"
+  alt="Deriving premise Fiscal from the base premise Gregorian with with. The left box holds Gregorian's public words (day, month, year, quarter, …) and the 10 premise members. The with block in the middle overrides only year to an April start; in the right box year is replaced, quarter and yearStart, which depend on year, follow by re-resolution, and the remaining public words and premise members are inherited from the base."></p>
+
+**Premise members** are inherited along the base chain as well, and the block's declarations override them (ADR-35 revision 3, 1.0.2).
+
+- All 10 words: `calendar-system:`, `calendar:`, `axis:`, `roll:`, `granularity:`, `tz:`, `wkst:`, `asof:`, `source:`, `epoch:` (the list was made precise in 1.0 addendum 21).
+- The entry premise's body sees the same set that the inside of a public word sees (the member resolution rule of §3.9).
+- That a derivation overriding `nonWorking` should also override `source:` (§3.9, declaration leaning towards required) is unchanged.
 
 ```text
 premise Fiscal = Gregorian with {
@@ -327,6 +329,9 @@ determined by the presence of covering:, and each of the containment, ascending-
 `labels:` same-length checks (only `labels: []` is legal) holds vacuously; alignment is vacuous
 conformance = §4.5).
 
+<p align="center"><img src="../../assets/figures/covering-three-ways.svg" width="880"
+  alt="Three ways to write covering, compared as bands on a time axis. Evaluating January 2027: covering: 2027..2027 gives false comfort (runway 355 days), covering: .. gives runway ∞ so monitoring never fires, and only covering: 2026-08-04..2026-08-04 returns the out-of-coverage annotation and runway −159 days."></p>
+
 ```text
 premise JPGazette {
   source: "cao.go.jp/official"      # provenance (declaration-required leaning: mixing up data provenance is dangerous. string = ADR-32)
@@ -336,66 +341,56 @@ premise JPGazette {
 }
 ```
 
-- A premise containing a table literal is `source:` declaration-required leaning. The edition is
-  carried by `asof:`. **A premise with `covering:` or a date table must declare `tz:`** (the ends
-  of the coverage resolve as civil days of the premise's tz; undeclared, the coverage would move
-  with the user side's tz. ADR-37).
-- **Coverage `covering:`**: a two-faced **claim** — "**complete inside the range, unknown outside
-  it**" — that **does not touch the values** (the values are exactly the written sequence).
-  Consistency of claim and values is a static check — **every element of the sequence must be
-  contained in covering** (a violation is a static error of the same rank as out-of-order and
-  duplicates). Evaluation outside the range flows into the evaluation annotations (I6, §4.10) as an
-  **out-of-coverage** provenance, distinguished from an "accidental empty". When omitted, the range is
-  the ends of the sequence (closed interval) — **the empty table, having no ends, requires an
-  explicit covering:** (omission is a static error with guidance. ADR-45).
-  - **Open-ended**: `covering: 2021..`, `..2027`, `..` (a claim of **completeness** over all time =
-    produces no annotations; the receptacle for a one-off exclusion table
-    `[2026-01-05] covering: ..`). Completeness is an unverifiable claim, so governance applies —
-    `source:`/`asof:` declaration-required leaning, and permanent display in the coverage summary
-    (§4.10). Note that omission (narrowest) and `..` (widest) are **opposite** claims.
-  - **Interval lists**: `covering: 2020..2022, 2024..2027` (an honest declaration of gapped data).
-  - **Binding-postfix = explicit coverage claim**: the composition
-    `nonWorking = (satSun | h2024 | h2025) covering: 2024..2025` claims "this composition is
-    complete over this range" (the component coverages' annotations are replaced by this binding's
-    claim — the sole outlet for cancellation; there is no automatic cancellation).
-    Necessary-condition static check: within the claimed range, every interval that would carry an
-    annotation must be contained in the covering of some **data component** (a rule component's
-    "all time" does not count — a completeness claim over an interval no data component can speak
-    for is pushed down to an open-ended covering on the component table's side. ADR-37 decision 5,
-    revised).
-- The range literal `2024-02-10..2024-02-17` is sugar expanding to an enumeration of consecutive
-  days.
-- **Labeled tables** (`labels:`. ADR-30): attach to the instant sequence a label sequence of the
-  same length, defining a point→label projection. **The binding name is itself the projection
-  name** (the same rule as cycle binding names) —
-  `sekki = [2026-01-05T17:23, …] labels: [小寒, 大寒, …]` makes `sekki(d)` return the solar-term
-  name. Points do not store labels; labels are read through the projection (§4.9) = no record type
-  is introduced. cycle (infinite rhythm) and label sequences (finite data) differ only in their
-  source.
-- A calendar system that carves windows with data (a lunisolar calendar cut at new moons) is the
-  same premise type. What calendar-system purity (I8) forbids is a generator's dependence on a
-  **calendar** (business-day policy), not a calendar system's dependence on **data** — the purity
-  distinction is drawn not by type but by provenance (`source:`/`asof:`) (ADR-26).
-- **The external supply declaration `external`** (ADR-46) — the socket for "expressions are static,
-  data resolves at run time". `name = external(kind: dates | instants [, labels: [domain]] [, source: "…"])`
-  may be written **only as the right-hand side (its head) of a premise binding** (body-layer and
-  under-preamble bindings are static errors — the governance of source:/tz: must live on the
-  premise). The resolved value is a table value itself, and the same governance checks as for
-  literals apply as the **supply contract**: covering and asof are always carried by the resolved
-  value (absence = contract violation); containment / ascending order / same length / date
-  existence are likewise checked at resolution. **asof is a version identifier**: used only for
-  identity (detecting a mismatch with the declared `asof:`), never ordered or read as a date (its
-  format is a convention of the supply contract — the language's as-of mechanism is not tied to the
-  notation of the Gregorian premise, which is just one premise. 1.0 addendum 23). `kind:` is the **alignment claim** (`dates` = the
-  civil-day grid of the definition side's tz; `instants` = none — the declaration stands in for the
-  literal text; even when empty, as declared = independent of the resolved value's row count).
-  `labels:` is the **enumeration of the value domain** (static knowledge for bare-name label
-  comparison). Resolution is **an adjunct of the evaluation context** (once per evaluation, at
-  first reference; snapshot-pinned; the means of acquisition is outside the language = ADR-15). A
-  resolution failure is a **supply error** (a machine-readable subclass — distinguished by type
-  from "nothing yet" (empty data + covering)). A premise with external must declare `tz:`. Details
-  in [`reference/external.md`](../reference/external.md). The resolution flow (one resolution
-  per evaluation, the supply contract, the type distinction between "nothing yet" and failure):
+A premise containing a table literal is `source:` declaration-required leaning. The edition is carried by `asof:`.
+
+- **A premise with `covering:` or a date table must declare `tz:`** (the ends of the coverage resolve as civil days of the premise's tz; undeclared, the coverage would move with the user side's tz. ADR-37).
+
+**Coverage `covering:`**: a two-faced **claim** — "**complete inside the range, unknown outside it**" — that **does not touch the values** (the values are exactly the written sequence). It is written in one of three forms: open-ended, interval list, or postfix on a binding.
+
+- Consistency of claim and values is a static check — **every element of the sequence must be contained in covering** (a violation is a static error of the same rank as out-of-order and duplicates).
+- Evaluation outside the range flows into the evaluation annotations (I6, §4.10) as an **out-of-coverage** provenance, distinguished from an "accidental empty".
+- When omitted, the range is the ends of the sequence (closed interval) — **the empty table, having no ends, requires an explicit covering:** (omission is a static error with guidance. ADR-45).
+
+**Open-ended**: `covering: 2021..`, `..2027`, `..` (a claim of **completeness** over all time = produces no annotations; the receptacle for a one-off exclusion table `[2026-01-05] covering: ..`).
+
+- Completeness is an unverifiable claim, so governance applies — `source:`/`asof:` declaration-required leaning, and permanent display in the coverage summary (§4.10).
+- Note that omission (narrowest) and `..` (widest) are **opposite** claims.
+
+**Interval lists**: `covering: 2020..2022, 2024..2027` (an honest declaration of gapped data).
+
+**Binding-postfix = explicit coverage claim**: the composition `nonWorking = (satSun | h2024 | h2025) covering: 2024..2025` claims "this composition is complete over this range".
+
+- The component coverages' annotations are replaced by this binding's claim — the sole outlet for cancellation; there is no automatic cancellation.
+- Necessary-condition static check: within the claimed range, every interval that would carry an annotation must be contained in the covering of some **data component**.
+- A rule component's "all time" does not count — a completeness claim over an interval no data component can speak for is pushed down to an open-ended covering on the component table's side (ADR-37 decision 5, revised).
+
+The range literal `2024-02-10..2024-02-17` is sugar expanding to an enumeration of consecutive days.
+
+**Labeled tables** (`labels:`. ADR-30): attach to the instant sequence a label sequence of the same length, defining a point→label projection.
+
+- **The binding name is itself the projection name** (the same rule as cycle binding names) — `sekki = [2026-01-05T17:23, …] labels: [小寒, 大寒, …]` makes `sekki(d)` return the solar-term name.
+- Points do not store labels; labels are read through the projection (§4.9) = no record type is introduced.
+- cycle (infinite rhythm) and label sequences (finite data) differ only in their source.
+
+A calendar system that carves windows with data (a lunisolar calendar cut at new moons) is the same premise type.
+
+- What calendar-system purity (I8) forbids is a generator's dependence on a **calendar** (business-day policy), not a calendar system's dependence on **data**.
+- The purity distinction is drawn not by type but by provenance (`source:`/`asof:`) (ADR-26).
+
+**The external supply declaration `external`** (ADR-46) — the socket for "expressions are static, data resolves at run time".
+
+- `name = external(kind: dates | instants [, labels: [domain]] [, source: "…"])` may be written **only as the right-hand side (its head) of a premise binding** (body-layer and under-preamble bindings are static errors — the governance of source:/tz: must live on the premise).
+- `kind:` is the **alignment claim** (`dates` = the civil-day grid of the definition side's tz; `instants` = none — the declaration stands in for the literal text; even when empty, as declared = independent of the resolved value's row count).
+- `labels:` is the **enumeration of the value domain** (static knowledge for bare-name label comparison).
+- A premise with external must declare `tz:`.
+
+The resolved value is a table value itself, and the same governance checks as for literals apply as the **supply contract**.
+
+- covering and asof are always carried by the resolved value (absence = contract violation). Containment / ascending order / same length / date existence are likewise checked at resolution.
+- **asof is a version identifier**: used only for identity (detecting a mismatch with the declared `asof:`), never ordered or read as a date (its format is a convention of the supply contract — the language's as-of mechanism is not tied to the notation of the Gregorian premise, which is just one premise. 1.0 addendum 23).
+- Resolution is **an adjunct of the evaluation context** (once per evaluation, at first reference; snapshot-pinned; the means of acquisition is outside the language = ADR-15).
+- A resolution failure is a **supply error** (a machine-readable subclass — distinguished by type from "nothing yet" (empty data + covering)).
+- Details in [`reference/external.md`](../reference/external.md). The resolution flow (one resolution per evaluation, the supply contract, the type distinction between "nothing yet" and failure):
 
   ```mermaid
   sequenceDiagram
@@ -415,6 +410,9 @@ premise JPGazette {
           X--xE: Supply error (a machine-readable subclass of evaluation error — distinguished by type from "nothing yet")
       end
   ```
+
+<p align="center"><img src="../../assets/figures/external-socket.svg" width="880"
+  alt="The external socket. Left: the expression (static) — premise HRDB only declares holidays = external(kind: dates). Right: the data arriving at run time (the resolved value), carrying dates, covering 2026-01-01..2026-01-31 and asof 2026-01-15. The socket in the middle states the contract (covering and asof are always carried); the three cards below are the checks (a point outside covering or a non-existent date is a contract violation; no supply is a supply error). The last line shows the out-of-coverage annotation and the coverage summary (runway -28 days) that ride along with the answer."></p>
 
 The naming status is in §5.4: `grid`, `span`, `split`, `cycle`, `anchor:`, `phase:`, `by:`, `with`,
 `chronos` (the lexical name of the base. ADR-29), and `axis:` (the operating axis) are settled, and
@@ -451,41 +449,28 @@ premise JP {
 }
 ```
 
-- **The type requirement is an identity check** (an extension of ADR-19): only "a premise with the
-  public word `nonWorking` (time-stream type, argument-less binding)" may stand at `calendar:`.
-  Placing a premise without it is a static error. The identity check further requires (a)
-  **`nonWorking` is aligned to the civil-day grid of the entity's tz** (§4.5 — the operational
-  definition of "read the entity at day granularity"), and (b) **the entity declares `tz:`
-  (required)** (the enforcement point of inner-fixing (ADR-33) is the declaration), and it runs at
-  the **first use as an entity** (resolution of `calendar:`; reinterpretation at an axis position).
-  Calendar-system premises and calendar premises are the same premise type, distinguished by
-  identity = the aspect of their public words (the reverse mistake — placing an entity in the
-  `calendar-system:` position — is caught by "a premise with `nonWorking` may not stand at
-  `calendar-system:`"). **Granularity is not part of the type** — fine-grained points such as
-  half-day-holiday non-working time bands and business hours are also in reach, as **other**
-  time-stream bindings within the same entity (`nonWorking` alone is the day-aligned reserved
-  word; the fine-grained layer's conventions are below, ADR-41).
-- **The standard derivation of `bizDay` is prescribed uniformly by the language**: with the
-  in-scope `calendar:` entity as C, a derivation sugar equivalent to
-  `bizDay = everyDay \ C.nonWorking` (lazily resolved; the same rule as §4.8). The bare name
-  `everyDay` resolves in the **user side's in-scope premise**, while `C.nonWorking` is **pinned**
-  to C (mechanism A). **Where `calendar:` is in scope, `bizDay` is a language-reserved derived
-  name** (a manual binding is a static error; out of that scope it remains a free binding name as
-  before). A derivation in which the entity's `tz:` and the user side's `tz:` disagree is stopped
-  by the alignment check (§4.5, ADR-36) as a safe-side error. The standard derivation
-  **propagates** `nonWorking`'s evaluation annotations (the out-of-coverage provenance of
-  `covering:`) (I6; the propagation rules are §4.10, ADR-37 — the difference `\` takes the union
-  of both sides' annotations, so the degeneration beyond where holiday data runs out **does occur
-  but is observable**).
-- **Premise names in the axis position** (F53's convention): a name at `on:`/`unit:`/`axis:`
-  resolves normally if it resolves as a binding; is reinterpreted if it resolves only as a premise
-  name; and is ambiguous = a static error if it resolves as both (ADR-17). A premise name P is
-  required by the identity check to be a calendar entity, and is reinterpreted as "override
-  `calendar:` to P for that stage (or that scope) only and read the standard derivation `bizDay`" —
-  `roll(Preceding, on: TSE)` ≡ "`roll(Preceding, on: bizDay)` in the context of `calendar: TSE`".
-  A premise name that is not an entity is a static error. The reinterpretation's ripple extends
-  only to the resolution of that axis. The full resolution path (the axis-position face of §2.7
-  "position-dependent name interpretation"):
+**The type requirement is an identity check** (an extension of ADR-19): only "a premise with the public word `nonWorking` (time-stream type, argument-less binding)" may stand at `calendar:`. Placing a premise without it is a static error.
+
+- The identity check further requires (a) **`nonWorking` is aligned to the civil-day grid of the entity's tz** (§4.5 — the operational definition of "read the entity at day granularity"), and (b) **the entity declares `tz:` (required)** (the enforcement point of inner-fixing (ADR-33) is the declaration).
+- The identity check runs at the **first use as an entity** (resolution of `calendar:`; reinterpretation at an axis position).
+
+Calendar-system premises and calendar premises are the same premise type, distinguished by identity = the aspect of their public words.
+
+- The reverse mistake — placing an entity in the `calendar-system:` position — is caught by "a premise with `nonWorking` may not stand at `calendar-system:`".
+- **Granularity is not part of the type** — fine-grained points such as half-day-holiday non-working time bands and business hours are also in reach, as **other** time-stream bindings within the same entity (`nonWorking` alone is the day-aligned reserved word; the fine-grained layer's conventions are below, ADR-41).
+
+**The standard derivation of `bizDay` is prescribed uniformly by the language**: with the in-scope `calendar:` entity as C, a derivation sugar equivalent to `bizDay = everyDay \ C.nonWorking` (lazily resolved; the same rule as §4.8).
+
+- The bare name `everyDay` resolves in the **user side's in-scope premise**, while `C.nonWorking` is **pinned** to C (mechanism A).
+- **Where `calendar:` is in scope, `bizDay` is a language-reserved derived name** (a manual binding is a static error; out of that scope it remains a free binding name as before).
+- A derivation in which the entity's `tz:` and the user side's `tz:` disagree is stopped by the alignment check (§4.5, ADR-36) as a safe-side error.
+- The standard derivation **propagates** `nonWorking`'s evaluation annotations (the out-of-coverage provenance of `covering:`) (I6; the propagation rules are §4.10, ADR-37 — the difference `\` takes the union of both sides' annotations, so the degeneration beyond where holiday data runs out **does occur but is observable**).
+
+**Premise names in the axis position** (F53's convention): a name at `on:`/`unit:`/`axis:` resolves normally if it resolves as a binding; is reinterpreted if it resolves only as a premise name; and is ambiguous = a static error if it resolves as both (ADR-17).
+
+- A premise name P is required by the identity check to be a calendar entity, and is reinterpreted as "override `calendar:` to P for that stage (or that scope) only and read the standard derivation `bizDay`" — `roll(Preceding, on: TSE)` ≡ "`roll(Preceding, on: bizDay)` in the context of `calendar: TSE`".
+- A premise name that is not an entity is a static error. The reinterpretation's ripple extends only to the resolution of that axis.
+- The full resolution path (the axis-position face of §2.7 "position-dependent name interpretation"):
 
   ```mermaid
   flowchart TD
@@ -501,33 +486,32 @@ premise JP {
     ID -- "pass" --> DER["Reinterpretation: read the standard derivation bizDay in the context of calendar: X"]
   ```
 
-- **Member resolution rule** (the codification of "pin to the resolved value", ADR-35): the
-  preamble members of definitions evaluated under a qualified pin (`C.word`) or an entity
-  reinterpretation follow **definition-side precedence** — members that C (and its base chain)
-  declares are fixed to C's values, and only undeclared members resolve in the user side's scope
-  (the inner-fixing of `tz:` and the lazy resolution of `wkst:` fold into this one line).
-- **Overriding uses the existing `with`** (§3.7):
-  `premise MyCompany = TSE with { source: "intra.example.com/holidays"; nonWorking = TSE.nonWorking | companyHolidays }`.
-  Base references on the right-hand side use the qualified pin (a bare name would be a
-  self-reference to the word being defined). **A derivation that overrides `nonWorking` overrides
-  `source:` as well (declaration-required leaning)** — inheriting it silently would let altered
-  data claim the official provenance.
-- **Squaring with cascades** (ADR-01): add-back and inversion override compositions are expressed
-  on the **right-hand side** of `nonWorking` (declaration order and left association per §4.5;
-  Mainland China's tiaoxiu (State Council holiday arrangement) is `nonWorking = (satSun | holidays) \ workdaysSpecial`). Filtering appears only
-  at the final stage of the standard derivation, and the composition leading up to it carries the
-  cascade — not a regression to "the residue of filtering".
-- **Governance is demand-driven**: an entity premise does not itself require `calendar:`. If a
-  binding inside the entity uses a bizDay-family axis, it requires the entity's own `calendar:`;
-  self- and mutual cycles are static errors.
-- Orthogonal to the external supply declaration: the right-hand side of `holidays` may be a table
-  literal or `external(kind: dates)` (§3.8, ADR-46) (the vessel's alignment claim is carried by
-  `kind:` — resolving the ADR-36 corollary; even with empty data the entity boots and bizDay
-  degenerates to everyDay (observably)).
-- Cross-tz use (using the Tokyo entity from an NY premise, etc.) is outside the reach of the
-  axis-position sugar — the explicit form `everyDay \ (TSE.nonWorking |> snapTo(day))` means "read
-  the overlap on chronos through the user side's day boundaries", while an explicit reconciliation
-  of "the same date label" is written with `rebase(to:)` (§4.4, ADR-40).
+**Member resolution rule** (the codification of "pin to the resolved value", ADR-35): the preamble members of definitions evaluated under a qualified pin (`C.word`) or an entity reinterpretation follow **definition-side precedence**.
+
+- Members that C (and its base chain) declares are fixed to C's values, and only undeclared members resolve in the user side's scope.
+- The inner-fixing of `tz:` and the lazy resolution of `wkst:` fold into this one line.
+
+**Overriding uses the existing `with`** (§3.7): `premise MyCompany = TSE with { source: "intra.example.com/holidays"; nonWorking = TSE.nonWorking | companyHolidays }`.
+
+- Base references on the right-hand side use the qualified pin (a bare name would be a self-reference to the word being defined).
+- **A derivation that overrides `nonWorking` overrides `source:` as well (declaration-required leaning)** — inheriting it silently would let altered data claim the official provenance.
+
+**Squaring with cascades** (ADR-01): add-back and inversion override compositions are expressed on the **right-hand side** of `nonWorking` (declaration order and left association per §4.5).
+
+- Mainland China's tiaoxiu (State Council holiday arrangement) is `nonWorking = (satSun | holidays) \ workdaysSpecial`.
+- Filtering appears only at the final stage of the standard derivation, and the composition leading up to it carries the cascade — not a regression to "the residue of filtering".
+
+**Governance is demand-driven**: an entity premise does not itself require `calendar:`. If a binding inside the entity uses a bizDay-family axis, it requires the entity's own `calendar:`; self- and mutual cycles are static errors.
+
+Orthogonal to the external supply declaration: the right-hand side of `holidays` may be a table literal or `external(kind: dates)` (§3.8, ADR-46).
+
+- The vessel's alignment claim is carried by `kind:` — resolving the ADR-36 corollary.
+- Even with empty data the entity boots and bizDay degenerates to everyDay (observably).
+
+Cross-tz use (using the Tokyo entity from an NY premise, etc.) is outside the reach of the axis-position sugar.
+
+- The explicit form `everyDay \ (TSE.nonWorking |> snapTo(day))` means "read the overlap on chronos through the user side's day boundaries".
+- An explicit reconciliation of "the same date label" is written with `rebase(to:)` (§4.4, ADR-40).
 
 
 ### 3.9.1 The fine-grained layer — business-hours supply conventions and standard derivations (ADR-41)
@@ -543,6 +527,9 @@ compositions of time-of-day tables). A session = the union of half-open interval
 `[open_i, close_i)`. Overnight sessions (crossing days) are legal; 24-hour operation is outside
 this vessel (express it at the day-granularity layer).
 
+<p align="center"><img src="../../assets/figures/isopen-sessions.svg" width="880"
+  alt="Trading sessions and hourly firings for 2026-01-05 to 01-07. 1/5 and 1/7 are bands from 9:00 to 15:00 with six points, 9:00 to 14:00; 15:00 sharp is not included. The half day 1/6 is a band from 9:00 to 11:30 with only three points, 9:00, 10:00 and 11:00."></p>
+
 **Consistency check** (data-relative layer; at first use of a fine-grained derivation): over the
 domain = joint effective coverage ∩ materialization range, adjacent markers must alternate in kind
 (an isolated close/open at an edge is legal as a notch). **For a simultaneous open/close both
@@ -550,14 +537,9 @@ points must exist**, and their order is unique from the alternation requirement 
 continuous operation / open→close = zero width) — the handling of firing for simultaneous events
 belongs to the firing layer (out of scope).
 
-**Standard derivations** (reserved where `calendar:` is in scope, when entity C declares the
-pair): `bizOpen` = the points of C.sessionOpens whose opening day (a civil day in C's tz) is a
-business day of C; `bizClose` = each session's closing point; `isOpen(t)` = whether t lies in the
-union of the bizOpen sessions' intervals (a value predicate). **The derivations are
-entity-relative** — the decision inputs (holidays, tz) resolve in the entity's culture and do not
-depend on the reader's premise (a different role from day-granularity `bizDay` =
-consumer-relative). A session's business-day-ness is read from its **opening day** (an overnight session's
-tail follows its opening day). Coverage follows the witness rule's three branches (true = an
-unannotated decision; out-of-coverage = the decision depends on annotated intervals of
-sessionOpens/sessionCloses/nonWorking; false = coverage complete. §4.10). No `bizHour`-style point
-sequence is derived — granularity is the expression's choice (`hourly |> filter(t => isOpen(t))`).
+**Standard derivations** (reserved where `calendar:` is in scope, when entity C declares the pair): `bizOpen` = the points of C.sessionOpens whose opening day (a civil day in C's tz) is a business day of C; `bizClose` = each session's closing point; `isOpen(t)` = whether t lies in the union of the bizOpen sessions' intervals (a value predicate).
+
+- **The derivations are entity-relative** — the decision inputs (holidays, tz) resolve in the entity's culture and do not depend on the reader's premise (a different role from day-granularity `bizDay` = consumer-relative).
+- A session's business-day-ness is read from its **opening day** (an overnight session's tail follows its opening day).
+- Coverage follows the witness rule's three branches (true = an unannotated decision; out-of-coverage = the decision depends on annotated intervals of sessionOpens/sessionCloses/nonWorking; false = coverage complete. §4.10).
+- No `bizHour`-style point sequence is derived — granularity is the expression's choice (`hourly |> filter(t => isOpen(t))`).

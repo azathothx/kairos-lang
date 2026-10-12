@@ -1,5 +1,5 @@
 ---
-source_sha: 980462a2b1cb
+source_sha: dfcb2d9cf4c1
 ---
 
 # `cycle` — parallel repeating labels (labels, not windows)
@@ -10,6 +10,9 @@ source_sha: 980462a2b1cb
 
 **Category**: window-generating word (premise layer) / **Signature**:
 `cycle(labels) anchor: r : Stream -> Stream(labeled)` / name settled (spec §5.4)
+
+<p align="center"><img src="../../assets/figures/cycle-grid.svg" width="880"
+  alt="A five-week grid from 2026-01-05. Days when team A (anchor 1/5) is On and days when team B (anchor 1/9) is On alternate in blocks of four, and every day has one team On. Day 1 of each A cycle drifts one weekday later: 1/5 (Mon), 1/13 (Tue), 1/21 (Wed), 1/29 (Thu), 2/6 (Fri)."></p>
 
 ## Meaning
 

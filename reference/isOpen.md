@@ -5,6 +5,9 @@
 供給側は `opens`/`closes` から **`sessionOpens`/`sessionCloses`** に改名して確定＝ADR-41 改訂）。
 規範は spec §3.9.1・ADR-41。
 
+<p align="center"><img src="../assets/figures/isopen-sessions.ja.svg" width="880"
+  alt="2026 年 1 月 5 日から 7 日の営業セッションと毎正時の発火。1/5 と 1/7 は 9:00 から 15:00 の帯で 9〜14 時の 6 点、15:00 ちょうどは含まない。半日休の 1/6 は 9:00 から 11:30 の帯で 9・10・11 時の 3 点だけ。"></p>
+
 ## 意味
 
 在圏 `calendar:` の実体 C が**対の予約公開語 `sessionOpens`・`sessionCloses`**（開場列・閉場列＝営業時間の

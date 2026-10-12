@@ -1,5 +1,5 @@
 ---
-source_sha: ea86b8c0d853
+source_sha: 789e4b596afe
 ---
 
 # `split` — variable division of a parent window (dependent windows)
@@ -10,6 +10,9 @@ source_sha: ea86b8c0d853
 
 **Category**: window-generating word (premise layer) / **Signature**: `split(g) by: u :
 Stream(windowed) -> Stream(partitioned)` / name settled (spec §5.4)
+
+<p align="center"><img src="../../assets/figures/windows-four-kinds.svg" width="880"
+  alt="The four ways to make windows, drawn over the same nine-week strip of days (Mon 2026-01-05 to Sun 03-08): within(month) divides the axis by month, split divides the parent week into dependent windows of widths [5, 2], span bundles days five at a time (from the epoch, so starting 1/2), and segmentBy cuts intervals at new-moon markers with no window before the first marker (edges: drop). The dots in each row are the first of each window."></p>
 
 ## Meaning
 

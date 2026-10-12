@@ -1,5 +1,5 @@
 ---
-source_sha: 0447d6fa9a3a
+source_sha: 0c54466dc32f
 ---
 
 # Kairos Language Specification — 2. Types and Layers
@@ -37,19 +37,13 @@ premise type. Primitive and derived share the same type.
 
 ### The value type (numbers, booleans, enums, lists, strings, instants, standalone times)
 
-Values that are not time streams: numbers, booleans, enums (`Mon`, `Preceding`, etc.), lists
-(`[…]`, indexing, and the membership predicate `in`), strings (`"Asia/Tokyo"`; the values of TZs
-and provenance, ADR-32), and **instants** (the value of a date literal; the point a lambda binds
-has the same makeup. A bare value binding `d0 = 2026-05-15` is also legal = ADR-43/F97 — this
-removes the duplication of writing the same date twice, in `anchor:`/`from:` and in a table), and
-**standalone times** (`T07:00` = a wall-clock time with no date part; a restricted value that
-materializes into an instant only in the `strideBy(1d, from:)` position — the argument of the
-stdlib sugar `at`. ADR-51 · §5.5). Used
-in the rules of calendar-system definitions (leap-year tests, etc.; §3.6) and in body-layer
-arguments (the `n` of `shift(n)`). The third type, alongside the time-stream type and the premise
-type. A list whose elements are instants is promoted to a time-stream constant (table literals,
-§3.8; ADR-26. The empty list `[]` is promoted only with a `covering:` postfix = the empty table,
-ADR-45).
+Values that are not time streams. Used in the rules of calendar-system definitions (leap-year tests, etc.; §3.6) and in body-layer arguments (the `n` of `shift(n)`). The third type, alongside the time-stream type and the premise type.
+
+- Numbers, booleans, enums (`Mon`, `Preceding`, etc.), lists (`[…]`, indexing, and the membership predicate `in`).
+- Strings (`"Asia/Tokyo"`; the values of TZs and provenance, ADR-32).
+- **Instants** (the value of a date literal; the point a lambda binds has the same makeup). A bare value binding `d0 = 2026-05-15` is also legal (ADR-43/F97); this removes the duplication of writing the same date twice, in `anchor:`/`from:` and in a table.
+- **Standalone times** (`T07:00` = a wall-clock time with no date part). A restricted value that materializes into an instant only in the `strideBy(1d, from:)` position; the argument of the stdlib sugar `at` (ADR-51 · §5.5).
+- A list whose elements are instants is promoted to a time-stream constant (table literals, §3.8; ADR-26). The empty list `[]` is promoted only with a `covering:` postfix = the empty table (ADR-45).
 
 Evaluating a premise yields a time stream (never the reverse). The two layers are asymmetric, with
 a single conduit at the boundary where the base coordinates (asof, TZ, granularity scale, data
@@ -152,17 +146,10 @@ three concrete faces.
 | Application, **point** argument `W(d)` | binding with a label source | Binding-name projection (point → value) | §4.9, ADR-30/34/39 |
 | Application, **value** argument `W(v)` | **window** binding with a label source | Window-instance reference (value → point sequence) = preimage | §4.9, ADR-42 |
 
-Dispatch (deciding point versus value) branches uniquely on the type of the argument
-**expression**. The type of a lambda variable is fixed by the **context of its binding site** (the
-lambda of `filter`/`label:` binds a point; the lambda of `span` binds a window ordinal = a number;
-value functions get theirs from the typing of the body), and the decision moment is **after sugar
-expansion and after actual-argument binding** (the same computation moment as alignment, §4.5) —
-at that moment the type of the actual argument is always unique, so an ambiguity error can
-structurally never fire at an application position. A free wrapper (`f = v => year(v)`) has its
-type fixed per call (polymorphism is allowed). `W(v)` is legal in every stream-expecting position
-(head position, combinator operands, `on:`/`unit:`, the S slot of `coincides`, etc.); a pure value
-position (`x = year(2020) + 1`) is a type error (streams cannot mix into value expressions = the
-type separation of §2.2). An instant is a member of the value type (§2.2, ADR-43), and dispatch
-reads "point → projection; **any non-point value** → instance reference" — a date literal and a
-value variable holding a point both branch to projection (`year(2026-05-15)` = `year(d0)` =
-projection = `2026`).
+Dispatch (deciding point versus value) branches uniquely on the type of the argument **expression**.
+
+- The type of a lambda variable is fixed by the **context of its binding site** (the lambda of `filter`/`label:` binds a point; the lambda of `span` binds a window ordinal = a number; value functions get theirs from the typing of the body).
+- The decision moment is **after sugar expansion and after actual-argument binding** (the same computation moment as alignment, §4.5). At that moment the type of the actual argument is always unique, so an ambiguity error can structurally never fire at an application position.
+- A free wrapper (`f = v => year(v)`) has its type fixed per call (polymorphism is allowed).
+- `W(v)` is legal in every stream-expecting position (head position, combinator operands, `on:`/`unit:`, the S slot of `coincides`, etc.). A pure value position (`x = year(2020) + 1`) is a type error (streams cannot mix into value expressions = the type separation of §2.2).
+- An instant is a member of the value type (§2.2, ADR-43), and dispatch reads "point → projection; **any non-point value** → instance reference". A date literal and a value variable holding a point both branch to projection (`year(2026-05-15)` = `year(d0)` = projection = `2026`).

@@ -1,5 +1,5 @@
 ---
-source_sha: 7a46d66079b7
+source_sha: 83e0d6e2e0f7
 ---
 
 # `nonWorking` — the calendar entity's reserved public word and the `bizDay` standard derivation
@@ -11,6 +11,9 @@ source_sha: 7a46d66079b7
 **Category**: calendar entity (premise layer) / **Identity**: the public word
 `nonWorking : Stream` (argument-less; day-aligned in the entity's tz) / `nonWorking` is a
 **settled name** (2026-07-09, the F51 batch confirmation). Normative: spec §3.9, ADR-35.
+
+<p align="center"><img src="../../assets/figures/isopen-sessions.svg" width="880"
+  alt="Trading sessions and hourly firings for 2026-01-05 to 01-07. 1/5 and 1/7 are bands from 9:00 to 15:00 with six points, 9:00 to 14:00; 15:00 sharp is not included. The half day 1/6 is a band from 9:00 to 11:30 with only three points, 9:00, 10:00 and 11:00."></p>
 
 ## Meaning
 

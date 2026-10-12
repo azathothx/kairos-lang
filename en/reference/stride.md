@@ -1,5 +1,5 @@
 ---
-source_sha: 91f200710769
+source_sha: 64c5d4094827
 ---
 
 # `stride` — thin the input points to every nth
@@ -10,6 +10,9 @@ source_sha: 91f200710769
 
 **Category**: stride (body-layer core; a family apart from selectors) / **Signature**:
 `stride(n, from:) : Stream -> Stream` / name settled (spec §5.4)
+
+<p align="center"><img src="../../assets/figures/selector-vs-stride.svg" width="880"
+  alt="Two number lines from 2026-01-01 to 2026-04-01. Top: counting the day of the month, 2/1 comes three days after 1/29 and 4/1 three days after 3/29. Bottom: stride(10, from: 2026-01-05) keeps a 10-day spacing across month boundaries."></p>
 
 ## Meaning
 

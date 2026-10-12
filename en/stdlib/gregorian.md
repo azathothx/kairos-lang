@@ -1,5 +1,5 @@
 ---
-source_sha: c620144a73e2
+source_sha: 19d14a36b851
 ---
 
 # Standard premise: Gregorian
@@ -73,22 +73,36 @@ auxiliary value functions to match that epoch).
 ### Note: `day`'s width is a civil day (not 86400 seconds)
 
 The `1d` in `day = chronos grid 1d` is the width convention "**one civil day** (one day of the
-calendar)", not `86400s` (a fixed number of seconds). A civil day is not constant in elapsed-time
-length — it runs 23 or 25 hours on DST transition days (ADR-11; leap seconds are **out of
-scope** — chronos is a uniform idealized axis without leap seconds (each UTC day = 86,400
-seconds), and `23:59:60` is a lexical error. ADR-33). If `day` were ticked at the fixed amount
-`86400s`, that would be an "**elapsed-time**" width, drifting away from the civil day at every DST
-transition (ADR-12 verified, on a UK DST day, that "one day later" turns into different datetimes
-under elapsed time 24h versus civil time). `Gregorian`'s `day` is the calendar's day = the civil
-day, so its width is given by the civil-time convention `1d`, not physical seconds. Elapsed-time
-widths (`24h`, `86400s`, and so on) are a concept for other uses, such as `shift`'s `unit:`; they
-are not used to partition the calendar.
+calendar)". It is not `86400s` (a fixed number of seconds).
 
-grid's **phase** aligns by default — civil-time widths (`d`) to the start instant of each civil
-day in the in-scope `tz:` (midnight on ordinary days. ADR-31 revised), elapsed-time widths
-(`h`/`m`/`s`) to the epoch. That `day = chronos grid 1d`, with nothing specified, becomes
-"calendar days cut at midnight" is due to this default. Only when a different phase is needed is
-it overridden with `anchor:` (ADR-31).
+**A civil day is not constant in elapsed time** (ADR-11).
+
+- A civil day runs 23 or 25 hours on DST transition days.
+- Leap seconds are **out of scope**. chronos is a uniform idealized axis without leap seconds (each
+  UTC day = 86,400 seconds), and `23:59:60` is a lexical error (ADR-33).
+
+**Ticking at fixed seconds drifts from the civil day.**
+
+- If `day` were ticked at the fixed amount `86400s`, that would be an "**elapsed-time**" width. It
+  drifts away from the civil day at every DST transition.
+- ADR-12 verified this on a UK DST day — "one day later" turns into different datetimes under
+  elapsed time 24h versus civil time.
+
+**The calendar is partitioned by the civil-time convention.**
+
+- `Gregorian`'s `day` is the calendar's day = the civil day. Its width is given by the civil-time
+  convention `1d`, not physical seconds.
+- Elapsed-time widths (`24h`, `86400s`, and so on) are a concept for other uses, such as `shift`'s
+  `unit:`; they are not used to partition the calendar.
+
+**grid's phase aligns by default** (ADR-31).
+
+- Civil-time widths (`d`) align to the start instant of each civil day in the in-scope `tz:`
+  (midnight on ordinary days. ADR-31 revised).
+- Elapsed-time widths (`h`/`m`/`s`) align to the epoch.
+- That `day = chronos grid 1d`, with nothing specified, becomes "calendar days cut at midnight" is
+  due to this default.
+- Only when a different phase is needed is it overridden with `anchor:`.
 
 ## 2. Each word
 
@@ -146,25 +160,33 @@ everyInstant |> strideBy(1h30m, from: 2026-01-05T09:00)
 
 Three cautions.
 
-1. **On DST transition days the ordinal drifts from the wall clock** (the side no check protects;
-   the most common trap). In whole-hour DST zones (America/New_York etc.) boundary alignment holds
-   and the check passes, but the transition day has a 23/25-tile day, and the equation
-   `ordinalIn(hour, day, d)` = wall-clock hour + 1 breaks (fall-back day: wall 23:30 = ordinal
-   25). **Wall-clock bands belong to the declaration side** — write them with `isOpen` (ADR-41);
-   wall-clock **instants** ("9:00 on that day") with `at(T09:00)` (the sugar over the wall-clock
-   tick `strideBy(1d, from: Thh:mm)` + `coincides` · ADR-51) (the F76 lesson).
-2. **Zones whose epoch difference broke are rejected by the alignment check.** `hour`'s phase is
-   the resident tz's civil epoch (1970-01-01T00:00) — in zones whose offset later moved by a
-   non-integral number of hours (Asia/Kathmandu = the 1986 change; Asia/Singapore = the 1981
-   change, breaking despite a whole-hour offset today; Australia/Lord_Howe = half-hour DST,
-   flipping seasonally), `ordinalIn(hour, day, d)` is an **explicit error** (no silently
-   fractional ordinals. ADR-50). Asia/Kolkata at a constant +05:30 works correctly — the breaking
-   predicate is **the epoch difference**, not whether the offset is a whole hour.
-3. **Fully materializing `hour` is expensive** (F80). Generate ticks with `strideBy(1h, from:)`,
-   not `hour |> first`. For sub-hour granularity (minutes, seconds), derive the same one line
-   (`premise M = Gregorian with { minuteW = chronos grid 1m }`; `grid 1s` for seconds) —
-   minute/second are not in the standard (the same one line suffices; standing cost is not
-   worth it).
+**Caution 1: on DST transition days the ordinal drifts from the wall clock** (the side no check
+protects; the most common trap).
+
+- In whole-hour DST zones (America/New_York etc.) boundary alignment holds and the check passes.
+- But the transition day has a 23/25-tile day, and the equation `ordinalIn(hour, day, d)` =
+  wall-clock hour + 1 breaks (fall-back day: wall 23:30 = ordinal 25).
+- **Wall-clock bands belong to the declaration side** — write them with `isOpen` (ADR-41).
+- Wall-clock **instants** ("9:00 on that day") are canonically `at(T09:00)` (the F76 lesson). `at`
+  is the sugar over the wall-clock tick `strideBy(1d, from: Thh:mm)` + `coincides` (ADR-51).
+
+**Caution 2: zones whose epoch difference broke are rejected by the alignment check.**
+
+- `hour`'s phase is the resident tz's civil epoch (1970-01-01T00:00).
+- In zones whose offset later moved by a non-integral number of hours, `ordinalIn(hour, day, d)`
+  is an **explicit error**. No silently fractional ordinals (ADR-50).
+- Examples: Asia/Kathmandu (the 1986 change); Asia/Singapore (the 1981 change, breaking despite a
+  whole-hour offset today); Australia/Lord_Howe (half-hour DST, flipping seasonally).
+- Asia/Kolkata at a constant +05:30 works correctly. The breaking predicate is **the epoch
+  difference**, not whether the offset is a whole hour.
+
+**Caution 3: fully materializing `hour` is expensive** (F80).
+
+- Generate ticks with `strideBy(1h, from:)`, not `hour |> first`.
+- For sub-hour granularity (minutes, seconds), derive the same one line —
+  `premise M = Gregorian with { minuteW = chronos grid 1m }` (`grid 1s` for seconds).
+- minute/second are not in the standard. The same one line suffices, and standing cost is not
+  worth it.
 
 ## 3. The dependency direction, and "leap is a value, not a window"
 
@@ -294,14 +316,18 @@ premise Fiscal = Gregorian with {
 }
 ```
 
-`month` is untouched, so calendar days and month ends are fixed. `quarter`'s inherited definition
-(`year split by month`) auto-tracks the new `year` and becomes the fiscal quarters (Apr-Jun/…).
-Because §3 placed `month` as the parent (leap is a value), no holding pin such as
-`month = Gregorian.month` and no cycle avoidance is needed — the single `year` line suffices.
-`label:` is **not inherited on override** (it is part of the definition; ADR-42/F96), so if
-window-instance reference for fiscal years is wanted (`year(2026)` = the days of fiscal 2026),
-reattach it explicitly — the `rephase` expansion preserves the base's `label:` (F65), so
-without the reattachment the equivalence of the two forms breaks.
+What this one line changes, and what it leaves alone:
+
+- `month` is untouched, so calendar days and month ends are fixed.
+- `quarter`'s inherited definition (`year split by month`) auto-tracks the new `year` and becomes
+  the fiscal quarters (Apr-Jun/…).
+- Because §3 placed `month` as the parent (leap is a value), no holding pin such as
+  `month = Gregorian.month` and no cycle avoidance is needed. The single `year` line suffices.
+- `label:` is **not inherited on override** (it is part of the definition; ADR-42/F96). If
+  window-instance reference for fiscal years is wanted (`year(2026)` = the days of fiscal 2026),
+  reattach it explicitly.
+- The `rephase` expansion preserves the base's `label:` (F65), so without the reattachment the
+  equivalence of the two forms breaks.
 
 Fiscal has been promoted to a standalone commentary as a standard premise — the exhaustive
 account, through fiscal-year numbering, fiscal month numbers, the variants (the US type,

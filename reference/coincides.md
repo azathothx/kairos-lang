@@ -2,6 +2,9 @@
 
 **分類**: 射影（本体層 §4.9・値関数） ／ **シグネチャ**: `coincides(S, w, d) : 点 -> Bool` ／ 名は**確定**（2026-07-09・F51 の一括確定。比較候補 `hits`/`anyIn`/`sharesWindow` は不採用）
 
+<p align="center"><img src="../assets/figures/out-of-coverage-edges.ja.svg" width="880"
+  alt="2026 年の祝日表（covering 2026-01-01..2026-12-31）を 2026 年いっぱいの評価範囲で使ったときの範囲外註釈を、年の両端を拡大した数直線で示す図。窓頭領域では 25 日払いの roll(Preceding) が 1/1 の前の営業日＝表の外に依存し得るので「⚠ 範囲外 2026-01-01..2026-01-02」、窓尾領域では 30 日払いの roll(Following) が 12/31 の次の営業日＝表の外に依存し得るので「⚠ 範囲外 2026-12-31..2027-01-01」が出る。点列は 12 点とも確定し、註釈だけが併走する。"></p>
+
 ## 意味
 
 点 `d` の属する `w` 窓の中に、ストリーム `S` の点が**少なくとも一つ在るか**（論理値）。
@@ -96,6 +99,9 @@ lunarMonth |> first |> filter(p => not coincides(chukiDay, lunarMonth, p))
 - **覆域端で閉じた最終窓**（データ由来の窓列の最終窓＝終端未確定）は、証人が無ければ**常に範囲外**——偽と確定しない（真の窓は
   覆域端の先へ続き得る。ADR-37 改訂 6）。閏月検出 `lunarMonth |> first |> filter(p => not coincides(chukiDay, lunarMonth, p))` が
   最終月で偽の閏月を出す形を塞ぐ（旧: 偽→`not` で真）。
+
+<p align="center"><img src="../assets/figures/witness-rule.ja.svg" width="880"
+  alt="coincides の証人規則の三分岐を、祝日表 national（covering 2026-01-01..2026-07-15）と month 窓で示す。5 月の窓は 5/3〜5/6 の祝日が証人なので真。6 月の窓は祝日がなく、窓の全体が covering の内なので偽。7 月の窓は祝日がなく、7/16 以降が表の外（註釈区間）なので範囲外。評価範囲 [2026-05-01, 2026-08-01) で month |&gt; first |&gt; filter(m =&gt; coincides(national, month, m)) は 2026-05-01 を返し、not を付けた式は 2026-06-01 を返し、どちらにも「⚠ 範囲外 2026-07-01..2026-08-01（JP.national covering 2026-01-01..2026-07-15）」が付く。"></p>
 
 `everyDay \ holidays` の退化尾部の点は**証人にならない**——存在しないかもしれない祝日の上に
 「確信付きの真」を築かない（「註釈は空でない結果にも付く」の消費側の規則）。

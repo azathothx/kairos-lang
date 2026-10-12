@@ -1,5 +1,5 @@
 ---
-source_sha: 6ce226bcf705
+source_sha: cd1ad40290f0
 ---
 
 # 11 — Schedules long said to be unwritable: collecting the world's limitation cases, then measuring them
@@ -9,7 +9,7 @@ source_sha: 6ce226bcf705
 > The code fences are byte-identical to the Japanese original and are executed as doctests there
 > (`impl/test/doctest.test.ts`); a consistency check keeps this page in sync.
 
-**Origin** (2026-08-16, designer's instruction): collect the schedule requirements that have been
+**Origin** (decided 2026-08-16): collect the schedule requirements that have been
 called "unwritable" in cron, RRULE, and business schedulers, classify them, and verify what Kairos
 can do — **by measurement**. The comparison table in spec §1.2 (13 capability rows) was drawn from
 the design side; this page walks the same map from the opposite direction, starting from
@@ -26,7 +26,7 @@ dialect extensions, and purpose-built machinery.
 ## 11.1 How the cases were collected
 
 Three lines of web research (captured 2026-08-17; every URL verified to exist) plus internal
-records:
+records. The three lines of web research:
 
 - **cron family**: frequent Stack Overflow / Server Fault / Unix SE questions, man pages and the
   POSIX text, the Debian bug tracker, HN. 16 items, ranked by view counts.
@@ -36,9 +36,14 @@ records:
 - **Calendar APIs / business systems**: Google Calendar and Microsoft Graph specifications,
   Kubernetes / Airflow / Quartz / ADF issues, the dedicated features of payroll and accounting
   SaaS. 17 items.
-- **Internal records**: the expressibility reflux reports (25 standard B2B forms — 21/25 writable
-  and the remaining 4 settled as F100–F103; 15 calendar-and-almanac formulas — only two could not
-  be written), studies 01–10, and the out-of-scope F numbers (F8, F24).
+
+Internal records:
+
+- **Expressibility measurements from the reflux reports**: 25 standard B2B forms — 21/25 writable
+  and the remaining 4 settled as F100–F103. 15 calendar-and-almanac formulas — only two could not
+  be written (the nine-star daily board and planetary hours).
+- **Prior verifications and out-of-scope items**: 40-examples 01–10 and the out-of-scope F
+  numbers (F8, F24).
 
 ## 11.2 The catalog — collected requirements and verdicts
 
@@ -453,59 +458,82 @@ out-of-scope side refusing to be silent is the closing contrast of this page.
 
 Four records from the measurements:
 
-- **F109** (new; filed in 90-findings): **`split` does not accept an interval-sequence
-  (segmentBy-built) parent window.** The natural statement of 4-4-5,
-  `isoYear split (y => …) by: isoWeek`, is rejected with "not a partition window" — although
-  isoYear is an effective partition that `within` accepts under the I5 check. Not an
-  expressiveness hole (the segmentBy canonical form works; measured in §(m)), but for
+**F109** (new; filed in 90-findings): **`split` does not accept an interval-sequence
+(segmentBy-built) parent window.**
+
+- The natural statement of 4-4-5, `isoYear split (y => …) by: isoWeek`, is rejected with "not a
+  partition window" — although isoYear is an effective partition that `within` accepts under the
+  I5 check.
+- Not an expressiveness hole (the segmentBy canonical form works; measured in §(m)), but for
   variable-length years (52/53 weeks) the split lambda (parent ordinal → width list) is closest
-  to the intent. Widening acceptance needs a consistency ruling against ADR-08 (the two window
-  kinds) — **awaiting ruling; does not block 1.0**.
-- **No ordering comparison between a point and a date literal** (`d >= 2026-06-29` fails with
-  "not a number"). Current receptacles: the evaluation-range separation (first) and
-  `epochOrdinal` ordinal comparison ((n)). Readable as the same governance that kept point ±
-  width arithmetic out (ADR-34: points are not bare numbers), though ordering is arguably a
-  separate question from arithmetic — a sugar candidate if demand persists (recorded only; no F
-  number).
-- **No `hour` window in the Gregorian standard.** Proven definable as a one-line derived premise
-  (`chronos grid 1h`) in (l) — added "sub-day windows" to the standard-sugar work item (the F1
-  family, already listed in 90-open-questions).
-- **First confirmed real demand for a "first N" selector** (catalog 29). spec §1.2 had kept it
-  "demand-gated"; rrule.js #456 (refill to keep n sessions after cancellations; a staple of the
-  lessons business) is the real case. A design memo is also recorded: were it introduced,
-  "count **after** exclusion" falls out of composition order (`(lessons \ cancelled) |> take(5,
-  …)`) — a shape that structurally avoids RRULE's COUNT trap. **Awaiting ruling (whether to
-  introduce it at all is the designer's call).**
+  to the intent.
+- Widening acceptance needs a consistency ruling against ADR-08 (the two window kinds) —
+  **undecided at the time; does not block 1.0** (introduced as ADR-48 in the follow-up below).
+
+**No ordering comparison between a point and a date literal** (`d >= 2026-06-29` fails with
+"not a number").
+
+- Current receptacles: the evaluation-range separation (first) and `epochOrdinal` ordinal
+  comparison ((n)).
+- Readable as the same governance that kept point ± width arithmetic out (ADR-34: points are not
+  bare numbers), though ordering is arguably a separate question from arithmetic.
+- A sugar candidate if demand persists (recorded only; no F number).
+
+**No `hour` window in the Gregorian standard.**
+
+- Proven definable as a one-line derived premise (`chronos grid 1h`) in (l).
+- Added "sub-day windows" to the standard-sugar work item (the F1 family, already listed in
+  90-open-questions).
+
+**First confirmed real demand for a "first N" selector** (catalog 29).
+
+- spec §1.2 had kept it "demand-gated"; rrule.js #456 (refill to keep n sessions after
+  cancellations; a staple of the lessons business) is the real case.
+- Design memo: were it introduced, "count **after** exclusion" falls out of composition order
+  (`(lessons \ cancelled) |> take(5, …)`) — a shape that structurally avoids RRULE's COUNT trap.
+- **Whether to introduce it at all was still undecided at the time** (adopted as ADR-49 in the
+  postscript just below).
 
 One verdict update: **03 §3.5 Easter, "value computes / lifting needs completion" → "writable"**
 (the measurement in (g); the proof that F28 is resolved).
 
 **(Postscript, same day, 2026-08-17)**: three of the four records above **went the whole way —
 ruling → candidate design → four-perspective verification → ADR → implementation — within the
-day**: F109 → **ADR-48** (split's widened acceptance, restricted to rule markers; the split form
-of 4-4-5, with the g(i) 53-week branch, measured extensionally identical to the canonical form of
-§(m)) · first-N → **ADR-49 `take(n, from:)`** (catalog 29 moves from "out of scope" to
-**"vocabulary"** — the first case of a named receptacle turning into an adopted word within one
-day of demand evidence; class C shrinks to two items) · the hour window → **ADR-50**
-(standardization plus the new ordinalIn alignment check — including the episode of verification
-refuting the first calibration by measurement). Only point-vs-date-literal comparison stays under
-watch. 555 tests
-(note 2026-08-28 = patching review 11 LOW: the difference of 3 from addendum 12's "552" (same day,
-2026-08-17) is a sampling-time difference — this document's 555 includes the same-day follow-up
-commits (ADR-49 additions). Not a contradiction; kept as a record of sampling order).
+day**. Only point-vs-date-literal comparison stays under watch.
+
+- F109 → **ADR-48** (split's widened acceptance, restricted to rule markers). The split form of
+  4-4-5, with the g(i) 53-week branch, measured extensionally identical to the canonical form of
+  §(m).
+- first-N → **ADR-49 `take(n, from:)`**. Catalog 29 moves from "out of scope" to **"vocabulary"**
+  — the first case of a named receptacle turning into an adopted word within one day of demand
+  evidence; class C shrinks to two items.
+- the hour window → **ADR-50** (standardization plus the new ordinalIn alignment check). Includes
+  the episode of verification refuting the first calibration by measurement.
+
+Tests: 555 (note 2026-08-28 = patching review 11 LOW: the difference of 3 from addendum 12's "552"
+(same day, 2026-08-17) is a sampling-time difference — this document's 555 includes the same-day
+follow-up commits (ADR-49 additions). Not a contradiction; kept as a record of sampling order).
 
 ## 11.6 Summary — as 1.0 positioning material
 
-- **17 measurements of "things said to be unwritable" — all in the current vocabulary, zero
-  language changes.** The 32 collected items classify as A 23, B 7, C 2 (initially A 22, C 3 —
-  catalog 29 moved with §11.5's ADR-49 `take`) — everything out of
-  scope has its receptacle in writing.
-- Measurements usable as headline material: last business day of month (a 325k-view failure in
-  one line); Easter (the RFC's flagship impossibility in 8 lines of zero-data arithmetic); 4-4-5
-  (a SaaS dedicated feature in a 5-line premise with the 53rd week falling out of the
-  structure); twice-monthly in one series (what W3C gave up on, via a single `|`); monthly on
-  the 31st (silent defaults vs writing the two meanings apart).
-- Blog seed candidates: a survey post ("what cron cannot write" — the catalog table is the
-  outline); an Easter post (the Computus story); a 4-4-5 post (accounting calendars and week
-  53); a "silent defaults" essay (the OR trap, SKIP, organizer-TZ — three silences, and a design
-  that refuses to be silent).
+**17 measurements of "things said to be unwritable" — all in the current vocabulary, zero
+language changes.** The 32 collected items classify as A 23, B 7, C 2 (initially A 22, C 3 —
+catalog 29 moved with §11.5's ADR-49 `take`) — everything out of scope has its receptacle in
+writing.
+
+Measurements usable as headline material:
+
+- last business day of month (a 325k-view failure in one line)
+- Easter (the RFC's flagship impossibility in 8 lines of zero-data arithmetic)
+- 4-4-5 (a SaaS dedicated feature in a 5-line premise with the 53rd week falling out of the
+  structure)
+- twice-monthly in one series (what W3C gave up on, via a single `|`)
+- monthly on the 31st (silent defaults vs writing the two meanings apart)
+
+Blog seed candidates:
+
+- a survey post ("what cron cannot write" — the catalog table is the outline)
+- an Easter post (the Computus story)
+- a 4-4-5 post (accounting calendars and week 53)
+- a "silent defaults" essay (the OR trap, SKIP, organizer-TZ — three silences, and a design that
+  refuses to be silent)

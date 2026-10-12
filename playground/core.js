@@ -43,7 +43,7 @@ const STRINGS = {
   },
 };
 
-// 暮らしの例（2026-10-06 設計者裁定「エンジニアでない一般の人向けの入口」）: 式を読まずに「カレンダーに入れる」まで行ける
+// 暮らしの例（2026-10-06 決定＝エンジニアでない一般の人向けの入口）: 式を読まずに「カレンダーに入れる」まで行ける
 // 最短経路。先頭のコメント行が予定の名前（.ics の SUMMARY）になる。ブログ第 30・31 弾の例と同じ定義
 const JP_PREMISE = `premise JP {
   calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon
@@ -76,7 +76,7 @@ eom = everyDay |> within(month) |> last
 (d15 | eom) |> roll(Preceding, on: bizDay)`,
   },
   alarm: {
-    window: 28,   // 選んだ日から 4 週間＝今日から先の有視界の窓（設計者裁定 2026-10-07。固定の範囲だと 11 月以降は過去の予定だけになる）
+    window: 28,   // 選んだ日から 4 週間＝今日から先の有視界の窓（2026-10-07 決定。固定の範囲だと 11 月以降は過去の予定だけになる）
     code: `# 目覚まし（平日 6:30・土曜と祝日 8:00）
 ${JP_PREMISE}
 
@@ -415,14 +415,14 @@ export function init(lang) {
   // カレンダーに入れる（.ics）——ブラウザ内で作って保存する（送信なし）。予定 0 件なら作らない
   const icsBtn = $('pg-ics');
   // 既定: PC は series（1 つの繰り返し予定）・スマホ（タッチ操作か狭い画面）は「1 点ずつ」——スマホの Google カレンダーアプリは RDATE を読まず
-  // 初回だけの単発予定になり、以後その UID の繰り返し予定を PC からも取り込めなくなる（設計者実測 2026-10-08・裁定同日）
+  // 初回だけの単発予定になり、以後その UID の繰り返し予定を PC からも取り込めなくなる（実測 2026-10-08・既定の変更も同日）
   const splitBox = $('pg-ics-split');
   if (splitBox && isPhoneLike()) splitBox.checked = true;
   if (icsBtn) icsBtn.addEventListener('click', () => {
     try {
       evaluate();   // 結果欄を同じ式・同じ範囲で更新してから書き出す（編集後に評価せず押しても画面と .ics が食い違わない）
       const from = $('pg-from').value, to = $('pg-to').value, tz = $('pg-tz').value.trim();
-      // 既定は series（1 式 1 つの繰り返し予定＝Google／Apple 向け・設計者裁定 2026-10-06「一般の人は Playground から取り込む」）。
+      // 既定は series（1 式 1 つの繰り返し予定＝Google／Apple 向け・2026-10-06 決定＝一般の人の経路は Playground からの取り込み）。
       // 「1 点ずつ別の予定にする」は RDATE を読まないアプリ（Outlook 系）向けの逃がし
       const split = $('pg-ics-split') ? $('pg-ics-split').checked === true : false;
       const r = buildIcs(src.value, { from, to, tz, lang, series: !split });

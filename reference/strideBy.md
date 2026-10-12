@@ -36,6 +36,9 @@ everyInstant |> strideBy(36h, from: 2026-01-01)
   「86400 秒ごと」が欲しいなら経過時間で——両者は DST の日にずれる。
 - 「3 営業日ごと」のような**数えの**間引きは [`stride`](stride.md)。`strideBy` は数えず測る。
 
+<p align="center"><img src="../assets/figures/civil-day-dst.ja.svg" width="880"
+  alt="ニューヨークの 2026 年 3 月 6 日から 9 日の市民日を物理の時間軸の上に並べた図（評価範囲 2026-03-06..2026-03-10・tz America/New_York）。3 月 8 日（日曜）は 02:00 に時計が 03:00 へ進むので市民日は 23 時間、ほかの 3 日は 24 時間。1d で刻む everyInstant |&gt; strideBy(1d, from: 2026-01-01T09:00) は 3/6・3/7・3/8・3/9 とも 09:00 に貼り付く（3/7 09:00 から 3/8 09:00 までは 23 時間）。24h で刻む strideBy(24h, from: 2026-01-01T09:00) は 3/6 09:00・3/7 09:00 のあと 3/8 10:00・3/9 10:00 と切替日から 1 時間ずれたまま進む。"></p>
+
 ## 関連
 
 [`stride`](stride.md)・[`take`](take.md)・[`everyInstant`](everyInstant.md)・幅リテラル（spec §5.5・ADR-11/12/28）。

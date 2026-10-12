@@ -1,5 +1,5 @@
 ---
-source_sha: efa785153675
+source_sha: 6acc87299e2a
 ---
 
 # `snapTo` — map to the first point of the containing window (floor)
@@ -10,6 +10,9 @@ source_sha: efa785153675
 
 **Category**: point transform (body-layer core) / **Signature**: `snapTo(w) : Stream -> Stream` /
 name settled (RC2 · spec §5.4)
+
+<p align="center"><img src="../../assets/figures/same-instant-vs-same-date.svg" width="880"
+  alt="Tokyo's and New York's civil days on one physical time axis. Tokyo's 2/12 and NY's 2/12 are separate intervals 14 hours apart. Tokyo's 2/12 0:00 is still 2/11 10:00 in NY, so mapping by the same instant (snapTo) lands on 2/11; mapping by the same date (rebase) maps 2/12 to 2/12."></p>
 
 ## Meaning
 

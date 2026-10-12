@@ -1,5 +1,5 @@
 ---
-source_sha: d15043ab0276
+source_sha: 035e916f0bf8
 ---
 
 # `segmentBy` — interval-sequence windows (cut at markers)
@@ -11,12 +11,18 @@ source_sha: d15043ab0276
 **Category**: window (body-layer core) / **Signature**:
 `segmentBy(m, edges:, empties:) : Stream -> Stream(interval)` / name settled (spec §5.4)
 
+<p align="center"><img src="../../assets/figures/windows-four-kinds.svg" width="880"
+  alt="The four ways to make windows, drawn over the same nine-week strip of days (Mon 2026-01-05 to Sun 03-08): within(month) divides the axis by month, split divides the parent week into dependent windows of widths [5, 2], span bundles days five at a time (from the epoch, so starting 1/2), and segmentBy cuts intervals at new-moon markers with no window before the first marker (edges: drop). The dots in each row are the first of each window."></p>
+
 ## Meaning
 
 Takes an arbitrary stream `m` as **markers** and makes each half-open interval `[mᵢ, mᵢ₊₁)` between
 adjacent markers a window. Every window whose boundaries are given by a sequence of points — fiscal
 closes, lunar phases (a lunisolar calendar cut at new moons), weeks (cut at the `wkst`-labeled day)
 — stands on this.
+
+<p align="center"><img src="../../assets/figures/half-open-intervals.svg" width="880"
+  alt="Half-open intervals. Top: on a number line from 8:00 to 16:00, the session [9:00, 15:00) includes 9:00 (filled dot) and excludes 15:00 (hollow dot); hourly |&gt; filter(t =&gt; isOpen(t)) on 2026-01-05 gives the six points 09:00 to 14:00, and 15:00 does not appear. Bottom: the closed ranges 9:00–11:59, 12:00–17:59 and 18:00–23:59 leave a 59-second gap at each seam, whereas the half-open windows [9:00, 12:00), [12:00, 18:00) and [18:00, 24:00) meet at the same point with no overlap and no leak: segmentBy over the markers 9:00, 12:00, 18:00 and 24:00 (2026-01-06T00:00) gives the first points 09:00, 12:00, 18:00 and the last points 11:00, 17:00, 23:00."></p>
 
 Unlike the partition type, **exhaustiveness is not guaranteed**, so the two arguments that state the
 meaning of the gaps explicitly are **mandatory declarations** (I5; omission is a static error). This

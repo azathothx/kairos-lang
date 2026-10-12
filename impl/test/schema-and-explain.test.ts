@@ -1,4 +1,4 @@
-// 1.0 追補 23（87 段 1・設計者裁定 2026-10-05〜06）: 機械可読の契約——JSON Schema 2 本（schema/cli-report.schema.json・
+// 1.0 追補 23（2026-10-05〜06 決定）: 機械可読の契約——JSON Schema 2 本（schema/cli-report.schema.json・
 // schema/supply.schema.json）の witness・`results[].source`／`line`・`--json` のエラー表面（CliErrorReport）・`--explain`（軽量 explain）・
 // 表示形の一意性（秒未満は .SSS・DST の重複はオフセット付き＝dates と points は一対一）。
 // witness の対＝「実物の出力が Schema に通る」と「壊れた形は通らない」。検証器は ajv（devDependency＝利用者には配られない）。
@@ -91,7 +91,7 @@ describe('JSON Schema の witness（schema/cli-report.schema.json・schema/suppl
   });
 });
 
-describe('results[].source と line（1.0 追補 23・設計者裁定 2026-10-06）', () => {
+describe('results[].source と line（1.0 追補 23・2026-10-06 決定）', () => {
   it('式の字面と 1 起点の行番号——複数行の pipe は改行を保つ・前文ブロックの内側も文書順', () => {
     const src = JP + 'everyDay |> within(month) |> last\n\n@JP wkst: Sun\neveryDay\n  |> within(week)\n  |> first\n@JP {\n  everyDay |> within(month) |> first\n}\n';
     const r = run(src, { from: '2026-01-01', to: '2026-02-01' });

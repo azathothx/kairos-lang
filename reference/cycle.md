@@ -2,6 +2,9 @@
 
 **分類**: 窓生成語（premise 層） ／ **シグネチャ**: `cycle(labels) anchor: r : Stream -> Stream(labeled)` ／ 名は確定（spec §5.4）
 
+<p align="center"><img src="../assets/figures/cycle-grid.ja.svg" width="880"
+  alt="2026 年 1 月 5 日からの 5 週間の格子。A 班（anchor 1/5）が On の日と B 班（anchor 1/9）が On の日が互い違いに 4 日ずつ並び、毎日どちらかが On。A 班のサイクル初日は 1/5（月）・1/13（火）・1/21（水）・1/29（木）・2/6（金）と曜日が 1 つずつずれる。"></p>
+
 ## 意味
 
 対象のパーティション窓に**反復ラベル**を付す。窓を作らない——曜日が日を分割しないように、ラベルは

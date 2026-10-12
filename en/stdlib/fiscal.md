@@ -1,5 +1,5 @@
 ---
-source_sha: a486c6a26437
+source_sha: bb2109bfa821
 ---
 
 # Standard premise: Fiscal
@@ -8,20 +8,12 @@ source_sha: a486c6a26437
 > The `source_sha` above records the source revision; a consistency check flags this page when the
 > Japanese original changes.
 
-`Fiscal` is the **transparent standard premise** bundled with Kairos (a fiscal calendar,
-April-start). It is a **derived definition** on top of [Gregorian](gregorian.md)
-(`premise → premise`; `../spec/20-premise-layer.md` §3.7), not a primitive-definition root.
-"Transparent" means it is no built-in language magic: it is written in the same derivation syntax
-any user can write ([`with`](../reference/with.md)), so its contents can be read and swapped out.
-The language specification (`../spec/`) goes no further than citing the fiscal calendar as "an
-example of a derived definition" (spec §3.7; `../spec/90-examples.md` §7.3); the exhaustive
-account is this page's job. The standard's choice of the April start is the convention of the
-Japanese fiscal year (the national fiscal year runs April 1 through March 31 of the following
-year; Public Finance Act, Article 11); for any other starting month, each user writes a one-line
-derivation of the same shape (§6). The names of the public words (`fiscalYearNo` and the rest) are
-premise public words, so their governance is light: they follow the convention of staying
-placeholders and being batch-confirmed at 1.0 (the naming status of the language's
-**descriptors** is spec §5.4 — premise public words sit outside that table).
+`Fiscal` is the **transparent standard premise** bundled with Kairos (a fiscal calendar, April-start). It is a **derived definition** on top of [Gregorian](gregorian.md) (`premise → premise`; `../spec/20-premise-layer.md` §3.7), not a primitive-definition root.
+
+- **Transparent** means it is no built-in language magic. It is written in the same derivation syntax any user can write ([`with`](../reference/with.md)), so its contents can be read and swapped out.
+- **Division of labor with the spec**: the language specification (`../spec/`) goes no further than citing the fiscal calendar as "an example of a derived definition" (spec §3.7; `../spec/90-examples.md` §7.3). The exhaustive account is this page's job.
+- **Why the April start**: it is the convention of the Japanese fiscal year (the national fiscal year runs April 1 through March 31 of the following year; Public Finance Act, Article 11). For any other starting month, each user writes a one-line derivation of the same shape (§6).
+- **Names of the public words** (`fiscalYearNo` and the rest): they are premise public words, so their governance is light. They follow the convention of staying placeholders and being batch-confirmed at 1.0. The naming status of the language's **descriptors** is spec §5.4 — premise public words sit outside that table.
 
 ## 1. Complete definition
 
@@ -50,7 +42,7 @@ This definition is the bundled source
 [`impl/stdlib/fiscal.kairos`](../../impl/stdlib/fiscal.kairos) itself (this page translates the
 comments); writing `calendar-system: Fiscal` in a preamble makes it usable with no definition of
 your own. If only the `year` override is wanted, the sugar
-[`rephase`](../reference/rephase.md) (official name, ruled 2026-07-26; formerly the placeholder shiftBoundary) writes it too:
+[`rephase`](../reference/rephase.md) (official name, decided 2026-07-26; formerly the placeholder shiftBoundary) writes it too:
 
 ```text
 premise Fiscal = Gregorian |> rephase(+3, on: year, unit: month)   # the same expansion as the single year line
@@ -105,19 +97,12 @@ everyDay |> filter(d => fiscalMonthNo(d) == 12) |> within(month) |> first
 #=> 2027-03-01
 ```
 
-Pitfall (implementation): `ordinalIn(month, year, d)` requires the point to belong to a frame
-window (`year`). **In the language semantics**, windows partition the whole axis (I5), with
-complete windows laid before and after the epoch — 1970-02-01 belongs to the complete FY1969
-window (1969-04-01 through 1970-03-31). **The reference implementation** cannot evaluate before
-1970 (bounded materialization), so it lays **stub windows** at the head of a `span` and the tail
-of a `split`, **approximating** I5 within the materialization range (before they were laid,
-`fiscalMonthNo` could not be written at all — a "point outside the frame window" error). Because
-of this approximation, `fiscalMonthNo` just after the epoch (1970-01 through 03) diverges from the
-semantics — it returns the ordinal within the stub window (2 for 1970-02), whereas by the
-semantics it is the 11th fiscal month of FY1969 (a known implementation constraint. F59). Note
-that over the same interval `fiscalYearNo` correctly returns 1969 — but only because `yearOf`'s
-`div` is implemented as flooring negative dividends (with trunc it would turn into 1970 — which is
-exactly why `div` was prescribed as floor division. ADR-31 revised, F63).
+Pitfall (implementation): `ordinalIn(month, year, d)` requires the point to belong to a frame window (`year`). Here the language semantics and the reference implementation part ways.
+
+- **In the language semantics**, windows partition the whole axis (I5), with complete windows laid before and after the epoch. 1970-02-01 belongs to the complete FY1969 window (1969-04-01 through 1970-03-31).
+- **The reference implementation** cannot evaluate before 1970 (bounded materialization). So it lays **stub windows** at the head of a `span` and the tail of a `split`, **approximating** I5 within the materialization range. Before they were laid, `fiscalMonthNo` could not be written at all — a "point outside the frame window" error.
+- **The divergence**: because of this approximation, `fiscalMonthNo` just after the epoch (1970-01 through 03) diverges from the semantics. It returns the ordinal within the stub window (2 for 1970-02), whereas by the semantics it is the 11th fiscal month of FY1969 (a known implementation constraint. F59).
+- **`fiscalYearNo` is correct**: over the same interval `fiscalYearNo` returns 1969. That is only because `yearOf`'s `div` is implemented as flooring negative dividends. With trunc it would turn into 1970 — which is exactly why `div` was prescribed as floor division (ADR-31 revised, F63).
 
 ## 3. Why it can be written in one line (mechanism A and "leap is a value, not a window")
 
@@ -129,15 +114,12 @@ Name resolution in a derivation is **mechanism A** (ADR-17; spec §3.7):
 - **`Base.word` pins to the base's value** — the explicit means for deliberately fixing to the
   original. The fiscal calendar **needs none**.
 
-No pin is needed because Gregorian is designed not to make `month` depend on `year` — "does
-February have 28 or 29 days?" is not a dependency on the `year` **window** but a **value**
-computation from the month ordinal ("leap is a value, not a window"; gregorian.md §3). If `month`
-were a child of `year`, then in a fiscal calendar that re-bundles `year` from `month`,
-`month ↔ year` would become circular. Because leap was viewed as a value and `month` placed as the
-parent, neither a keep-in-place pin like `month = Gregorian.month` nor any cycle avoidance is
-needed — the single `year` line suffices. Leap attribution also comes out right — FY2027
-(2027-04-01 through 2028-03-31) contains 2028-02-29, but that is just `month` computing 29 days as
-a value, independently of `year`'s phase.
+No pin is needed because Gregorian is designed not to make `month` depend on `year`.
+
+- "Does February have 28 or 29 days?" is not a dependency on the `year` **window** but a **value** computation from the month ordinal ("leap is a value, not a window"; gregorian.md §3).
+- If `month` were a child of `year`, then in a fiscal calendar that re-bundles `year` from `month`, `month ↔ year` would become circular.
+- Because leap was viewed as a value and `month` placed as the parent, neither a keep-in-place pin like `month = Gregorian.month` nor any cycle avoidance is needed — the single `year` line suffices.
+- Leap attribution also comes out right. FY2027 (2027-04-01 through 2028-03-31) contains 2028-02-29, but that is just `month` computing 29 days as a value, independently of `year`'s phase.
 
 Watch `quarter`'s auto-tracking over calendar year 2026. Since `phase: 3` is a multiple of 3,
 however, **the set of cut points is identical to Gregorian's quarters** (1/1, 4/1, 7/1, 10/1) — at

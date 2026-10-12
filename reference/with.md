@@ -2,6 +2,9 @@
 
 **分類**: 派生（premise 層 core） ／ **シグネチャ**: `Base with { w = … } : premise -> premise` ／ 名は確定（spec §5.4）
 
+<p align="center"><img src="../assets/figures/premise-derivation.ja.svg" width="880"
+  alt="基底 premise Gregorian から with で派生 premise Fiscal を作る図。左の箱は Gregorian の公開語（day・month・year・quarter…）と前文メンバー 10 語。中央の with ブロックで year だけを 4 月始まりに上書きすると、右の箱では year が差し替わり、year に依存する quarter と yearStart は再解決で追従し、残りの公開語と前文メンバーは基底から継承される。"></p>
+
 ## 意味
 
 既存 premise を土台に、指定した公開語だけ**差し替え・追加**して新しい premise を作る

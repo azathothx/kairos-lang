@@ -2,6 +2,9 @@
 
 **分類**: 点変換（本体層 core） ／ **シグネチャ**: `snapTo(w) : Stream -> Stream` ／ 名は確定（RC2・spec §5.4）
 
+<p align="center"><img src="../assets/figures/same-instant-vs-same-date.ja.svg" width="880"
+  alt="一本の物理の時間軸に東京とニューヨークの市民日を置いた図。東京の 2/12 と NY の 2/12 は 14 時間ずれた別々の区間。東京の 2/12 の 0 時は NY ではまだ 2/11 の 10 時なので、同じ瞬間で写す snapTo は 2/11 に落ちる。同じ日付で写す rebase は 2/12 を 2/12 に対応させる。"></p>
+
 ## 意味
 
 各点を、その点が**属する** `w` 窓の**先頭点**へ写す（floor）。粒度の継ぎ目を揃える演算子——

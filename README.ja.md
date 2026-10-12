@@ -30,7 +30,7 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 
 **ステータス: 1.0（2026-09-14 宣言・追補 26〈2026-10-10〉まで反映）**。意味論・演算子族・文法（EBNF）・字句は確定、命名も
 **全語確定**（最後の仮称 `shiftBoundary` は `rephase` に裁定済み＝2026-07-26）。表現力は既知スケジュール 20 要素のサンプル
-検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・783 テスト）で実証済み。
+検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・784 テスト）で実証済み。
 
 ## 構成
 
@@ -41,7 +41,7 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 | [`reference/`](reference/) | **記述語リファレンス**（演算子・窓生成語ごとの解説。例は実装で実行検証） |
 | [`stdlib/`](stdlib/) | 標準 premise の解説（`Gregorian`・`Fiscal`・`ISOWeek`・`Kyureki`——透明な標準ライブラリ。例は実行検証） |
 | [`impl/`](impl/) | リファレンス実装（TypeScript・実行時依存ゼロ。プロトタイプ） |
-| [`mcp/`](mcp/) | MCP サーバ `kairos-lang-mcp`——MCP クライアントから評価（list／next）・検証・リファレンス参照。tz は必須（英語） |
+| [`mcp/`](mcp/)（[日本語](mcp/README.ja.md)） | MCP サーバ `kairos-lang-mcp`——MCP クライアントから評価（list／next）・検証・リファレンス参照。tz は必須（英語） |
 | [`design/`](design/) | 設計記録（ADR-01〜53・ドメインモデル・構文ドラフト・表現力検証〈[「書けないスケジュール」の博物誌](design/40-examples/11-impossible-schedules.md) 含む〉・綻びログ） |
 
 設計の履歴を遡るときは [`design/INDEX.md`](design/INDEX.md) から。

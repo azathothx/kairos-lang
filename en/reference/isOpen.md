@@ -1,5 +1,5 @@
 ---
-source_sha: c9a9a778c657
+source_sha: 3aafff614334
 ---
 
 # `isOpen` / `bizOpen` / `bizClose` — the business-hours standard derivations
@@ -13,6 +13,9 @@ source_sha: c9a9a778c657
 **settled** (2026-07-09, the F51 batch confirmation; the supply side was renamed from `opens`/`closes`
 to **`sessionOpens`/`sessionCloses`** and settled = ADR-41 revised). Normative:
 spec §3.9.1, ADR-41.
+
+<p align="center"><img src="../../assets/figures/isopen-sessions.svg" width="880"
+  alt="Trading sessions and hourly firings for 2026-01-05 to 01-07. 1/5 and 1/7 are bands from 9:00 to 15:00 with six points, 9:00 to 14:00; 15:00 sharp is not included. The half day 1/6 is a band from 9:00 to 11:30 with only three points, 9:00, 10:00 and 11:00."></p>
 
 ## Meaning
 

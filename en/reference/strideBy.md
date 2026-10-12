@@ -1,5 +1,5 @@
 ---
-source_sha: bf896ad554e0
+source_sha: 01f3b9f86284
 ---
 
 # `strideBy` — step by width, "every w"
@@ -49,6 +49,9 @@ For every Martian sol, see the example in [`everyInstant`](everyInstant.md)
   operations; if you want "every 86400 seconds", use elapsed time — the two diverge on DST days.
 - Thinning **by count**, like "every 3 business days", is [`stride`](stride.md). `strideBy` does
   not count; it measures.
+
+<p align="center"><img src="../../assets/figures/civil-day-dst.svg" width="880"
+  alt="New York's civil days from 2026-03-06 to 03-09 laid on one physical time axis (evaluation range 2026-03-06..2026-03-10, tz America/New_York). On Sunday, March 8, the clocks jump from 02:00 to 03:00, so that civil day is 23 hours; the other three days are 24 hours. Stepping by 1d, everyInstant |&gt; strideBy(1d, from: 2026-01-01T09:00) sticks to 09:00 on 3/6, 3/7, 3/8 and 3/9 (3/7 09:00 to 3/8 09:00 is 23 hours). Stepping by 24h, strideBy(24h, from: 2026-01-01T09:00) gives 3/6 09:00 and 3/7 09:00, then 3/8 10:00 and 3/9 10:00, staying one hour late from the transition day on."></p>
 
 ## Related
 

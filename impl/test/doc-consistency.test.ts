@@ -23,16 +23,16 @@ const CURRENT_DOCS = [
   ...mdFiles('en/spec/'), // 英語版ミラー（日本語が正・spec/reference/stdlib 全章＋40-examples README）
   ...mdFiles('en/reference/'),
   ...mdFiles('en/stdlib/'),
-  ...mdFiles('en/design/40-examples/'), // カタログ＋需要順の研究英訳（11→10→05→09→06・2026-08-17 設計者裁定。旧: カタログのみ＝2026-08-06）
+  ...mdFiles('en/design/40-examples/'), // カタログ＋需要順の研究英訳（11→10→05→09→06・2026-08-17 決定。旧: カタログのみ＝2026-08-06）
   ...mdFiles('en/recipes/'),
-  'assets/logo/README.md', // ロゴ・アイコンの解説（/assets/ に公開＝2026-09-18 設計者指摘: 表セルの \| が公開面に露出・網の外だった）
+  'assets/logo/README.md', // ロゴ・アイコンの解説（/assets/ に公開＝2026-09-18 指摘: 表セルの \| が公開面に露出・網の外だった）
 ];
 
 // 外部の生データ層（AI 検索の回答・調査報告の逐語保存＝2026-09-28 新設・非公開・publish.sh の PRIVATE_PATHS）。
 // 逐語保存が目的なので役割語・相対リンクの検査対象から外す（内容を直すと記録が偽になる）。
 const RAW_DATA_DIR = 'design/ai-observations';
 
-// 公開される design 文書（kramdown 検査の対象＝2026-08-17 設計者指摘: 11 の表で \| が再発——
+// 公開される design 文書（kramdown 検査の対象＝2026-08-17 指摘: 11 の表で \| が再発——
 // 従来の検査対象は上の CURRENT_DOCS のみで、公開層である design/ が網の外だった）。
 // 対象は明示列挙（歴史記録の層＝作業記と受領記録〈60-reviews・「エスケープ自体の引用」を含む〉は
 // 対象外。design/ 直下に現在形の文書を新設したらここに足す）
@@ -98,7 +98,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     expect(stale).toEqual([]);
   });
 
-  it('公開 Markdown にテーブル用エスケープ \\| が残っていない（kramdown はコードスパン内の \\| を戻さない——2026-07-30 設計者指摘・テーブル内は <code>&#124;</code> を使う。2026-08-17 に公開 design 文書へ拡張＝11 の再発指摘）', () => {
+  it('公開 Markdown にテーブル用エスケープ \\| が残っていない（kramdown はコードスパン内の \\| を戻さない——2026-07-30 指摘・テーブル内は <code>&#124;</code> を使う。2026-08-17 に公開 design 文書へ拡張＝11 の再発指摘）', () => {
     const stale: string[] = [];
     for (const p of [...CURRENT_DOCS, ...PUBLISHED_DESIGN]) {
       for (const [i, line] of read(p).split('\n').entries()) {
@@ -440,5 +440,43 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     const fiscalDoc = read('stdlib/fiscal.md');
     expect(/year\s*=[^\n]*label:/.test(fiscal), 'Fiscal.year の label: が fiscal.kairos に無い').toBe(true);
     expect(/year\s*=[^\n]*label:/.test(fiscalDoc), 'Fiscal.year の label: が stdlib/fiscal.md に無い').toBe(true);
+  });
+});
+
+describe('公開ツリーの露出の上限（2026-10-10）: 設計の経緯や発言の引用を公開文書に新たに足さない', () => {
+  // 露出の上限: 公開ツリー（publish.sh が同期する全ファイル）に「設計者裁定」や設計者の発言の引用を増やさない。既に入っている分は基準値として
+  // 固定し、減らしたら基準値を下げる（上限の検査＝ratchet）。非公開の作業層は同期スクリプトの除外リスト（PRIVATE_PATHS）を実行時に読んで
+  // 差し引く（公開スナップショットではスクリプトも除外対象も存在しない＝一覧をここに書くと公開ツリーの製品語ガードに掛かる・2026-10-12）。
+  // 決めたことは「YYYY-MM-DD 決定」のように事実として書き、経緯は非公開層へ。
+  const PRIVATE: string[] = [];
+  if (existsSync(new URL('tools/publish.sh', root))) {
+    const m = /PRIVATE_PATHS=\(([^)]*)\)/.exec(read('tools/publish.sh'));
+    if (m) PRIVATE.push(...m[1].split(/\s+/).filter(Boolean));
+  }
+  const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'docs']);
+  const EXT = /\.(md|ts|js|json|yml|yaml|txt|html|kairos|scss)$/;
+  const BASELINE = 33;    // 露出の上限（2026-10-11 の実数＝CHANGELOG の書き直しと 91/90/30-syntax の中立化で 105→98→63、70-release／90-findings／spec/40／INDEX の中立化で 33。減らしたらここを下げる）
+  const pattern = /設計者(裁定|の裁定|承認|指示|指摘|の見立て|「)/g;   // 露出の上限の対象
+  const legend = /露出の上限/;
+  const files: string[] = [];
+  const walk = (rel: string) => {
+    for (const ent of readdirSync(new URL(rel || './', root), { withFileTypes: true })) {
+      const p = rel ? `${rel}/${ent.name}` : ent.name;
+      if (PRIVATE.some(x => p === x || p.startsWith(x + '/'))) continue;
+      if (ent.isDirectory()) { if (!SKIP_DIRS.has(ent.name)) walk(p); }
+      else if (EXT.test(ent.name)) files.push(p);
+    }
+  };
+  walk('');
+  it(`公開ツリーの該当箇所が基準値（${BASELINE}）を超えない——超えたら新しく書いた文を中立の事実に直す`, () => {
+    const perFile: Record<string, number> = {};
+    for (const p of files) {
+      let n = 0;
+      for (const line of read(p).split('\n')) { if (legend.test(line)) continue; n += (line.match(pattern) ?? []).length; }
+      if (n > 0) perFile[p] = n;
+    }
+    const total = Object.values(perFile).reduce((a, b) => a + b, 0);
+    const top = Object.entries(perFile).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([p, n]) => `${p}=${n}`).join('・');
+    expect(total, `露出の上限 ${BASELINE} を超過（実数 ${total}）: ${top}`).toBeLessThanOrEqual(BASELINE);
   });
 });

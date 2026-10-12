@@ -200,7 +200,7 @@ describe('.ics 書き出し: 行の形（CRLF・75 オクテット折り返し�
     expect(foldLine('x'.repeat(76))).toEqual(['x'.repeat(75), ' x']);
     expect(foldLine('x'.repeat(75 + 74 + 1))).toEqual(['x'.repeat(75), ' ' + 'x'.repeat(74), ' x']);
     expect(foldLine('x'.repeat(74) + 'あ')).toEqual(['x'.repeat(74), ' あ']);    // 3 バイト文字は丸ごと次行へ
-    // エスケープ列も割らない（行末の孤立した \ を Google カレンダーが拒んだ＝設計者実測 2026-10-08）: \n は丸ごと次行へ・\\ は 2 本で完結するので割ってよい
+    // エスケープ列も割らない（行末の孤立した \ を Google カレンダーが拒んだ＝実測 2026-10-08）: \n は丸ごと次行へ・\\ は 2 本で完結するので割ってよい
     expect(foldLine('x'.repeat(74) + '\\ny')).toEqual(['x'.repeat(74), ' \\ny']);
     expect(foldLine('x'.repeat(73) + '\\\\y')).toEqual(['x'.repeat(73) + '\\\\', ' y']);
     expect(foldLine('x'.repeat(74) + '\\\\\\ny')).toEqual(['x'.repeat(74), ' \\\\\\ny']);   // 75 文字目が \ で奇数本→その \ から次行へ（行末は x）
@@ -270,7 +270,7 @@ describe('.ics 書き出し: CLI --ics と Playground の「カレンダーに�
     const { buildIcs, rollingWindow } = await import(new URL('../../playground/core.js', import.meta.url).href) as
       { buildIcs: (s: string, o: { from: string; to: string; tz: string; lang: string; series?: boolean }) => { text: string; name: string; count: number };
         rollingWindow: (tz: string, days: number, now?: Date) => { from: string; to: string } };
-    // 目覚ましの例は「今日から先の有視界の窓」（選んだ日から 4 週間・設計者裁定 2026-10-07）: JST 10/7 01:00 ＝ UTC 10/6 16:00 でも from は tz の今日
+    // 目覚ましの例は「今日から先の有視界の窓」（選んだ日から 4 週間・2026-10-07 決定）: JST 10/7 01:00 ＝ UTC 10/6 16:00 でも from は tz の今日
     expect(rollingWindow('Asia/Tokyo', 28, new Date(Date.UTC(2026, 9, 6, 16, 0, 0)))).toEqual({ from: '2026-10-07', to: '2026-11-04' });
     expect(rollingWindow('America/New_York', 28, new Date(Date.UTC(2026, 9, 6, 16, 0, 0)))).toEqual({ from: '2026-10-06', to: '2026-11-03' });
     expect(rollingWindow('Asia/Tokyo', 28, new Date(Date.UTC(2026, 11, 20, 0, 0, 0)))).toEqual({ from: '2026-12-20', to: '2027-01-17' });   // 年またぎ
@@ -296,7 +296,7 @@ describe('.ics 書き出し: CLI --ics と Playground の「カレンダーに�
   });
 });
 
-describe('results[].uid（1.0 追補 26・設計者裁定 2026-10-08「1.0.9 で入れる」）: --json の式の指紋は .ics の UID と同じ鍵', () => {
+describe('results[].uid（1.0 追補 26・2026-10-08 決定）: --json の式の指紋は .ics の UID と同じ鍵', () => {
   const o = { from: '2026-01-01', to: '2026-03-01', tz: 'Asia/Tokyo' };
   const SRC = JP + 'd15 = everyDay |> within(month) |> nth(15)\neom = everyDay |> within(month) |> last\n(d15 | eom) |> roll(Preceding, on: bizDay)\n';
   it('uid は series の VEVENT の UID と同一・1 点 1 予定の UID は -series@ を -<ms>@ に・註釈の予定は -ann-<fromMs>-<toMs>@', () => {

@@ -1,4 +1,4 @@
-// Kairos MCP server — kairos-lang-mcp（87 段 2・設計者裁定 2026-10-05: 案 A＝別パッケージ・tz は必須・診断は日本語が正・
+// Kairos MCP server — kairos-lang-mcp（2026-10-05 決定: 案 A＝別パッケージ・tz は必須・診断は日本語が正・
 // エラーは構造化して返す）。tool の当て先は参照実装の CLI と同じ関数（kairos-lang/cli の cmdList／cmdNext）＝`--json` と同じ
 // CliReport をそのまま返す。評価は決定的・時計を読むのは next の from 既定（tz の今日）だけ。
 import { readFileSync, readdirSync, existsSync } from 'node:fs';

@@ -2,6 +2,9 @@
 
 **分類**: 点変換（本体層 core） ／ **シグネチャ**: `roll(conv, on: P) : Stream -> Stream` ／ 名は確定（spec §5.4）
 
+<p align="center"><img src="../assets/figures/roll-vs-shift.ja.svg" width="880"
+  alt="roll と shift の違い。上は 10/25（日曜）が営業日の軸に無いので、Preceding なら 10/23、Following なら 10/26 へ寄る。下は 9/30 から営業日の目盛りで 3 つ戻ると、土日を数えずに 9/25 に着く。"></p>
+
 ## 意味
 
 各点が軸 `P` 上の**有効点**でなければ、規約 `conv` に従って有効点へ寄せる。**有効点は動かない**。

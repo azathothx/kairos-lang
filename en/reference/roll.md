@@ -1,5 +1,5 @@
 ---
-source_sha: f8b98a205232
+source_sha: f7c869d7645d
 ---
 
 # `roll` — nudge invalid points to valid ones
@@ -10,6 +10,9 @@ source_sha: f8b98a205232
 
 **Category**: point transform (body-layer core) / **Signature**:
 `roll(conv, on: P) : Stream -> Stream` / name settled (spec §5.4)
+
+<p align="center"><img src="../../assets/figures/roll-vs-shift.svg" width="880"
+  alt="The difference between roll and shift. Top: 10/25 (Sunday) is not on the business-day axis, so Preceding snaps to 10/23 and Following to 10/26. Bottom: counting three business-day ticks back from 9/30 lands on 9/25, skipping the weekend."></p>
 
 ## Meaning
 

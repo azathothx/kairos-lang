@@ -2,6 +2,9 @@
 
 **分類**: 窓（本体層 core） ／ **シグネチャ**: `within(w) : Stream -> Stream(partitioned)` ／ 名は確定（spec §5.4）
 
+<p align="center"><img src="../assets/figures/windows-four-kinds.ja.svg" width="880"
+  alt="同じ 9 週（2026-01-05 月〜03-08 日）の日の帯の上に、窓の 4 つの作り方を 1 行ずつ並べた図。within(month) は月で軸を余さず分け、split は親窓の週を [5, 2] の幅で従属窓に割り、span は日を 5 個ずつ束ね（紀元起点なので 1/2 から）、segmentBy は朔のマーカーで区間を切って最初のマーカー前は窓なし（edges: drop）。各行の点は窓ごとの first。"></p>
+
 ## 意味
 
 ストリームを、窓名 `w` が指すパーティション型窓（軸を余さず分割する窓）で束ねる。窓名は在圏 premise の

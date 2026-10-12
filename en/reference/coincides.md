@@ -1,5 +1,5 @@
 ---
-source_sha: 0d509108dd9c
+source_sha: 7bfd7a5bb64c
 ---
 
 # `coincides` — the window-membership predicate
@@ -11,6 +11,9 @@ source_sha: 0d509108dd9c
 **Category**: projection (body layer §4.9; value function) / **Signature**:
 `coincides(S, w, d) : point -> Bool` / name **settled** (2026-07-09, the F51 batch confirmation;
 the compared candidates `hits`/`anyIn`/`sharesWindow` were not adopted)
+
+<p align="center"><img src="../../assets/figures/out-of-coverage-edges.svg" width="880"
+  alt="Out-of-coverage annotations when a 2026 holiday table (covering 2026-01-01..2026-12-31) is evaluated over the whole of 2026, on a number line with both ends of the year enlarged. In the head region, rolling the 25th payday with Preceding may depend on the business day before 1/1 (outside the table), giving ⚠ out-of-coverage 2026-01-01..2026-01-02; in the tail region, rolling the 30th payday with Following may depend on the business day after 12/31, giving ⚠ out-of-coverage 2026-12-31..2027-01-01. All 12 points are settled; only the annotation runs alongside."></p>
 
 ## Meaning
 
@@ -124,6 +127,9 @@ intervals; [table literals](table-literal.md)' `covering:`, ADR-37), never the r
   revision 6). This closes the shape where leap-month detection
   `lunarMonth |> first |> filter(p => not coincides(chukiDay, lunarMonth, p))` reported a false leap month in the final month
   (before: false → true under `not`).
+
+<p align="center"><img src="../../assets/figures/witness-rule.svg" width="880"
+  alt="The three-way witness rule of coincides, shown with the holiday table national (covering 2026-01-01..2026-07-15) and month windows. The May window holds the holidays 5/3–5/6 as witnesses, so true. The June window has no holiday and lies entirely within the covering, so false. The July window has no holiday and from 7/16 on lies outside the table (an annotated interval), so out-of-coverage. Evaluated over [2026-05-01, 2026-08-01), month |&gt; first |&gt; filter(m =&gt; coincides(national, month, m)) returns 2026-05-01, the same with not returns 2026-06-01, and both carry &quot;⚠ out-of-coverage 2026-07-01..2026-08-01 (JP.national covering 2026-01-01..2026-07-15)&quot;."></p>
 
 Points of the degenerate tail of `everyDay \ holidays` are **not witnesses** — no "confident true"
 is built on top of holidays that may not exist (the consumer-side face of the rule "annotations

@@ -55,7 +55,7 @@ describe('Playground: 本体式の無い定義は CLI と同じ文言・画面�
       }
     } finally { g.document = saved.document; g.location = saved.location; }
   });
-  it('「1 点ずつ別の予定にする」の既定＝スマホ（タッチ主体か狭い画面）ではオン・PC ではオフ（設計者裁定 2026-10-08＝スマホのアプリは RDATE を読まず、series は単発になり以後取り込めない）', async () => {
+  it('「1 点ずつ別の予定にする」の既定＝スマホ（タッチ主体か狭い画面）ではオン・PC ではオフ（2026-10-08 決定＝スマホのアプリは RDATE を読まず、series は単発になり以後取り込めない）', async () => {
     const { isPhoneLike } = await import(new URL('../../playground/core.js', import.meta.url).href) as
       { isPhoneLike: (env?: Record<string, unknown>) => boolean };
     expect(isPhoneLike({ matchMedia: () => ({ matches: true }), innerWidth: 1200 })).toBe(true);     // タッチ主体
@@ -83,7 +83,7 @@ describe('Playground: 本体式の無い定義は CLI と同じ文言・画面�
   });
 });
 
-describe('Playground の例の祝日表（2026-10-09 設計者裁定＝例は資産として毎年延ばす・言語は年で腐るデータを配布しない）', () => {
+describe('Playground の例の祝日表（2026-10-09 決定＝例は資産として毎年延ばす・言語は年で腐るデータを配布しない）', () => {
   const core = readFileSync(new URL('../../playground/core.js', import.meta.url), 'utf8');
   // 出所: 内閣府「国民の祝日について」CSV（2026-10-09 取得・休日 3/22 を含む 17 件）・OPM Federal Holidays（observed・2026-10-09 取得・11 件）
   const JP_2027 = ['2027-01-01', '2027-01-11', '2027-02-11', '2027-02-23', '2027-03-21', '2027-03-22', '2027-04-29', '2027-05-03', '2027-05-04',

@@ -10,6 +10,8 @@ https://kairos-lang.org/schema/cli-report.schema.json). Points are epoch millise
 identity; `dates` are one-to-one civil labels. Out-of-coverage intervals come back as annotations,
 never as silently dropped points.
 
+日本語: [README.ja.md](README.ja.md)
+
 ## Install
 
 Node.js 20 or later. The server speaks MCP over stdio.

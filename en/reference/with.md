@@ -1,5 +1,5 @@
 ---
-source_sha: d4bc804f482e
+source_sha: 18fc1c7efd5f
 ---
 
 # `with` — derived definition (overriding public words)
@@ -10,6 +10,9 @@ source_sha: d4bc804f482e
 
 **Category**: derivation (premise-layer core) / **Signature**:
 `Base with { w = … } : premise -> premise` / name settled (spec §5.4)
+
+<p align="center"><img src="../../assets/figures/premise-derivation.svg" width="880"
+  alt="Deriving premise Fiscal from the base premise Gregorian with with. The left box holds Gregorian's public words (day, month, year, quarter, …) and the 10 premise members. The with block in the middle overrides only year to an April start; in the right box year is replaced, quarter and yearStart, which depend on year, follow by re-resolution, and the remaining public words and premise members are inherited from the base."></p>
 
 ## Meaning
 

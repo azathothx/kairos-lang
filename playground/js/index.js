@@ -38,7 +38,7 @@ export function run(source, opts) {
     }
     const defaultMembers = new Map();
     const results = ev.runProgram(program, defaultMembers);
-    // CliReport の source（式の字面）と line（1 起点の行番号）: 本体式の行範囲を原文から切り出す（1.0 追補 23・設計者裁定 2026-10-06
+    // CliReport の source（式の字面）と line（1 起点の行番号）: 本体式の行範囲を原文から切り出す（1.0 追補 23・2026-10-06 決定
     // ＝同じ字面でも直前の前文で結果が変わるので line が要る）。結果は本体式の文書順（前文ブロックの内側も含め深さ優先）に並ぶ
     const exprStmts = [];
     const collect = (sts) => {

@@ -2,6 +2,9 @@
 
 **分類**: 窓生成語（premise 層） ／ **シグネチャ**: `span(f) : Stream -> Stream(partitioned)`・位相は `phase:` ／ 名は確定（spec §5.4）
 
+<p align="center"><img src="../assets/figures/windows-four-kinds.ja.svg" width="880"
+  alt="同じ 9 週（2026-01-05 月〜03-08 日）の日の帯の上に、窓の 4 つの作り方を 1 行ずつ並べた図。within(month) は月で軸を余さず分け、split は親窓の週を [5, 2] の幅で従属窓に割り、span は日を 5 個ずつ束ね（紀元起点なので 1/2 から）、segmentBy は朔のマーカーで区間を切って最初のマーカー前は窓なし（edges: drop）。各行の点は窓ごとの first。"></p>
+
 ## 意味
 
 細かい単位の列を、`f = n => 個数` に従って連続窓へ**束ねる**（ボトムアップ集約）。`n` は

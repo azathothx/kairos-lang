@@ -2,6 +2,9 @@
 
 **分類**: premise 束縛の宣言 ／ 形: `名 = external(kind: dates | instants [, labels: [値域]] [, source: "…"])` ／ 確定（ADR-46）
 
+<p align="center"><img src="../assets/figures/external-socket.ja.svg" width="880"
+  alt="external の差し込み口の図。左は式（静的）で、premise HRDB に holidays = external(kind: dates) と宣言だけする。右は実行時に届くデータ（解決値）で、dates・covering 2026-01-01..2026-01-31・asof 2026-01-15 を運ぶ。中央の差し込み口には契約（covering と asof を必ず運ぶ）が書いてあり、下の 3 枚のカードは検査（covering の外の点と実在しない日付は契約違反、供給が来ないのは供給エラー）。最下行は答えに併走する範囲外註釈と被覆サマリ（残走路 -28 日）。"></p>
+
 ## 意味
 
 **式は静的・データは実行時解決**に分離する差し込み口（socket）。[テーブルリテラル](table-literal.md)が

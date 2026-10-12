@@ -1,5 +1,5 @@
 ---
-source_sha: dd944f2c4e64
+source_sha: a64720993232
 ---
 
 # Standard premise: ISOWeek
@@ -8,20 +8,18 @@ source_sha: dd944f2c4e64
 > The `source_sha` above records the source revision; a consistency check flags this page when the
 > Japanese original changes.
 
-`ISOWeek` is a **transparent standard premise** bundled with Kairos. A **derived definition** on
-top of `Gregorian` (`premise → premise`; `../spec/20-premise-layer.md` §3.7 — the same shape as
-`Fiscal`), it adds the vocabulary of the ISO 8601 week calendar (week date): **Monday-starting
-weeks** and **week numbers under which W01 is the week containing the year's first Thursday**.
-"Transparent" means the same as in [`gregorian.md`](gregorian.md): no built-in
-language magic — it is written in the same derived-definition syntax any user can write, so its
-contents can be read and swapped out. The language specification (`../spec/`) goes no further than
-prescribing the derivation syntax and the semantics of the projection family; the exhaustive
-account of the ISO week calendar is this page's job. The design focus of this premise is that the
-ISO week number — which the design records had classified as the first example of a `label:`
-attachment expression (F40) — is written out, via an equivalent transformation, in **settled
-vocabulary alone** (§4). The word names (`isoWeek` and the rest) are premise public words and
-**placeholders** (the convention of batch confirmation at 1.0; the naming status of the language's
-**descriptors** is spec §5.4 — premise public words sit outside that table).
+`ISOWeek` is a **transparent standard premise** bundled with Kairos. A **derived definition** on top of `Gregorian` (`premise → premise`; `../spec/20-premise-layer.md` §3.7 — the same shape as `Fiscal`), it adds the vocabulary of the ISO 8601 week calendar (week date).
+
+- **Monday-starting weeks**.
+- **Week numbers under which W01 is the week containing the year's first Thursday**.
+
+**What "transparent" means** is the same as in [`gregorian.md`](gregorian.md): no built-in language magic — it is written in the same derived-definition syntax any user can write, so its contents can be read and swapped out.
+
+**The division between the specification and this page.** The language specification (`../spec/`) goes no further than prescribing the derivation syntax and the semantics of the projection family; the exhaustive account of the ISO week calendar is this page's job.
+
+**The design focus.** The ISO week number — which the design records had classified as the first example of a `label:` attachment expression (F40) — is written out, via an equivalent transformation, in **settled vocabulary alone** (§4).
+
+**The word names are placeholders.** `isoWeek` and the rest are premise public words, following the convention of batch confirmation at 1.0. The naming status of the language's **descriptors** is spec §5.4 — premise public words sit outside that table.
 
 ## 1. Complete definition
 
@@ -271,26 +269,25 @@ no accident.
 
 ### 6.3 The epoch-1970 edge (a prototype constraint)
 
-The language-default epoch 1970-01-01 (ADR-31) is a **Thursday**, and the W01 Monday of ISO year
-1970 is 1969-12-29. The reference implementation materializes from 1970-01-01 (nothing before 1970
-can be evaluated; `../../impl/README.md`), so the ISO-1970 year window lacks its leading
-1969-12-29 through 31 (a partial window under `edges: clip`). At this edge the consequences differ
-per word — `isoWeekNo` (= 1) and `isoYearNo` (= 1970) come out correct, but **`isoWeekday`
-returns 1..4 over 1970-01-01 through 04** (the true values are Thu through Sun = 4..7; being
-ordinals inside the partial window, they are off by 3). It silently becomes a different value (the
-form ADR-16 hates most), so do not use `isoWeekday` in early January 1970.
+The language-default epoch 1970-01-01 (ADR-31) is a **Thursday**, and the W01 Monday of ISO year 1970 is 1969-12-29. The reference implementation materializes from 1970-01-01 (nothing before 1970 can be evaluated; `../../impl/README.md`), so the ISO-1970 year window lacks its leading 1969-12-29 through 31 (a partial window under `edges: clip`).
+
+At this edge the consequences differ per word:
+
+- `isoWeekNo` (= 1) and `isoYearNo` (= 1970) come out correct.
+- **`isoWeekday` returns 1..4 over 1970-01-01 through 04**. The true values are Thu through Sun = 4..7; being ordinals inside the partial window, they are off by 3.
+
+It silently becomes a different value (the form ADR-16 hates most), so do not use `isoWeekday` in early January 1970.
 
 ## 7. Verification
 
-Every ` ```kairos ` example in this page is execution-verified as a doctest
-(`../../impl/test/doctest.test.ts`; the conventions are `../reference/README.md`). In addition,
-the regression test `../../impl/test/stdlib-premises.test.ts` holds an **exhaustive cross-check**
-against an independent oracle (a JS implementation equivalent to isocalendar): agreement on the
-full set of days where `isoYearNo` ≠ calendar year (every day of 2024-01-01 through 2028-06-01),
-and on the day sets per week number (W01, W02, W09, W26, W52, W53; 2025-01-01 through 2027-06-01).
-At prototyping time, full agreement with Python's `datetime.isocalendar()` was also confirmed over
-all 1,836 days of 2024-01-01 through 2029-01-09 (the reproducible cross-check that remains in the
-repository is the regression test above).
+Every ` ```kairos ` example in this page is execution-verified as a doctest (`../../impl/test/doctest.test.ts`; the conventions are `../reference/README.md`).
+
+In addition, the regression test `../../impl/test/stdlib-premises.test.ts` holds an **exhaustive cross-check** against an independent oracle (a JS implementation equivalent to isocalendar). It checks agreement on two things:
+
+- The full set of days where `isoYearNo` ≠ calendar year (every day of 2024-01-01 through 2028-06-01).
+- The day sets per week number (W01, W02, W09, W26, W52, W53; 2025-01-01 through 2027-06-01).
+
+At prototyping time, full agreement with Python's `datetime.isocalendar()` was also confirmed over all 1,836 days of 2024-01-01 through 2029-01-09. The reproducible cross-check that remains in the repository is the regression test above.
 
 ## 8. Scope (what ISOWeek does not carry)
 

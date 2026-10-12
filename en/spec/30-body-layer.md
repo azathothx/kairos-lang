@@ -1,5 +1,5 @@
 ---
-source_sha: 7b3c2ed93014
+source_sha: 61a9ec9fe743
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -43,6 +43,9 @@ expression stays on one line wherever possible; the preamble need not.
 Windows come in two kinds, split into separate operators. The partition type takes a window name;
 the interval-sequence type takes a stream of markers. The argument kinds differ fundamentally, so the
 two are not unified.
+
+<p align="center"><img src="../../assets/figures/windows-four-kinds.svg" width="880"
+  alt="The four ways to make windows, drawn over the same nine-week strip of days (Mon 2026-01-05 to Sun 03-08): within(month) divides the axis by month, split divides the parent week into dependent windows of widths [5, 2], span bundles days five at a time (from the epoch, so starting 1/2), and segmentBy cuts intervals at new-moon markers with no window before the first marker (edges: drop). The dots in each row are the first of each window."></p>
 
 **Partition type `within(w)`** — a window that partitions the axis without remainder. `w` is a
 window name (`day`/`week`/`month`/`quarter`/`year`, or a user-defined partition window), resolved
@@ -96,6 +99,9 @@ everyDay |> segmentBy(fiscalCloses, edges: clip, empties: keep) |> first
 lunarMonth = day |> segmentBy(lunarStart, edges: drop, empties: error, labels: monthNos)   # lunisolar month numbers
 ```
 
+<p align="center"><img src="../../assets/figures/half-open-intervals.svg" width="880"
+  alt="Half-open intervals. Top: on a number line from 8:00 to 16:00, the session [9:00, 15:00) includes 9:00 (filled dot) and excludes 15:00 (hollow dot); hourly |&gt; filter(t =&gt; isOpen(t)) on 2026-01-05 gives the six points 09:00 to 14:00, and 15:00 does not appear. Bottom: the closed ranges 9:00–11:59, 12:00–17:59 and 18:00–23:59 leave a 59-second gap at each seam, whereas the half-open windows [9:00, 12:00), [12:00, 18:00) and [18:00, 24:00) meet at the same point with no overlap and no leak: segmentBy over the markers 9:00, 12:00, 18:00 and 24:00 (2026-01-06T00:00) gives the first points 09:00, 12:00, 18:00 and the last points 11:00, 17:00, 23:00."></p>
+
 ## 4.3 Selectors
 
 `first` / `nth(n)` / `last`. They select the Nth or the last element within a window. By default
@@ -114,6 +120,9 @@ everyDay |> within(quarter) |> first(of: quarter)
 
 Point → point, lifted to streams. Two members of one family, choosing their reference premise by
 argument (`on:`/`unit:`). Each stage is self-sufficient in its premises.
+
+<p align="center"><img src="../../assets/figures/roll-vs-shift.svg" width="880"
+  alt="The difference between roll and shift. Top: 10/25 (Sunday) is not on the business-day axis, so Preceding snaps to 10/23 and Following to 10/26. Bottom: counting three business-day ticks back from 9/30 lands on 9/25, skipping the weekend."></p>
 
 - **`roll(conv, on: P)`** — nudges invalid points to valid ones by conv
   (`Following`/`Preceding`/`Modified`…). Roll conventions are axis-independent; the same system
@@ -178,6 +187,9 @@ schedule \ blackoutDays      # difference (both sides day-granular; excluding fr
 Point identity is equality on chronos (ADR-33). To stop the matching of two streams of mismatched
 granularity — `everyDay \ instants` never coincides at a point and is a **silent no-match** — a
 static **alignment** check is placed on every operation that decides membership by point equality.
+
+<p align="center"><img src="../../assets/figures/same-instant-vs-same-date.svg" width="880"
+  alt="Tokyo's and New York's civil days on one physical time axis. Tokyo's 2/12 and NY's 2/12 are separate intervals 14 hours apart. Tokyo's 2/12 0:00 is still 2/11 10:00 in NY, so mapping by the same instant (snapTo) lands on 2/11; mapping by the same date (rebase) maps 2/12 to 2/12."></p>
 
 **Alignment** is a static property of a time stream — "every point lies on a tick of some **atomic
 grid** G = (width, normalized phase, tz name)" — a claim computed from the derivation structure of
@@ -257,6 +269,9 @@ no window and counts through (continuous across boundaries, never resetting). "E
 days, ignoring month boundaries", "five sessions total" and "the last three firings" cannot be
 written with selectors — that is the stride's reason to exist. It splits into four operators by
 argument kind and how the count is used.
+
+<p align="center"><img src="../../assets/figures/selector-vs-stride.svg" width="880"
+  alt="Two number lines from 2026-01-01 to 2026-04-01. Top: counting the day of the month, 2/1 comes three days after 1/29 and 4/1 three days after 3/29. Bottom: stride(10, from: 2026-01-05) keeps a 10-day spacing across month boundaries."></p>
 
 | Operator | Argument | What it counts | Example |
 |---|---|---|---|
@@ -386,20 +401,13 @@ core of the reading side is these three words.
 | `epochOrdinal(u, d)` | point → number | The running ordinal of `u` windows from the epoch (the same coordinate as the window ordinal of §3.6; **0-based**; negative before the epoch. The epoch is the language default 1970-01-01, overridable by the calendar system's `epoch:`. For data-derived windows whose sequence does not reach the epoch, **the first existing window is 0** = ADR-31 revision, F60) |
 | `coincides(S, w, d)` | point → boolean | Whether at least one point of stream `S` lies within the `w` window containing point `d` (**the window-membership predicate** = bounded existential quantification in value expressions; ADR-38, F68). Alone in the family, its first argument is a stream (a window word is a static error — get a point sequence via <code>month &#124;> first</code>) |
 
-`coincides` is the vessel for F68 (applying exception days to timed and mixed schedules) — the
-canonical form is `notices |> filter(t => not coincides(closures, day, t))` (preserve the firing
-time, exclude by "day"). The intersection form is the same single word (difference versus
-intersection written by the presence or absence of `not`). Membership is interval membership, with
-**no alignment requirement** (the exempt family of ADR-36 decision 7) — but if S's alignment is a
-civil-time grid whose tz name disagrees with w's, it is a **static error** (preventing the silent
-one-day cross-tz slip — coincides is chronos membership, not "the same date label"; F69).
-Determination is the three-way **witness rule** (ADR-38 decision 4): if a point of S from an
-**unannotated interval** (a witness) is in the window, true; with no witness, if the window
-intersects an annotated interval of S, out-of-coverage (§4.10; the final window closed at the coverage edge has an undetermined end, so with no witness it is always out-of-coverage — never settled as false. ADR-37 revision 6); if the window lies entirely within
-the effective coverage, false — points of a degenerate computed value (the data-exhausted tail of
-`everyDay \ holidays`) are not witnesses. Choosing between the two: for exception days between
-day-aligned streams the combinator (`schedule \ blackoutDays`) is right — "same **point**:
-combinator; same **membership**: coincides". The witness rule's three branches:
+`coincides` is the vessel for F68 (applying exception days to timed and mixed schedules); the canonical form is `notices |> filter(t => not coincides(closures, day, t))` (preserve the firing time, exclude by "day"). The intersection form is the same single word: difference versus intersection is written by the presence or absence of `not`.
+
+- Membership is interval membership, with **no alignment requirement** (the exempt family of ADR-36 decision 7). But if S's alignment is a civil-time grid whose tz name disagrees with w's, it is a **static error** (preventing the silent one-day cross-tz slip; coincides is chronos membership, not "the same date label"; F69).
+- Determination is the three-way **witness rule** (ADR-38 decision 4). If a point of S from an **unannotated interval** (a witness) is in the window, true. With no witness, if the window intersects an annotated interval of S, out-of-coverage (§4.10; the final window closed at the coverage edge has an undetermined end, so with no witness it is always out-of-coverage, never settled as false. ADR-37 revision 6). If the window lies entirely within the effective coverage, false. Points of a degenerate computed value (the data-exhausted tail of `everyDay \ holidays`) are not witnesses.
+- Choosing between the two: for exception days between day-aligned streams the combinator (`schedule \ blackoutDays`) is right. "Same **point**: combinator; same **membership**: coincides".
+
+The witness rule's three branches:
 
 ```mermaid
 flowchart TD
@@ -410,6 +418,9 @@ flowchart TD
   C -- "yes" --> O["out-of-coverage — in filter, drop the point and annotate<br/>(widened to the whole window read = F75)"]
   C -- "no (window within the effective coverage)" --> F["false — determining false depends on coverage completeness<br/>(the asymmetry with true is normative)"]
 ```
+
+<p align="center"><img src="../../assets/figures/witness-rule.svg" width="880"
+  alt="The three-way witness rule of coincides, shown with the holiday table national (covering 2026-01-01..2026-07-15) and month windows. The May window holds the holidays 5/3–5/6 as witnesses, so true. The June window has no holiday and lies entirely within the covering, so false. The July window has no holiday and from 7/16 on lies outside the table (an annotated interval), so out-of-coverage. Evaluated over [2026-05-01, 2026-08-01), month |&gt; first |&gt; filter(m =&gt; coincides(national, month, m)) returns 2026-05-01, the same with not returns 2026-06-01, and both carry &quot;⚠ out-of-coverage 2026-07-01..2026-08-01 (JP.national covering 2026-01-01..2026-07-15)&quot;."></p>
 
 **Labels are read by binding name** (no generic `labelOf` word; ADR-30). Apply the **binding name
 itself, as the projection name**, of a labeled window/cycle/table to a point — `weekday(d)`,
@@ -459,25 +470,14 @@ reduces to this and gets no dedicated notation). The calendar coordinates
 (`yearOf`/`monthOf`). No value → instant lifting (`dateOf`) is introduced — projection plus
 `filter` suffices.
 
-The **attachment** side of window labels (the `label:` argument at generation time) is written as
-a lambda, which **binds the window's first point (the representative point)** (ADR-34). The
-semantics is the one-line defining equation
-`name(d) ≡ attachExpr(first point of the window containing d)`; evaluation is at projection time,
-deferred (I7); bare names inside the attachment expression are premise-relative (ADR-17). The
-attachment expression may refer to any window or projection of the representative point (a
-fiscal-year label `label: (p => yearNo(p))`, ordinal lookup into a parallel list), but
-adjacent-window reference is out of range (I7); self-reference (label projection of the binding
-name under definition, **and value-argument application** — the preimage subsumes the projection;
-ADR-34 revision / ADR-42) is an explicit error (detected at projection time — bare names in the
-attachment expression resolve lazily, so it cannot be decided statically); and there is no
-point-±-width arithmetic in value expressions (the old example "ISO week's Thursday → year" was
-transformed equivalently by F57, making the `label:` itself unnecessary). Labeled data is a point
-sequence plus a parallel label list (`labels:`; §3.8, ADR-30), and **the same `labels:` attaches
-to window sequences too** (§4.2, ADR-39 — the three-source symmetry: table + labels: = data labels
-on points; window + label: lambda = rule labels on windows; window + labels: list = data labels on
-windows. When merely pasting a data column, `labels:` is canonical; a `label:` lambda only for
-computations that need an index expression). The family's names (`ordinalIn`, `epochOrdinal`,
-`snapTo`, `label:`, `labels:`) were fixed at RC2 (§5.4).
+The **attachment** side of window labels (the `label:` argument at generation time) is written as a lambda, which **binds the window's first point (the representative point)** (ADR-34). The semantics is the one-line defining equation `name(d) ≡ attachExpr(first point of the window containing d)`; evaluation is at projection time, deferred (I7); bare names inside the attachment expression are premise-relative (ADR-17).
+
+- The attachment expression may refer to any window or projection of the representative point (a fiscal-year label `label: (p => yearNo(p))`, ordinal lookup into a parallel list). Adjacent-window reference is out of range (I7).
+- Self-reference (label projection of the binding name under definition, **and value-argument application**; the preimage subsumes the projection; ADR-34 revision / ADR-42) is an explicit error. It is detected at projection time: bare names in the attachment expression resolve lazily, so it cannot be decided statically.
+- There is no point-±-width arithmetic in value expressions (the old example "ISO week's Thursday → year" was transformed equivalently by F57, making the `label:` itself unnecessary).
+- Labeled data is a point sequence plus a parallel label list (`labels:`; §3.8, ADR-30). **The same `labels:` attaches to window sequences too** (§4.2, ADR-39). The three-source symmetry: table + labels: (data labels on points), window + label: lambda (rule labels on windows), window + labels: list (data labels on windows). When merely pasting a data column, `labels:` is canonical; a `label:` lambda only for computations that need an index expression.
+
+The family's names (`ordinalIn`, `epochOrdinal`, `snapTo`, `label:`, `labels:`) were fixed at RC2 (§5.4).
 
 **Types in equality** — both sides of `==` / `!=` must be of the same type (number, string 〈label〉, boolean, point,
 time-of-day). Comparing different types is an error, not a silent false (1.0 addendum 22). The identifier form and the string
@@ -503,6 +503,9 @@ correctness** (a typo's total drop-out goes to external judgment as an empty res
 annotations). An annotation is an adjunct of evaluation, not element data of the value (I6 — the
 same stance as ADR-30's "points store no labels"). The relation among coverage, evaluation range,
 and annotations:
+
+<p align="center"><img src="../../assets/figures/out-of-coverage-edges.svg" width="880"
+  alt="Out-of-coverage annotations when a 2026 holiday table (covering 2026-01-01..2026-12-31) is evaluated over the whole of 2026, on a number line with both ends of the year enlarged. In the head region, rolling the 25th payday with Preceding may depend on the business day before 1/1 (outside the table), giving ⚠ out-of-coverage 2026-01-01..2026-01-02; in the tail region, rolling the 30th payday with Following may depend on the business day after 12/31, giving ⚠ out-of-coverage 2026-12-31..2027-01-01. All 12 points are settled; only the annotation runs alongside."></p>
 
 ```mermaid
 gantt

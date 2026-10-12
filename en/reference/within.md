@@ -1,5 +1,5 @@
 ---
-source_sha: 02f3f4e9ff0c
+source_sha: 74c4a48e7837
 ---
 
 # `within` — the partition-type window
@@ -10,6 +10,9 @@ source_sha: 02f3f4e9ff0c
 
 **Category**: window (body-layer core) / **Signature**:
 `within(w) : Stream -> Stream(partitioned)` / name settled (spec §5.4)
+
+<p align="center"><img src="../../assets/figures/windows-four-kinds.svg" width="880"
+  alt="The four ways to make windows, drawn over the same nine-week strip of days (Mon 2026-01-05 to Sun 03-08): within(month) divides the axis by month, split divides the parent week into dependent windows of widths [5, 2], span bundles days five at a time (from the epoch, so starting 1/2), and segmentBy cuts intervals at new-moon markers with no window before the first marker (edges: drop). The dots in each row are the first of each window."></p>
 
 ## Meaning
 

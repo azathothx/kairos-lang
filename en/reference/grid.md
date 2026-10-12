@@ -1,5 +1,5 @@
 ---
-source_sha: 6d1204d3ea71
+source_sha: 47685a532e79
 ---
 
 # `grid` — uniform division of the continuous axis (the atoms of a calendar)
@@ -22,6 +22,9 @@ calendar entity lays the wall-clock ticks of business hours
 The width `w` follows the **civil-time width conventions** (ADR-11/12) — `1d` is "1 civil day",
 not a fixed `86400s`. The civil day of a DST transition is 23–25 hours long (leap seconds are out
 of scope = ADR-33).
+
+<p align="center"><img src="../../assets/figures/civil-day-dst.svg" width="880"
+  alt="New York's civil days from 2026-03-06 to 03-09 laid on one physical time axis (evaluation range 2026-03-06..2026-03-10, tz America/New_York). On Sunday, March 8, the clocks jump from 02:00 to 03:00, so that civil day is 23 hours; the other three days are 24 hours. Stepping by 1d, everyInstant |&gt; strideBy(1d, from: 2026-01-01T09:00) sticks to 09:00 on 3/6, 3/7, 3/8 and 3/9 (3/7 09:00 to 3/8 09:00 is 23 hours). Stepping by 24h, strideBy(24h, from: 2026-01-01T09:00) gives 3/6 09:00 and 3/7 09:00, then 3/8 10:00 and 3/9 10:00, staying one hour late from the transition day on."></p>
 
 The **phase** aligns by default (ADR-31): civil-time widths (`d`) to the **opening instant of each
 civil day** in the in-scope `tz:` (midnight on ordinary days. ADR-31 revision); elapsed-time widths

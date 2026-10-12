@@ -1,5 +1,5 @@
 ---
-source_sha: 28efa31bd407
+source_sha: f5c7e38f0092
 ---
 
 # `rebase` — date-label-preserving re-anchoring
@@ -11,6 +11,9 @@ source_sha: 28efa31bd407
 **Category**: point transform (body-layer core — the fourth member alongside roll/shift/snapTo) /
 **Signature**: `rebase(to: "tz") : Stream -> Stream` / name **settled** (2026-07-09, the F51 batch
 confirmation; the compared candidates `relabel`/`sameDate` were not adopted)
+
+<p align="center"><img src="../../assets/figures/same-instant-vs-same-date.svg" width="880"
+  alt="Tokyo's and New York's civil days on one physical time axis. Tokyo's 2/12 and NY's 2/12 are separate intervals 14 hours apart. Tokyo's 2/12 0:00 is still 2/11 10:00 in NY, so mapping by the same instant (snapTo) lands on 2/11; mapping by the same date (rebase) maps 2/12 to 2/12."></p>
 
 ## Meaning
 

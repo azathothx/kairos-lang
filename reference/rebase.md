@@ -2,6 +2,9 @@
 
 **分類**: 点変換（本体層 core・roll/shift/snapTo に並ぶ第 4 メンバー） ／ **シグネチャ**: `rebase(to: "tz") : Stream -> Stream` ／ 名は**確定**（2026-07-09・F51 の一括確定。比較候補 `relabel`/`sameDate` は不採用）
 
+<p align="center"><img src="../assets/figures/same-instant-vs-same-date.ja.svg" width="880"
+  alt="一本の物理の時間軸に東京とニューヨークの市民日を置いた図。東京の 2/12 と NY の 2/12 は 14 時間ずれた別々の区間。東京の 2/12 の 0 時は NY ではまだ 2/11 の 10 時なので、同じ瞬間で写す snapTo は 2/11 に落ちる。同じ日付で写す rebase は 2/12 を 2/12 に対応させる。"></p>
+
 ## 意味
 
 入力の各点（source tz の**市民日の先頭点**）の**日付ラベル**（Y-M-D）を取り、**to tz の同じ日付の

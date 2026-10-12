@@ -1,5 +1,5 @@
 ---
-source_sha: 3973e85090f2
+source_sha: 87e269945a18
 ---
 
 # Table literal — a stream constant of an instant sequence
@@ -11,6 +11,9 @@ source_sha: 3973e85090f2
 **Category**: literal (the premise layer is its main ground) / Form:
 `[instant, …] covering: range labels: [label, …]`; empty form `[] covering: range` (ADR-45) /
 `covering:` and `labels:` settled (RC2, spec §5.4)
+
+<p align="center"><img src="../../assets/figures/covering-three-ways.svg" width="880"
+  alt="Three ways to write covering, compared as bands on a time axis. Evaluating January 2027: covering: 2027..2027 gives false comfort (runway 355 days), covering: .. gives runway ∞ so monitoring never fires, and only covering: 2026-08-04..2026-08-04 returns the out-of-coverage annotation and runway −159 days."></p>
 
 ## Meaning
 

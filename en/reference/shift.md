@@ -1,5 +1,5 @@
 ---
-source_sha: cbf797d3d876
+source_sha: 9ddd8a70a5ce
 ---
 
 # `shift` — move by n units
@@ -10,6 +10,9 @@ source_sha: cbf797d3d876
 
 **Category**: point transform (body-layer core) / **Signature**: `shift(n, unit: U) : Stream ->
 Stream` / name settled (spec §5.4)
+
+<p align="center"><img src="../../assets/figures/roll-vs-shift.svg" width="880"
+  alt="The difference between roll and shift. Top: 10/25 (Sunday) is not on the business-day axis, so Preceding snaps to 10/23 and Following to 10/26. Bottom: counting three business-day ticks back from 9/30 lands on 9/25, skipping the weekend."></p>
 
 ## Meaning
 

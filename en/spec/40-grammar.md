@@ -1,5 +1,5 @@
 ---
-source_sha: 9a4f94009e76
+source_sha: a3def40b7914
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -32,72 +32,61 @@ source_sha: 9a4f94009e76
 
 ## 5.2 Signatures of the body-layer core family
 
-- `everyDay : () -> Stream` / `everyInstant : () -> Stream` — calendar-system-pure generators (the
-  latter is every point of the continuous base).
-- `within(w) : Stream -> Stream(partitioned)` — partition-type window. `w` is a window name.
-  Exhaustiveness and non-overlap are checkable under I5.
-- `segmentBy(m, edges:, empties:) : Stream -> Stream(interval)` — interval-sequence-type window.
-  The gap policy (`edges:`/`empties:`) is mandatory (I5). An element's membership is decided by its
-  representative point (for a window element, the first point) (§3.8, ADR-26). `labels:` takes a
-  parallel label list (ADR-39) or the cyclic form `cycle list anchor: real-day` (ADR-47).
-- `first / nth(n) / last : Stream(windowed) -> Stream` — in-window selection. The default is the
-  innermost window; `of: w` names the target window explicitly. Window-relative (I4).
-- `filter(on: P) : Stream -> Stream` / `filter(x => condition) : Stream -> Stream` — thins by a
-  premise predicate or a value-expression predicate.
-- `roll(conv, on: P) : Stream -> Stream` — moves invalid points onto valid ones by conv
-  (Following/Preceding/Modified…). `on:` is an axis name or a derived stream.
-- `shift(n, unit: U) : Stream -> Stream` — moves by n (signed) in units of U. Direction is carried
-  by the sign.
-- `snapTo(w) : Stream -> Stream` — maps each point to the first point of the `w` window containing
-  it (floor; §4.4).
-- Projections (inside value expressions): `ordinalIn(u, w, d) : point -> number` (two-window,
-  granularity-independent) / `epochOrdinal(u, d) : point -> number`. Labels are read through bound
-  names (`weekday(d)` and the like; the generic word `labelOf` is abolished — points store no
-  labels. §4.9, ADR-27/30).
-- Combinators: `A | B` union / `A & B` intersection / `A \ B` difference. Prioritized overriding
-  is expressed by left-associative, order-sensitive application of union and difference (no
-  dedicated symbol).
-- Strides (a family separate from the selectors): `stride(n, from:)` input counting (every n
-  **input points**; no axis argument; n is an integer ≥ 1 = ADR-38) / `take(n, from:)` first-N
-  selection (only the first n input points; windowed input is a static error = ADR-49) /
-  `takeLast(n, until:)` last-N selection (only the last n input points at or before `until:`
-  〈inclusive〉; windowed input is a static error = ADR-52) / `strideBy(w, from:)` width stepping
-  (a physical quantity over multiple axes). The anchor is mandatory (ADR-31 — the origin `from:`
-  for stride/take/strideBy 〈the counting origin is the first input point at or after `from:`〉,
-  the terminus `until:` for takeLast 〈step 0 is the last input point at or before `until:`〉);
-  no reset is defaulted.
-- Window-membership predicate (projection family; §4.9): `coincides(S, w, d)` = whether a point of
-  S lies in the w window containing point d (a boolean; witness rule and tz-name check = ADR-38).
+**Generators and windowing**:
+
+- `everyDay : () -> Stream` / `everyInstant : () -> Stream` — calendar-system-pure generators (the latter is every point of the continuous base).
+- `within(w) : Stream -> Stream(partitioned)` — partition-type window. `w` is a window name. Exhaustiveness and non-overlap are checkable under I5.
+- `segmentBy(m, edges:, empties:) : Stream -> Stream(interval)` — interval-sequence-type window. The gap policy (`edges:`/`empties:`) is mandatory (I5). An element's membership is decided by its representative point (for a window element, the first point) (§3.8, ADR-26). `labels:` takes a parallel label list (ADR-39) or the cyclic form `cycle list anchor: real-day` (ADR-47).
+
+**In-window selection and thinning**:
+
+- `first / nth(n) / last : Stream(windowed) -> Stream` — in-window selection. The default is the innermost window; `of: w` names the target window explicitly. Window-relative (I4).
+- `filter(on: P) : Stream -> Stream` / `filter(x => condition) : Stream -> Stream` — thins by a premise predicate or a value-expression predicate.
+
+**Moving points**:
+
+- `roll(conv, on: P) : Stream -> Stream` — moves invalid points onto valid ones by conv (Following/Preceding/Modified…). `on:` is an axis name or a derived stream.
+- `shift(n, unit: U) : Stream -> Stream` — moves by n (signed) in units of U. Direction is carried by the sign.
+- `snapTo(w) : Stream -> Stream` — maps each point to the first point of the `w` window containing it (floor; §4.4).
+
+**Projections and combinators**:
+
+- Projections (inside value expressions): `ordinalIn(u, w, d) : point -> number` (two-window, granularity-independent) / `epochOrdinal(u, d) : point -> number`. Labels are read through bound names (`weekday(d)` and the like; the generic word `labelOf` is abolished — points store no labels. §4.9, ADR-27/30).
+- Combinators: `A | B` union / `A & B` intersection / `A \ B` difference. Prioritized overriding is expressed by left-associative, order-sensitive application of union and difference (no dedicated symbol).
+
+**Strides** (a family separate from the selectors): the anchor is mandatory (ADR-31); no reset is defaulted.
+
+- `stride(n, from:)` — input counting (every n **input points**; no axis argument; n is an integer ≥ 1 = ADR-38).
+- `take(n, from:)` — first-N selection (only the first n input points; windowed input is a static error = ADR-49).
+- `takeLast(n, until:)` — last-N selection (only the last n input points at or before `until:` 〈inclusive〉; windowed input is a static error = ADR-52).
+- `strideBy(w, from:)` — width stepping (a physical quantity over multiple axes).
+- Anchors: the origin `from:` for stride/take/strideBy 〈the counting origin is the first input point at or after `from:`〉; the terminus `until:` for takeLast 〈step 0 is the last input point at or before `until:`〉.
+
+**Window-membership predicate** (projection family; §4.9):
+
+- `coincides(S, w, d)` = whether a point of S lies in the w window containing point d (a boolean; witness rule and tz-name check = ADR-38).
 
 ## 5.3 Signatures of the premise layer
 
-**Window-generating words of primitive definitions** (names final; §5.4):
+**Window-generating words of primitive definitions** (names final; §5.4): `grid`, `span` and `split` produce windows; `cycle` produces labels.
 
-- `grid(w) : Chronos -> Stream(partitioned)` — partitions the continuous axis uniformly at width
-  `w` (the atom of a calendar). Phase is the default alignment (civil-time width = the starting
-  instant of each civil day — tz midnight on ordinary days; elapsed-time width = the epoch),
-  overridden with `anchor:` (ADR-31).
-- `span(n => count) : Stream -> Stream(partitioned)` — bundles finer units (bottom-up). `n` is the
-  ordinal of the window being generated (epoch-origin, 0-based; the epoch is the language default
-  1970-01-01, overridable with the member `epoch:` = ADR-31). Phase via `phase:`.
-- `split(y => [widths…]) by: u : Stream(windowed) -> Stream(partitioned)` — divides the parent
-  window at variable widths in unit `u` (top-down). The widths sum to the parent (I5).
-- `cycle(labels) anchor: r : Stream -> Stream(labeled)` — parallel repeating labels; produces
-  labels, not windows. Cycle length and application target are free; `anchor:` makes the target
-  window containing it carry the first label. The binding name reads as a point → label value
-  function (ADR-27). It also appears in the value position of `segmentBy`'s `labels:` (the cyclic
-  form; position-dependent keyword interpretation = the unifying principle of ADR-42. ADR-47).
-- Public words are the top-level bindings of a premise block (`Gregorian.month`). Boundaries are
-  selector reuse (`monthStart = month |> first`).
-- **Table literals** (§3.8, ADR-26): a list of instants is a time-stream constant. `covering:`
-  states the valid range; `labels:` a parallel label sequence (defining the point → label
-  projection. ADR-30). The empty list `[]` is promoted only with a `covering:` postfix (ADR-45).
-- **`external(kind: dates | instants [, labels: [domain]] [, source: "…"]) : → Stream`** (§3.8,
-  ADR-46): external-supply declaration = a table literal resolved at run time. Restricted to the
-  right-hand side (head position) of a premise binding; the resolved value receives the same
-  governance checks as a literal (the supply contract).
-- The right-hand side of a premise binding may also be a body-layer stream expression (layer
-  crossing; the definition of `week` is an example. §3.6).
+- `grid(w) : Chronos -> Stream(partitioned)` — partitions the continuous axis uniformly at width `w` (the atom of a calendar). Phase is the default alignment (civil-time width = the starting instant of each civil day — tz midnight on ordinary days; elapsed-time width = the epoch), overridden with `anchor:` (ADR-31).
+- `span(n => count) : Stream -> Stream(partitioned)` — bundles finer units (bottom-up). `n` is the ordinal of the window being generated (epoch-origin, 0-based; the epoch is the language default 1970-01-01, overridable with the member `epoch:` = ADR-31). Phase via `phase:`.
+- `split(y => [widths…]) by: u : Stream(windowed) -> Stream(partitioned)` — divides the parent window at variable widths in unit `u` (top-down). The widths sum to the parent (I5).
+
+**Among the window-generating words, the one that produces labels**:
+
+- `cycle(labels) anchor: r : Stream -> Stream(labeled)` — parallel repeating labels; produces labels, not windows. Cycle length and application target are free; `anchor:` makes the target window containing it carry the first label. The binding name reads as a point → label value function (ADR-27).
+- `cycle` also appears in the value position of `segmentBy`'s `labels:` (the cyclic form; position-dependent keyword interpretation = the unifying principle of ADR-42. ADR-47).
+
+**Public words** are the top-level bindings of a premise block (`Gregorian.month`). Boundaries are selector reuse (`monthStart = month |> first`).
+
+**Tables and external supply**:
+
+- **Table literals** (§3.8, ADR-26): a list of instants is a time-stream constant. `covering:` states the valid range; `labels:` a parallel label sequence (defining the point → label projection. ADR-30). The empty list `[]` is promoted only with a `covering:` postfix (ADR-45).
+- **`external(kind: dates | instants [, labels: [domain]] [, source: "…"]) : → Stream`** (§3.8, ADR-46): external-supply declaration = a table literal resolved at run time. Restricted to the right-hand side (head position) of a premise binding; the resolved value receives the same governance checks as a literal (the supply contract).
+
+The right-hand side of a premise binding may also be a body-layer stream expression (layer crossing; the definition of `week` is an example. §3.6).
 
 **Derived definitions**:
 
@@ -122,26 +111,29 @@ source_sha: 9a4f94009e76
 
 ## 5.4 Naming status
 
-**Settled** (2026-07-07, as of RC2, plus ADR-31/32): the window-generating words
-`grid`/`span`/`split`/`cycle`; the arguments `anchor:`/`phase:`/`by:`/`from:` (mandatory in the
-stride family); the member `epoch:` (epoch); the string literal `"…"`; derivation's `with` (all
-RC1 — no cracks in the 40-examples expressiveness verification). The base's lexical name
-**`chronos`** (`day = chronos grid 1d`; the type name is likewise `Chronos`) and the operation
-axis's **`axis:`** — the ambiguity between the two was dissolved in ADR-29, and both were
-confirmed as final names. The projection family's **`ordinalIn`/`epochOrdinal`/`snapTo`** and the
-attachment/data-side **`label:`/`labels:`/`covering:`** — confirmed at RC2, since the
-internal-design confirmation (ADR-30) and the crack hunting (`40-examples/04-projections.md`,
-F34–F42) surfaced no cracks in the names. The body layer's symbols and operator names (`|>`,
-`within`, `segmentBy`, `roll`, `shift`, `stride`, `strideBy`, `filter`, the selectors, the
-combinators) are final as well. The lexis of date and width literals was fixed in ADR-28 (§5.5).
+**Settled** (2026-07-07, as of RC2, plus ADR-31/32): first, the words settled at RC1 — no cracks in the 40-examples expressiveness verification.
 
-**Settled (2026-07-14, ADR-46 = designer ruling)**: the external-supply declaration **`external`**
+- The window-generating words `grid`/`span`/`split`/`cycle`.
+- The arguments `anchor:`/`phase:`/`by:`/`from:` (mandatory in the stride family) and the member `epoch:` (epoch).
+- The string literal `"…"` and derivation's `with`.
+
+Words confirmed as final names through ADR-29/30:
+
+- The base's lexical name **`chronos`** (`day = chronos grid 1d`; the type name is likewise `Chronos`) and the operation axis's **`axis:`**. The ambiguity between the two was dissolved in ADR-29, and both were confirmed as final names.
+- The projection family's **`ordinalIn`/`epochOrdinal`/`snapTo`** and the attachment/data-side **`label:`/`labels:`/`covering:`**. Confirmed at RC2, since the internal-design confirmation (ADR-30) and the crack hunting (`40-examples/04-projections.md`, F34–F42) surfaced no cracks in the names.
+
+The body layer's symbols and the lexis are likewise settled.
+
+- The body layer's symbols and operator names (`|>`, `within`, `segmentBy`, `roll`, `shift`, `stride`, `strideBy`, `filter`, the selectors, the combinators) are final.
+- The lexis of date and width literals was fixed in ADR-28 (§5.5).
+
+**Settled (2026-07-14, ADR-46)**: the external-supply declaration **`external`**
 (the rival candidate `socket` was rejected because it would be the same spelling with a different
 sense as the "socket" metaphor of ADR-15 in the English-language documents) and the kind values
 **`dates`/`instants`** (consistent in feel with `everyInstant` and the date literal; a sweep
 confirmed no collisions with existing identifiers).
 
-**Settled (2026-07-09, the F51 batch confirmation = designer ruling)**: `nonWorking` (the reserved
+**Settled (2026-07-09, the F51 batch confirmation)**: `nonWorking` (the reserved
 public word for entities; §3.9), `coincides` (the window-membership predicate; §4.9 — the rival
 candidates `hits`/`anyIn`/`sharesWindow` were rejected), `rebase` (re-anchoring; §4.4 — the rival
 candidates `relabel`/`sameDate` were rejected), and `bizOpen`/`bizClose`/`isOpen` (the standard
@@ -151,78 +143,69 @@ derivations; §3.9.1) are **confirmed as final names unchanged**. The business-h
 same-name bindings; ADR-41 revised). All have seen live use (16–35 files) with no cracks in the
 names.
 
-**Final (2026-07-26, designer ruling — the last placeholder resolved)**: the window-boundary
-phase-shift sugar is **`rephase`** (formerly the placeholder `shiftBoundary`). The name matches the
-expansion's substance (replacing `span`'s `phase:`) and is symmetric with `rebase` (re-anchor) and
-`anchor:` (the real day that pins a phase) in the vocabulary family. Rejected candidates: promoting
-`shiftBoundary` (same stem as the point transform `shift` despite being a different thing; 13
-characters), `shiftPhase` (the stem confusion remains), `offsetBoundary`/`moveBoundary` (new stems).
-The word `boundary` is reserved for a possible future operator handling variable-`k` pairs (§3.7,
-out of scope). **With this, every word bears its official name — no placeholders remain** (the
-history is CHANGELOG addendum 11).
-Addendum (2026-08-17, ADR-49/50): the later **`take`** (the stride family's third word) was
-settled after a naming comparison (`first(n, from:)` collides with the window selector `first` —
-rejected). The premise public word **`hour`** (ADR-50) sits outside the vocabulary table (public
-words are settled in one batch at 1.0).
-Addendum (2026-08-21, ADR-51/52): **`takeLast`** (the stride family's fourth word; anchor
-`until:`) was settled after a naming comparison (`take(n, until:)` = meaning inverted by one
-named arg on the same word; `last(n,…)` = selector collision; `recent` = a ring of built-in
-"now" — all rejected). The stdlib sugar **`at`** (ADR-51) is on the public-word side
-(`dailyAt` = generator misreading; `atTime` = doubly expressed with the T prefix — rejected).
+**Final (2026-07-26, the last placeholder resolved)**: the window-boundary phase-shift sugar is **`rephase`** (formerly the placeholder `shiftBoundary`). **With this, every word bears its official name — no placeholders remain** (the history is CHANGELOG addendum 11).
+
+- Rationale for the name: it matches the expansion's substance (replacing `span`'s `phase:`) and is symmetric with `rebase` (re-anchor) and `anchor:` (the real day that pins a phase) in the vocabulary family.
+- Rejected candidates: promoting `shiftBoundary` (same stem as the point transform `shift` despite being a different thing; 13 characters), `shiftPhase` (the stem confusion remains), `offsetBoundary`/`moveBoundary` (new stems).
+- The word `boundary` is reserved for a possible future operator handling variable-`k` pairs (§3.7, out of scope).
+
+Addendum (2026-08-17, ADR-49/50): words settled later.
+
+- **`take`** (the stride family's third word) was settled after a naming comparison (`first(n, from:)` collides with the window selector `first` — rejected).
+- The premise public word **`hour`** (ADR-50) sits outside the vocabulary table (public words are settled in one batch at 1.0).
+
+Addendum (2026-08-21, ADR-51/52): words settled later.
+
+- **`takeLast`** (the stride family's fourth word; anchor `until:`) was settled after a naming comparison (`take(n, until:)` = meaning inverted by one named arg on the same word; `last(n,…)` = selector collision; `recent` = a ring of built-in "now" — all rejected).
+- The stdlib sugar **`at`** (ADR-51) is on the public-word side (`dailyAt` = generator misreading; `atTime` = doubly expressed with the T prefix — rejected).
 
 ## 5.5 Lexis (ADR-28)
 
-- **Date literals**: `YYYY-MM-DD` (day) and `YYYY-MM-DDThh:mm(:ss(.f+)?)?` (with time of day).
-  **They carry no TZ specifier** — the anchor is struck by the in-scope premise's `tz:` (I6). That
-  the same literal denotes different points on the base under different premises is by design.
-  **Out-of-range date parts are lexical errors** (ADR-43 = F66 (a)): months are 01..12, and days
-  only those that exist under the month and leap-year rules (proleptic Gregorian,
-  premise-independent) — `2026-02-30` is rejected at the lexical layer (no silent rollover). The
-  time part's digit ranges are `hh` = 00..23 and `mm`/`ss` = 00..59 (**`23:59:60` is a lexical
-  error** = leap seconds are out of scope. ADR-33). A timed literal that falls into a DST gap or
-  overlap of the in-scope tz is an error (the "exists and is unique" requirement. ADR-33 —
-  relative to tz data, hence not necessarily static). In the reference implementation the seconds
-  fraction has at most three digits (1 ms): any non-zero digit beyond the third is a lexical error
-  (no silent rounding; the time axis itself is continuous, and 1 ms is the resolution of the
-  reference implementation — the same holds for standalone time literals).
-- **Standalone time literals** (ADR-51): `Thh:mm(:ss(.f+)?)?` — a wall-clock time with no date
-  part. The value is a time of day; it materializes into an instant **only in the
-  `strideBy(1d, from:)` position** (anchored on the epoch anchor day 1970-01-01 in the resident
-  tz = the origin of the wall-clock tick; the stdlib sugar `at` is the main consumer — and **its
-  argument is restricted to this lexeme** 〈a dated anchor means forward-only omission, windowed
-  input means dropped windows — both guided static errors. ADR-51 addendum〉. Other point
-  positions and other widths are guided static errors — never silently pinned to the epoch day).
-  The time digits obey the same ranges as date literals. **T-prefixed form only** — a bare
-  `hh:mm` would collide with legal ternary expressions (`cond ? 10:30`), so it is not a lexeme.
-  Malformed forms after `T\d\d:` are guided lexical errors (never silently read as identifiers).
-- **String literals**: from `"` to the next `"` (no newlines inside; no escape sequences = strings
-  containing quotes are a future extension. ADR-32). Used as the member values of `tz:` and
-  `source:`. The value domain of `tz:` is IANA tzdb region identifiers, fixed-offset notation, and
-  `"UTC"` (ADR-33). **Fixed-offset notation admits only the strict canonical form** (ADR-43 =
-  F66 (b)): `"±HH:MM"` (zero-padding mandatory; HH = 00..14, MM = 00..59). The likes of `"+9:00"`,
-  `"+0900"`, `"Z"`, and `"UTC+9"` are lexical errors (the uniqueness that lets tz-name equality be
-  literal-spelling equality — ADR-36).
-- **Width literals**: a `number + unit` sequence. `d` = civil day (a conventional width);
-  `h`/`m`/`s` = elapsed time. Compounds (`24h39m35.244s`) exist within elapsed time only. Mixing
-  civil time and elapsed time (`1d12h`) is a static error (a width straddling the convention sets
-  of ADR-12 is undefined). **The number of civil days is an integer** — `1.5d` and `0.5d` are
-  static errors (a civil day is a conventional width of 23–25 hours, and a fraction of it is not
-  defined; write half a day as elapsed time, `12h`). In the reference implementation an elapsed
-  width is a whole number of milliseconds (`0.0004s` is a static error — no silent rounding).
-- **Numbers**: integers and decimals. **Identifiers and enumeration labels**: Unicode letters are
-  allowed (kanji labels such as `甲` and `子` are fine). The reserved symbols
-  (`|> . | & \ = => < > [ ] ( ) { } : , ? @ #`) and whitespace cannot appear in identifiers.
-  Label equality is **textual**: an identifier label and a string literal with the same text
-  (`立春` and `"立春"`) are equal. However, **only an identifier declaration in label position
-  introduces the name into the vocabulary** — referencing a string-declared label with a bare
-  identifier is an "unresolved name". Declare labels in identifier form (the native role of
-  string literals is the value of `tz:` and `source:` — ADR-32).
-- **Comments**: from `#` to the end of the line.
-- **Statement separation and continuation** (ADR-44): statements (bindings, premise members, body
-  expressions) are separated by newlines — except that (1) a newline while parentheses or brackets
-  remain open, and (2) a line ending or beginning with the stage connection `|>` or a combinator `|`,
-  `&`, `\`, continue the previous line (unambiguous, since a statement cannot begin with a
-  combinator). There is no continuation symbol.
+**Date literals**: `YYYY-MM-DD` (day) and `YYYY-MM-DDThh:mm(:ss(.f+)?)?` (with time of day). **They carry no TZ specifier** — the anchor is struck by the in-scope premise's `tz:` (I6).
+
+- That the same literal denotes different points on the base under different premises is by design.
+- **Out-of-range date parts are lexical errors** (ADR-43 = F66 (a)): months are 01..12, and days only those that exist under the month and leap-year rules (proleptic Gregorian, premise-independent). `2026-02-30` is rejected at the lexical layer (no silent rollover).
+
+Rules for the time part:
+
+- The digit ranges are `hh` = 00..23 and `mm`/`ss` = 00..59. **`23:59:60` is a lexical error** = leap seconds are out of scope (ADR-33).
+- A timed literal that falls into a DST gap or overlap of the in-scope tz is an error (the "exists and is unique" requirement. ADR-33 — relative to tz data, hence not necessarily static).
+- In the reference implementation the seconds fraction has at most three digits (1 ms). Any non-zero digit beyond the third is a lexical error (no silent rounding; the time axis itself is continuous, and 1 ms is the resolution of the reference implementation — the same holds for standalone time literals).
+
+**Standalone time literals** (ADR-51): `Thh:mm(:ss(.f+)?)?` — a wall-clock time with no date part. The value is a time of day; it materializes into an instant **only in the `strideBy(1d, from:)` position**.
+
+- The anchor of that materialization is the epoch anchor day 1970-01-01 in the resident tz = the origin of the wall-clock tick.
+- The stdlib sugar `at` is the main consumer — and **its argument is restricted to this lexeme** 〈a dated anchor means forward-only omission, windowed input means dropped windows — both guided static errors. ADR-51 addendum〉.
+- Other point positions and other widths are guided static errors — never silently pinned to the epoch day.
+- The time digits obey the same ranges as date literals.
+- **T-prefixed form only** — a bare `hh:mm` would collide with legal ternary expressions (`cond ? 10:30`), so it is not a lexeme. Malformed forms after `T\d\d:` are guided lexical errors (never silently read as identifiers).
+
+**String literals**: from `"` to the next `"` (no newlines inside; no escape sequences = strings containing quotes are a future extension. ADR-32). Used as the member values of `tz:` and `source:`.
+
+- The value domain of `tz:` is IANA tzdb region identifiers, fixed-offset notation, and `"UTC"` (ADR-33).
+- **Fixed-offset notation admits only the strict canonical form** (ADR-43 = F66 (b)): `"±HH:MM"` (zero-padding mandatory; HH = 00..14, MM = 00..59).
+- The likes of `"+9:00"`, `"+0900"`, `"Z"`, and `"UTC+9"` are lexical errors (the uniqueness that lets tz-name equality be literal-spelling equality — ADR-36).
+
+**Width literals**: a `number + unit` sequence. `d` = civil day (a conventional width); `h`/`m`/`s` = elapsed time.
+
+- Compounds (`24h39m35.244s`) exist within elapsed time only. Mixing civil time and elapsed time (`1d12h`) is a static error (a width straddling the convention sets of ADR-12 is undefined).
+- **The number of civil days is an integer** — `1.5d` and `0.5d` are static errors (a civil day is a conventional width of 23–25 hours, and a fraction of it is not defined; write half a day as elapsed time, `12h`).
+- In the reference implementation an elapsed width is a whole number of milliseconds (`0.0004s` is a static error — no silent rounding).
+
+**Numbers**: integers and decimals.
+
+**Identifiers and enumeration labels**: Unicode letters are allowed (kanji labels such as `甲` and `子` are fine). The reserved symbols (`|> . | & \ = => < > [ ] ( ) { } : , ? @ #`) and whitespace cannot appear in identifiers.
+
+- Label equality is **textual**: an identifier label and a string literal with the same text (`立春` and `"立春"`) are equal.
+- However, **only an identifier declaration in label position introduces the name into the vocabulary** — referencing a string-declared label with a bare identifier is an "unresolved name".
+- Declare labels in identifier form (the native role of string literals is the value of `tz:` and `source:` — ADR-32).
+
+**Comments**: from `#` to the end of the line.
+
+**Statement separation and continuation** (ADR-44): statements (bindings, premise members, body expressions) are separated by newlines. There is no continuation symbol.
+
+- (1) A newline while parentheses or brackets remain open continues the previous line.
+- (2) A line ending or beginning with the stage connection `|>` or a combinator `|`, `&`, `\` also continues the previous line (unambiguous, since a statement cannot begin with a combinator).
 
 ## 5.6 Grammar (EBNF)
 
@@ -348,19 +331,18 @@ digits         = digit , { digit } ;
 letter         = ? a Unicode letter (category Letter; kanji allowed; no digits or symbols) ? ;
 ```
 
-Note: enumeration labels (`Mon`, `甲`, `Following`) are lexically identical to `name` and are
-distinguished by semantics (resolution against the in-scope premise). `table-literal` and
-`list-literal` share one syntax, and the type is decided by the elements (ADR-26. **Zero elements
-are decided by the presence of `covering:`** — with covering = an empty table, without = an empty
-value list. ADR-45). The label sequence of `labels:` has the same length as the instant sequence
-(a semantic check. ADR-30; for the empty table only `labels: []` is legal). Operator precedence is
-defined exactly by the nesting of the production rules above (the combinators share one precedence
-level and are left-associative; a check imposes the convention that mixing `&` requires
-parentheses. §4.5). A preamble is grammatically an independent statement, and bindings and body
-expressions may be listed under it (the holiday cascade of §7.5 is an example). Its effect lasts
-until the next preamble (§3.2) — a scoping rule, not grammar. A body expression that reaches
-evaluation with a dangerous member unresolved is a static error (§3.3 — likewise a governance
-check, not grammar).
+Notes:
+
+- Enumeration labels (`Mon`, `甲`, `Following`) are lexically identical to `name` and are distinguished by semantics (resolution against the in-scope premise).
+- `table-literal` and `list-literal` share one syntax, and the type is decided by the elements (ADR-26). **Zero elements are decided by the presence of `covering:`**: with covering = an empty table, without = an empty value list (ADR-45).
+- The label sequence of `labels:` has the same length as the instant sequence (a semantic check. ADR-30; for the empty table only `labels: []` is legal).
+
+Operator precedence is defined exactly by the nesting of the production rules above. The combinators share one precedence level and are left-associative; a check imposes the convention that mixing `&` requires parentheses (§4.5).
+
+Rules that belong to scoping and to governance checks rather than to the grammar:
+
+- A preamble is grammatically an independent statement, and bindings and body expressions may be listed under it (the holiday cascade of §7.5 is an example). Its effect lasts until the next preamble (§3.2).
+- A body expression that reaches evaluation with a dangerous member unresolved is a static error (§3.3).
 
 ## 5.7 Open questions
 

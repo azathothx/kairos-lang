@@ -2,6 +2,9 @@
 
 **分類**: リテラル（premise 層が主戦場） ／ 形: `[時点, …] covering: 範囲 labels: [ラベル, …]`・空形 `[] covering: 範囲`（ADR-45） ／ `covering:`・`labels:` は確定（RC2・spec §5.4）
 
+<p align="center"><img src="../assets/figures/covering-three-ways.ja.svg" width="880"
+  alt="covering の 3 つの書き方を時間軸の帯で比べる。2027 年 1 月を評価するとき、covering: 2027..2027 は偽の安心（残走路 355 日）、covering: .. は残走路 ∞ で監視が効かない、covering: 2026-08-04..2026-08-04 だけが範囲外の註釈と残走路 −159 日を返す。"></p>
+
 ## 意味
 
 **時点リテラルのリストは時間ストリーム定数に昇格する**（ADR-26）。周期規則から生成できない列——
