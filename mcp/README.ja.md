@@ -16,11 +16,6 @@ English: [README.md](README.md)
 
 Node.js 20 以上。サーバは stdio で MCP を話します。
 
-> **状態: まだ npm にありません。** `kairos-lang-mcp` の初回公開は `kairos-lang` 1.0.9 の数日後です（同じ版番号）。
-> それまでは、このリポジトリから動かしてください: `cd mcp && npm install && npm run build && npm test`。
-> MCP クライアントには `npx -y kairos-lang-mcp` の代わりに `node <repo>/mcp/dist/bin.js` を指定します。
-> （この注記は公開時に消えます。）
-
 ```sh
 npx -y kairos-lang-mcp          # stdio で起動（MCP クライアントが代わりに実行する形）
 npx -y kairos-lang-mcp --version

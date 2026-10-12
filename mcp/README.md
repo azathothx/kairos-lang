@@ -16,11 +16,6 @@ never as silently dropped points.
 
 Node.js 20 or later. The server speaks MCP over stdio.
 
-> **Status: not on npm yet.** The first release of `kairos-lang-mcp` follows `kairos-lang` 1.0.7 by a few
-> days (same version number). Until then, run it from this repository: `cd mcp && npm install && npm run build
-> && npm test`, and point your MCP client at `node <repo>/mcp/dist/bin.js` instead of `npx -y kairos-lang-mcp`.
-> (This note goes away when the package is published.)
-
 ```sh
 npx -y kairos-lang-mcp          # start on stdio (what an MCP client runs for you)
 npx -y kairos-lang-mcp --version

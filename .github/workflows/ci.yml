@@ -62,3 +62,23 @@ jobs:
           ./node_modules/.bin/kairos --version
           ./node_modules/.bin/kairos next -n 3 --json "${GITHUB_WORKSPACE}/impl/examples/payday.kairos" > out.json
           node -e "const r=require('./out.json'); if(r.found!==3||r.results[0].points.length!==3){console.error(JSON.stringify(r).slice(0,300));process.exit(1)}; console.log('ok', r.version, r.results[0].dates.join(' '))"
+
+  # kairos-lang-mcp（mcp/）の検査（2026-10-12 新設＝npm 初公開と同時）: lock から入れて build（reference 日英と llms.txt を docs/ に束ねる）→
+  # typecheck → vitest（当て先は同居する ../impl/src＝いまの impl と同じ契約を検査する）。配布物の実走は pack-install と同型で --version を見る。
+  mcp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: node dist/bin.js --version
+      - run: npm run typecheck
+      - run: npx vitest run --testTimeout=90000

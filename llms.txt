@@ -33,6 +33,9 @@ Key facts:
 - Identity key (1.0.9): `--json` results[].uid is the expression's fingerprint (FNV-1a 64 over its index, source text and tz;
   12 hex digits), identical to the UID of its recurring VEVENT in `--ics-series`; one-event-per-point UIDs replace
   '-series@' with '-<ms>@'. A fingerprint, not a durable identity: keep your own record id, use uid to tell "same definition".
+- MCP server (1.0.9): `npx -y kairos-lang-mcp` (npm package kairos-lang-mcp, same version as kairos-lang) speaks MCP over stdio
+  with four tools — kairos_list, kairos_next, kairos_validate, kairos_reference; `tz` is required on every call; results are the
+  same CliReport JSON as `--json`. Source and setup: https://github.com/azathothx/kairos-lang/tree/main/mcp
 - Calendar export (1.0.7): `--ics` writes the result as iCalendar (RFC 5545) — one VEVENT per point; day-granular
   points are all-day events when `--tz` equals the definition's premise tz, timed points are zero-length events
   with a VALARM at the point itself, out-of-coverage intervals appear as events, and no RRULE is emitted (expanded
