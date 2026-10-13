@@ -106,7 +106,7 @@ param(
   [Parameter(Mandatory = $true)] [string] $Command,
   [Parameter(ValueFromRemainingArguments = $true)] [string[]] $CommandArgs = @()
 )
-$kairos = 'kairos'                      # SYSTEM で動かすなら kairos.cmd の絶対パスに（落とし穴の表）
+$kairos = 'kairos'                      # SYSTEM で動かすなら C:\kairos に入れた kairos.cmd の絶対パスに（管理者の型）
 $tz = 'Asia/Tokyo'                      # 「今日」をどこの暦で読むか。機械の tz 設定と揃える
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8   # kairos の出力は UTF-8
 
@@ -155,11 +155,48 @@ schtasks /Create /SC DAILY /ST 08:30 /TN "Kairos\PatchTuesday" /TR "powershell -
 
 - `/RU` を省くと、登録した人のアカウントで動き、パスワードは聞かれない。ただし**ログオン中だけ動く**。ログオンしていなくても動かすなら `/RU <ユーザー> /RP <パスワード>` を付ける。
 - ノート PC では、既定で「コンピューターを AC 電源で使用している場合のみタスクを開始する」になる。バッテリーでも動かすなら、タスク スケジューラでタスクを開き「条件」タブでこの項目を外す。
-- `/RU SYSTEM` はパスワード不要だが、`kairos` のパスが通っていない。スクリプトの `$kairos` を `kairos.cmd` の絶対パス（`%APPDATA%\npm\kairos.cmd`）にする。
+- ログオンの有無に関わらず動かすなら、下の「管理者の型」で SYSTEM として登録する。
 - `/RL HIGHEST` は、通知スクリプトが管理者権限を要るときだけ。
 
 すぐ試すなら `schtasks /Run /TN "Kairos\PatchTuesday"`。結果は `schtasks /Query /TN "Kairos\PatchTuesday" /V /FO LIST` の
 「前回の結果」で見る（0 が成功、1 がエラー）。
+
+### 管理者の型——SYSTEM で、止まらないコンピューターで
+
+通知はログオンの有無に関わらず出てほしい。**常時動いているコンピューター（サーバーなど）で、SYSTEM アカウントのタスクとして登録する**のが確実（2026-10-13 実測）。
+
+前提:
+
+- Node.js は全ユーザー向けに入れる（公式インストーラーの既定）。SYSTEM からも `node` が見える。
+- Kairos は SYSTEM が読める場所に入れる。利用者のフォルダ（`%APPDATA%\npm`）の `kairos` は SYSTEM から使えず、タスクが失敗する。
+
+```powershell
+npm install --prefix C:\kairos kairos-lang
+# run-if-today.ps1 の 1 行をこう書き換える
+$kairos = 'C:\kairos\node_modules\.bin\kairos.cmd'
+```
+
+登録（管理者の PowerShell で。`schtasks` の代わりに ScheduledTasks モジュールを使う）:
+
+```powershell
+$task = @{ TaskName = 'PatchTuesday'; TaskPath = '\Kairos\' }
+$argument = '-NoProfile -ExecutionPolicy Bypass -File "C:\kairos\run-if-today.ps1" -Definition "C:\kairos\patch.kairos" -Command "C:\kairos\notify.ps1"'
+
+Get-ScheduledTask @task -ErrorAction Ignore | Unregister-ScheduledTask -Confirm:$false
+Register-ScheduledTask @task `
+  -Action    (New-ScheduledTaskAction -Execute '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe' -Argument $argument) `
+  -Trigger   (New-ScheduledTaskTrigger -Daily -At '08:30') `
+  -Principal (New-ScheduledTaskPrincipal -UserId 'NT AUTHORITY\SYSTEM' -LogonType ServiceAccount) `
+  -Settings  (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -DontStopOnIdleEnd)
+```
+
+- SYSTEM はパスワード不要で、ログオンしていなくても動く。電源の条件もここで外している。
+- 通知スクリプトも SYSTEM で動くこと（メールの資格情報・ネットワークの到達性）を確かめる。
+- SYSTEM での予行は、`$argument` を次の形に一時的に差し替えて登録し、`Start-ScheduledTask @task` で走らせて「前回の結果」を見る。終わったら元の `$argument` で登録し直す。
+
+```powershell
+$argument = '-NoProfile -ExecutionPolicy Bypass -Command $env:KAIROS_TODAY = ''2026-10-14''; . "C:\kairos\run-if-today.ps1" -Definition "C:\kairos\patch.kairos" -Command "C:\kairos\notify.ps1"'
+```
 
 ## カレンダーに入れる——Outlook
 
@@ -175,11 +212,16 @@ cmd /c "kairos list --from 2026-10-01 --to 2027-01-01 --tz Asia/Tokyo --ics C:\k
 - 時刻付きの点は、その時刻に通知が出る 0 分の予定。空き時間は塞がない。この定義では水曜の 2 時か 3 時に通知が出る。
 - 期間に点が 1 つも無いと、ファイルは書かれず終了コード 2。
 
-Outlook への取り込み:
+Outlook への取り込み（2026-10-13 に新しい Outlook と従来の Outlook で実測）:
 
-- 新しい Outlook では「予定表を追加」→「ファイルからアップロード」→「参照」で `.ics` を選び、入れる先の予定表を選んで「予定表に追加」。`.ics` をダブルクリックしても同じ画面が開く。
-- 取り込んだ予定の本文には、点の日時と式が入る。どの定義から来た予定かを後から辿れる。
-- `--ics-series`（1 式を 1 つの繰り返し予定にまとめる形）は Google／Apple カレンダー向け。Outlook は繰り返しの日付一覧（RDATE）を読まないので `--ics` を使う。
+- 新しい Outlook: 「予定表を追加」→「ファイルからアップロード」→「参照」で `.ics` を選び、入れる先の予定表を選んで「予定表に追加」。`.ics` をダブルクリックしても同じ画面が開く。
+- 従来の Outlook（クラシック）: `.ics` をダブルクリックすると「新しい予定表として開くか、使用している予定表にインポートするか」を聞かれる。自分の予定表に入れるなら「インポート」。
+- どちらも CLI の出力どおりの日時に入る。本文には点の日時と式が入り、どの定義から来た予定かを後から辿れる。
+
+**`--ics-series` は Outlook では取り込めない**（同日実測）。
+
+- 新しい Outlook は「予定表をインポートできませんでした」と出る。従来の Outlook はエラーも出さずに何も入らない。
+- 1 式を 1 つの繰り返し予定にまとめる `--ics-series` は Google カレンダー向け。Outlook には `--ics` を使う。
 - 詳細は [リファレンス実装の README](../impl/README.md) の `--ics` 節。
 
 **通知を朝にしたいなら、定義の側で時刻を貼り替える**。公開の点は太平洋時間の前提の中に置き、東京の前提から参照して
@@ -215,7 +257,8 @@ PT.release |> snapTo(day) |> at(T09:00)
 | PowerShell 5.1 の `>` | UTF-16 のファイルになり、他のツールが読めない | `cmd /c "kairos … > out.json"`。版を問わず確実 |
 | 日本語が化ける | PowerShell の既定の文字コードで UTF-8 を読んでいる | 先に `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` |
 | 実行ポリシー | `.ps1` が「スクリプトの実行が無効」で止まる | `powershell -ExecutionPolicy Bypass -File …`。そのプロセスだけに効く |
-| タスクの実行ユーザー | `/RU` 省略は登録した人のアカウントで、ログオン中だけ動く。SYSTEM は `kairos` のパスが通らない | 無人なら `/RU` と `/RP`。SYSTEM なら `$kairos` を `kairos.cmd` の絶対パスに |
+| タスクの実行ユーザー | `/RU` 省略は登録した人のアカウントで、ログオン中だけ動く。SYSTEM は利用者のフォルダの `kairos` を使えない | 常時動かすなら「管理者の型」（SYSTEM・`C:\kairos` に入れて絶対パス） |
+| Outlook に `--ics-series` | 新しい Outlook はエラー、従来の Outlook は黙って 0 件 | `--ics` を使う |
 | `--from`／`--to` に時刻 | 「日付は YYYY-MM-DD」のエラー | 日付だけを書く。`--to` の日は含まない |
 | 祝日表の覆域切れ | `# ⚠ 範囲外` が出て残走路がマイナス。点は祝日を知らずに出る | 表を延ばす。`covering:` の終端も |
 | ノート PC のバッテリー | 既定では AC 電源でないと開始しない。その日の通知が出ないまま過ぎる | タスクの「条件」タブで「AC 電源で使用している場合のみ」を外す |

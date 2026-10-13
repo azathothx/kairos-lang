@@ -1,5 +1,5 @@
 ---
-source_sha: 62283ab78a8e
+source_sha: c4fb8f37dd7b
 ---
 
 # Kairos for Windows administrators — PowerShell and Task Scheduler, nothing else
@@ -114,7 +114,7 @@ param(
   [Parameter(Mandatory = $true)] [string] $Command,
   [Parameter(ValueFromRemainingArguments = $true)] [string[]] $CommandArgs = @()
 )
-$kairos = 'kairos'                      # when running as SYSTEM, use the absolute path of kairos.cmd (see the pitfalls table)
+$kairos = 'kairos'                      # when running as SYSTEM, use the absolute path of kairos.cmd under C:\kairos (the administrator's pattern)
 $tz = 'Asia/Tokyo'                      # whose calendar "today" is read on; keep it equal to the machine's time-zone setting
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8   # kairos writes UTF-8
 
@@ -163,11 +163,48 @@ Run-as account and power (measured 2026-10-13):
 
 - Without `/RU` it runs as the registering account and no password is asked, but **it runs only while that user is logged on**. Unattended: `/RU <user> /RP <password>`.
 - On a laptop the default is "Start the task only if the computer is on AC power". To run on battery too, open the task in Task Scheduler and clear it on the Conditions tab.
-- `/RU SYSTEM` needs no password but cannot find `kairos`: set `$kairos` to the full path of `kairos.cmd` (`%APPDATA%\npm\kairos.cmd`).
+- To run whether or not anyone is logged on, register it as SYSTEM with the administrator's pattern below.
 - `/RL HIGHEST` only if the notification script needs admin rights.
 
 To try it right away: `schtasks /Run /TN "Kairos\PatchTuesday"`. The result is "Last Result" in
 `schtasks /Query /TN "Kairos\PatchTuesday" /V /FO LIST` (0 is success, 1 is an error).
+
+### The administrator's pattern — as SYSTEM, on a machine that stays on
+
+Notifications should go out whether or not anyone is logged on. **Register the task as SYSTEM on a machine that is always running (a server, say)** — measured 2026-10-13.
+
+Prerequisites:
+
+- Install Node.js for all users (the official installer's default), so SYSTEM can find `node` too.
+- Install Kairos where SYSTEM can read it. A `kairos` in a user's folder (`%APPDATA%\npm`) is not usable from SYSTEM, and the task fails.
+
+```powershell
+npm install --prefix C:\kairos kairos-lang
+# change this one line in run-if-today.ps1
+$kairos = 'C:\kairos\node_modules\.bin\kairos.cmd'
+```
+
+Register it (in an administrator PowerShell, using the ScheduledTasks module instead of `schtasks`):
+
+```powershell
+$task = @{ TaskName = 'PatchTuesday'; TaskPath = '\Kairos\' }
+$argument = '-NoProfile -ExecutionPolicy Bypass -File "C:\kairos\run-if-today.ps1" -Definition "C:\kairos\patch.kairos" -Command "C:\kairos\notify.ps1"'
+
+Get-ScheduledTask @task -ErrorAction Ignore | Unregister-ScheduledTask -Confirm:$false
+Register-ScheduledTask @task `
+  -Action    (New-ScheduledTaskAction -Execute '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe' -Argument $argument) `
+  -Trigger   (New-ScheduledTaskTrigger -Daily -At '08:30') `
+  -Principal (New-ScheduledTaskPrincipal -UserId 'NT AUTHORITY\SYSTEM' -LogonType ServiceAccount) `
+  -Settings  (New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -DontStopOnIdleEnd)
+```
+
+- SYSTEM needs no password and runs whether or not anyone is logged on. The power conditions are cleared here as well.
+- Check that the notification script also works as SYSTEM (mail credentials, network reachability).
+- To rehearse as SYSTEM, register with `$argument` temporarily set to the form below, run it with `Start-ScheduledTask @task`, and read "Last Result". Then register again with the original `$argument`.
+
+```powershell
+$argument = '-NoProfile -ExecutionPolicy Bypass -Command $env:KAIROS_TODAY = ''2026-10-14''; . "C:\kairos\run-if-today.ps1" -Definition "C:\kairos\patch.kairos" -Command "C:\kairos\notify.ps1"'
+```
 
 ## Putting it in a calendar — Outlook
 
@@ -183,11 +220,16 @@ What is in the file:
 - A point with a time becomes a zero-minute event with a reminder at that time; it does not block free/busy time. Here the reminder fires on Wednesday at 2 or 3 am.
 - If the range has no points, no file is written and the exit code is 2.
 
-Importing into Outlook:
+Importing into Outlook (measured 2026-10-13 in the new Outlook and in classic Outlook):
 
-- In the new Outlook: "Add calendar" → "Upload from file" → "Browse" to pick the `.ics`, choose the target calendar, then "Add to calendar". Double-clicking the `.ics` opens the same screen.
-- Each imported event carries the point's date-time and the expression in its body, so you can trace which definition it came from.
-- `--ics-series` (one recurring event per expression) is for Google and Apple Calendar. Outlook does not read the recurrence date list (RDATE), so use `--ics`.
+- New Outlook: "Add calendar" → "Upload from file" → "Browse" to pick the `.ics`, choose the target calendar, then "Add to calendar". Double-clicking the `.ics` opens the same screen.
+- Classic Outlook: double-clicking the `.ics` asks whether to open it as a new calendar or import it into the calendar in use. To put it into your own calendar, choose "Import".
+- Both place the events at the times the CLI printed. Each event body carries the point's date-time and the expression, so you can trace which definition it came from.
+
+**Outlook cannot import `--ics-series`** (measured the same day).
+
+- The new Outlook says it could not import the calendar. Classic Outlook shows no error and imports nothing.
+- `--ics-series`, which groups an expression into one recurring event, is for Google Calendar. Use `--ics` for Outlook.
 - Details: the `--ics` section of the [reference implementation README](../../impl/README.md) (Japanese).
 
 **To get the reminder in the morning, move the time in the definition.** Keep the release point inside the Pacific Time
@@ -223,7 +265,8 @@ PT.release |> snapTo(day) |> at(T09:00)
 | `>` in PowerShell 5.1 | The file is UTF-16 and other tools cannot read it | `cmd /c "kairos … > out.json"` — works in every version |
 | Garbled non-ASCII text | PowerShell decodes UTF-8 with its default code page | Run `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` first |
 | Execution policy | The `.ps1` stops with "running scripts is disabled" | `powershell -ExecutionPolicy Bypass -File …` — affects that process only |
-| The task's user | Without `/RU` it is the registering account and runs only while logged on. SYSTEM cannot find `kairos` on its PATH | Unattended: `/RU` and `/RP`. SYSTEM: set `$kairos` to the absolute path of `kairos.cmd` |
+| The task's user | Without `/RU` it is the registering account and runs only while logged on. SYSTEM cannot use a `kairos` in a user's folder | To run always, use the administrator's pattern (SYSTEM, installed under `C:\kairos`, absolute path) |
+| `--ics-series` into Outlook | New Outlook shows an error; classic Outlook silently imports nothing | Use `--ics` |
 | A time in `--from`/`--to` | The error "日付は YYYY-MM-DD" (dates only) | Write dates only. The `--to` day is not included |
 | Holiday table runs out | `# ⚠ 範囲外` appears and the runway is negative. Points come out without holidays | Extend the table, including the end of `covering:` |
 | Laptop on battery | By default the task does not start unless on AC power, so that day's notification is silently skipped | Clear "only if the computer is on AC power" on the task's Conditions tab |
