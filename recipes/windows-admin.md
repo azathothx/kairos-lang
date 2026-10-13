@@ -150,7 +150,11 @@ schtasks /Create /SC DAILY /ST 08:30 /TN "Kairos\PatchTuesday" /TR "powershell -
 ```
 
 - 書式は [Microsoft Learn: schtasks create](https://learn.microsoft.com/windows-server/administration/windows-commands/schtasks-create) のとおり。`/SD`（開始日）は地域設定の日付形式に依存するので使わない。
-- `/RU` を省くと、登録した人のアカウントで動く。ログオンしていなくても動かすなら `/RU <ユーザー> /RP <パスワード>` を付ける。
+
+実行ユーザーと電源（2026-10-13 実測）:
+
+- `/RU` を省くと、登録した人のアカウントで動き、パスワードは聞かれない。ただし**ログオン中だけ動く**。ログオンしていなくても動かすなら `/RU <ユーザー> /RP <パスワード>` を付ける。
+- ノート PC では、既定で「コンピューターを AC 電源で使用している場合のみタスクを開始する」になる。バッテリーでも動かすなら、タスク スケジューラでタスクを開き「条件」タブでこの項目を外す。
 - `/RU SYSTEM` はパスワード不要だが、`kairos` のパスが通っていない。スクリプトの `$kairos` を `kairos.cmd` の絶対パス（`%APPDATA%\npm\kairos.cmd`）にする。
 - `/RL HIGHEST` は、通知スクリプトが管理者権限を要るときだけ。
 
@@ -173,7 +177,8 @@ cmd /c "kairos list --from 2026-10-01 --to 2027-01-01 --tz Asia/Tokyo --ics C:\k
 
 Outlook への取り込み:
 
-- `.ics` をダブルクリックすると「新規として開く」か「インポート」かを聞かれる。自分の予定表に入れるなら「インポート」。
+- 新しい Outlook では「予定表を追加」→「ファイルからアップロード」→「参照」で `.ics` を選び、入れる先の予定表を選んで「予定表に追加」。`.ics` をダブルクリックしても同じ画面が開く。
+- 取り込んだ予定の本文には、点の日時と式が入る。どの定義から来た予定かを後から辿れる。
 - `--ics-series`（1 式を 1 つの繰り返し予定にまとめる形）は Google／Apple カレンダー向け。Outlook は繰り返しの日付一覧（RDATE）を読まないので `--ics` を使う。
 - 詳細は [リファレンス実装の README](../impl/README.md) の `--ics` 節。
 
@@ -210,9 +215,10 @@ PT.release |> snapTo(day) |> at(T09:00)
 | PowerShell 5.1 の `>` | UTF-16 のファイルになり、他のツールが読めない | `cmd /c "kairos … > out.json"`。版を問わず確実 |
 | 日本語が化ける | PowerShell の既定の文字コードで UTF-8 を読んでいる | 先に `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` |
 | 実行ポリシー | `.ps1` が「スクリプトの実行が無効」で止まる | `powershell -ExecutionPolicy Bypass -File …`。そのプロセスだけに効く |
-| タスクの実行ユーザー | `/RU` 省略は登録した人のアカウント。SYSTEM は `kairos` のパスが通らない | 無人なら `/RU` と `/RP`。SYSTEM なら `$kairos` を `kairos.cmd` の絶対パスに |
+| タスクの実行ユーザー | `/RU` 省略は登録した人のアカウントで、ログオン中だけ動く。SYSTEM は `kairos` のパスが通らない | 無人なら `/RU` と `/RP`。SYSTEM なら `$kairos` を `kairos.cmd` の絶対パスに |
 | `--from`／`--to` に時刻 | 「日付は YYYY-MM-DD」のエラー | 日付だけを書く。`--to` の日は含まない |
 | 祝日表の覆域切れ | `# ⚠ 範囲外` が出て残走路がマイナス。点は祝日を知らずに出る | 表を延ばす。`covering:` の終端も |
+| ノート PC のバッテリー | 既定では AC 電源でないと開始しない。その日の通知が出ないまま過ぎる | タスクの「条件」タブで「AC 電源で使用している場合のみ」を外す |
 | schtasks の `/SD` | 地域設定の日付形式に依存して失敗する | 使わない。`/SC DAILY /ST` だけで今日から始まる |
 | タスクの出力が残らない | タスク スケジューラは標準出力を保存しない | 「前回の結果」の終了コードを見る。記録が要るなら通知スクリプト側で書く |
 

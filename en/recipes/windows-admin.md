@@ -1,5 +1,5 @@
 ---
-source_sha: e4f716e2f320
+source_sha: 62283ab78a8e
 ---
 
 # Kairos for Windows administrators — PowerShell and Task Scheduler, nothing else
@@ -158,7 +158,11 @@ schtasks /Create /SC DAILY /ST 08:30 /TN "Kairos\PatchTuesday" /TR "powershell -
 ```
 
 - [Microsoft Learn: schtasks create](https://learn.microsoft.com/windows-server/administration/windows-commands/schtasks-create) has the syntax. `/SD` is not used: its date format is regional.
-- Without `/RU` it runs as the registering account. Unattended: `/RU <user> /RP <password>`.
+
+Run-as account and power (measured 2026-10-13):
+
+- Without `/RU` it runs as the registering account and no password is asked, but **it runs only while that user is logged on**. Unattended: `/RU <user> /RP <password>`.
+- On a laptop the default is "Start the task only if the computer is on AC power". To run on battery too, open the task in Task Scheduler and clear it on the Conditions tab.
 - `/RU SYSTEM` needs no password but cannot find `kairos`: set `$kairos` to the full path of `kairos.cmd` (`%APPDATA%\npm\kairos.cmd`).
 - `/RL HIGHEST` only if the notification script needs admin rights.
 
@@ -181,7 +185,8 @@ What is in the file:
 
 Importing into Outlook:
 
-- Double-clicking the `.ics` asks whether to "Open as New" or "Import". To put it into your own calendar, choose "Import".
+- In the new Outlook: "Add calendar" → "Upload from file" → "Browse" to pick the `.ics`, choose the target calendar, then "Add to calendar". Double-clicking the `.ics` opens the same screen.
+- Each imported event carries the point's date-time and the expression in its body, so you can trace which definition it came from.
 - `--ics-series` (one recurring event per expression) is for Google and Apple Calendar. Outlook does not read the recurrence date list (RDATE), so use `--ics`.
 - Details: the `--ics` section of the [reference implementation README](../../impl/README.md) (Japanese).
 
@@ -218,9 +223,10 @@ PT.release |> snapTo(day) |> at(T09:00)
 | `>` in PowerShell 5.1 | The file is UTF-16 and other tools cannot read it | `cmd /c "kairos … > out.json"` — works in every version |
 | Garbled non-ASCII text | PowerShell decodes UTF-8 with its default code page | Run `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` first |
 | Execution policy | The `.ps1` stops with "running scripts is disabled" | `powershell -ExecutionPolicy Bypass -File …` — affects that process only |
-| The task's user | Without `/RU` it is the registering account. SYSTEM cannot find `kairos` on its PATH | Unattended: `/RU` and `/RP`. SYSTEM: set `$kairos` to the absolute path of `kairos.cmd` |
+| The task's user | Without `/RU` it is the registering account and runs only while logged on. SYSTEM cannot find `kairos` on its PATH | Unattended: `/RU` and `/RP`. SYSTEM: set `$kairos` to the absolute path of `kairos.cmd` |
 | A time in `--from`/`--to` | The error "日付は YYYY-MM-DD" (dates only) | Write dates only. The `--to` day is not included |
 | Holiday table runs out | `# ⚠ 範囲外` appears and the runway is negative. Points come out without holidays | Extend the table, including the end of `covering:` |
+| Laptop on battery | By default the task does not start unless on AC power, so that day's notification is silently skipped | Clear "only if the computer is on AC power" on the task's Conditions tab |
 | `/SD` in schtasks | Fails depending on the regional date format | Do not use it. `/SC DAILY /ST` alone starts today |
 | No task output kept | Task Scheduler does not save standard output | Read the exit code in "Last Result". If you need a record, write it from the notification script |
 
