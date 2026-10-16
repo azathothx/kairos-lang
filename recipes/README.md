@@ -13,6 +13,7 @@ cron・Quartz・iCalendar RRULE で「書けない」と長く言われてきた
 | [米国の選挙日・ブラックフライデー・感謝祭の次の日曜](us-election-day-and-thanksgiving.md) | 計算で決まる日を基準にした相対日。RRULE の `BYMONTHDAY=2..8` 符号化を法律の言葉の順に |
 | [Windows Update の日（Patch Tuesday）](patch-tuesday.md) | 太平洋時間の第 2 火曜 10 時を各地の時刻で。定義は 1 つ・表示 tz だけ変える。「日本では第 2 水曜 3 時」がなぜ 10/12 か月で外れるか |
 | [Windows 管理者のための Kairos](windows-admin.md) | PowerShell とタスク スケジューラだけで動かす。定義→`list`→`--json`→毎日の判定→Outlook の .ics。開発はしない人向け |
+| [Excel の WORKDAY・EOMONTH で書きにくいスケジュール](excel-workday.md) | 月末最終営業日・25 日払い・第 10 営業日・四半期末の 3 営業日前を Excel の式と並べる。祝日表の期限切れを黙らせない。結果は TSV で Excel へ |
 
 - コード例はすべてリファレンス実装の doctest（`impl/test/doctest.test.ts`）が実行検証する。
   `# eval:` が評価範囲・`#=>` が期待値（規約は [reference](../reference/README.md#実行例の規約doctest)）。

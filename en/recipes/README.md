@@ -1,5 +1,5 @@
 ---
-source_sha: d5806d66abb8
+source_sha: 6d01d2dd8ff5
 ---
 
 # Recipes — practical forms of the schedules long said to be unwritable
@@ -22,6 +22,7 @@ first, the background after.
 | [US Election Day, Black Friday and the Sunday after Thanksgiving](us-election-day-and-thanksgiving.md) | Dates relative to a computed date; RRULE's `BYMONTHDAY=2..8` encoding written in the order the law states it |
 | [Patch Tuesday](patch-tuesday.md) | The second Tuesday at 10:00 Pacific, shown in any time zone from one definition; why "second Wednesday, 3 am" in Tokyo is wrong in 10 of 12 months |
 | [Kairos for Windows administrators](windows-admin.md) | PowerShell and Task Scheduler, nothing else: definition → `list` → `--json` → a daily check → .ics for Outlook. For people who run commands but do not write software |
+| [Schedules that are hard to write with Excel's WORKDAY and EOMONTH](excel-workday.md) | Last business day of the month, payment on the 25th, the 10th business day, three business days before quarter-end — side by side with the Excel formulas. An expired holiday table is not allowed to stay silent. Results go to Excel as TSV |
 
 - Every code example is execution-verified by the reference implementation's doctests
   (`impl/test/doctest.test.ts`). `# eval:` gives the evaluation range and `#=>` the expected
