@@ -4,11 +4,11 @@
 > that follow it (each page records its source revision as `source_sha`, and a consistency check
 > flags stale translations) ([日本語版はこちら](../../spec/README.md)).
 
-**Status: 1.0 (declared 2026-09-14; addenda through no. 26, 2026-10-10).**
+**Status: 1.0 (declared 2026-09-14; addenda through no. 27, 2026-10-16).**
 Semantics, the operator family, the grammar (EBNF, §5.6), and the lexis are frozen. **Naming is final
 for every word** — the last placeholder `shiftBoundary` was settled as **`rephase`** on 2026-07-26
 (see §5.4). Expressiveness is validated against 20 well-known schedule families
-(`design/40-examples/`) and by the reference implementation (`impl/`, 784 tests). All remaining
+(`design/40-examples/`) and by the reference implementation (`impl/`, 816 tests). All remaining
 homework items are catalogued in `design/90-open-questions.md`, and none of them changes the semantics.
 
 For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese).
@@ -23,6 +23,10 @@ For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese
 6. [Glossary](50-glossary.md) ([日本語](../../spec/50-glossary.md)) — index of concepts, descriptors, symbols, and invariants
 7. [Worked examples](90-examples.md) ([日本語](../../spec/90-examples.md)) — "3 business days before month-end", payday, holiday
    cascade, fiscal calendar, runtime integration (§7.7–7.8)
+
+Appendix A. [Firing layer profile](60-firing-layer-profile.md) ([日本語](../../spec/60-firing-layer-profile.md)) — the contract for conformant
+implementations (not part of the language specification): the evaluation contract (CliReport, uid) / re-evaluation (rolling horizon, watermark) /
+firing and idempotency (at-least-once, the idempotency key) / wiring of operational signals / supply / reconciliation / observed examples / checklist / terms
 
 ## Where things live
 

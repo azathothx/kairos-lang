@@ -1,0 +1,84 @@
+# npm への公開＝kairos-lang-mcp（2026-10-12 新設）: publish-impl.yml と同じ型（trusted publishing・environment「npm」の承認で
+# 止まる・キャッシュなし）。違い＝(1) 同じ版の kairos-lang が npm に出ていることを冒頭で確かめる（mcp は kairos-lang@^1.0.x に
+# 依存＝Publish impl を先に完走させてから、こちらを承認する）(2) mcp の版は impl の版とも一致 (3) build（reference 日英と llms.txt を
+# docs/ に束ねる）→ --version の実走を挟む（CI の mcp ジョブと同じ）。
+name: Publish mcp
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '公開するタグ（例: v1.0.10）'
+        required: true
+        type: string
+      ref:
+        description: 'checkout する ref（省略＝タグ。impl の公開後に mcp の lock を更新した回だけ main）'
+        required: false
+        type: string
+permissions:
+  id-token: write   # OIDC（npm への名乗り）
+  contents: read
+concurrency:
+  group: publish-mcp
+  cancel-in-progress: false   # 公開は途中で止めない・重なったら順番に
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/kairos-lang-mcp
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mcp
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && (inputs.ref || inputs.tag) || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: 版の照合（タグ＝mcp の version＝impl の version）と、同じ版の kairos-lang が npm に出ていること
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::タグの形が v1.0.x でない: $TAG"; exit 1; }
+          VERSION="${TAG#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          IMPL="$(node -p "require('../impl/package.json').version")"
+          [ "$PKG" = "$VERSION" ] || { echo "::error::mcp/package.json は $PKG・タグは $TAG"; exit 1; }
+          [ "$IMPL" = "$VERSION" ] || { echo "::error::impl/package.json は $IMPL・mcp は $PKG（両方同じ版にする）"; exit 1; }
+          SJ="$(node -p "const s=require('./server.json'); [s.version, s.packages[0].version].join(' ')")"
+          [ "$SJ" = "$VERSION $VERSION" ] || { echo "::error::server.json の version／packages[0].version は $SJ・タグは $TAG（登録簿の版は npm と揃える）"; exit 1; }
+          seen="$(npm view "kairos-lang@${VERSION}" version 2>/dev/null || true)"
+          [ "$seen" = "$VERSION" ] || { echo "::error::kairos-lang@${VERSION} が npm にまだ無い。Publish impl を先に完走させてから承認する"; exit 1; }
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+      - name: npm が 11.5.1 以上であること（満たさなければ上げる）
+        run: |
+          node --version && npm --version
+          node -e "const [a,b,c]=process.argv[1].split('.').map(Number); process.exit(a>11||a===11&&(b>5||b===5&&c>=1)?0:1)" "$(npm --version)" || npm i -g npm@latest
+      - run: npm ci
+      - run: npm run build
+      - run: node dist/bin.js --version
+      - run: npm run typecheck
+      - run: npx vitest run --testTimeout=90000
+      - name: 配布物の中身（prepack→build を含む）
+        run: npm pack --dry-run
+      - run: npm publish
+      - name: 公開後の実測（版・shasum・来歴）
+        run: |
+          set -euo pipefail
+          # staged publishing: publish 直後は数分レジストリに見えないことがある（1.0.9 で 4 分）。30 秒おきに最長 10 分待つ。
+          for i in $(seq 1 20); do
+            seen="$(npm view "kairos-lang-mcp@${VERSION}" version 2>/dev/null || true)"
+            if [ "$seen" = "$VERSION" ]; then
+              npm view "kairos-lang-mcp@${VERSION}" version dist.shasum dist.attestations
+              { echo "## kairos-lang-mcp@${VERSION}"; echo '```'; npm view "kairos-lang-mcp@${VERSION}" dist.shasum dist.attestations; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::warning::kairos-lang-mcp@${VERSION} がレジストリにまだ見えない。手元で npm view kairos-lang-mcp@${VERSION} dist.attestations を確かめる"

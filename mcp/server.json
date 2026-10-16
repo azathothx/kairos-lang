@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.azathothx/kairos-lang-mcp",
+  "description": "Evaluate (list/next) and validate Kairos schedule definitions; look up the descriptor reference",
+  "websiteUrl": "https://kairos-lang.org/",
+  "repository": {
+    "url": "https://github.com/azathothx/kairos-lang",
+    "source": "github",
+    "subfolder": "mcp"
+  },
+  "version": "1.0.10",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "kairos-lang-mcp",
+      "version": "1.0.10",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

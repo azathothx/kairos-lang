@@ -1,6 +1,7 @@
 {
   "name": "kairos-lang-mcp",
-  "version": "1.0.9",
+  "mcpName": "io.github.azathothx/kairos-lang-mcp",
+  "version": "1.0.10",
   "description": "MCP server for the Kairos schedule definition language — evaluate definitions (list/next), validate them, and look up the descriptor reference, from any MCP client",
   "keywords": [
     "mcp",

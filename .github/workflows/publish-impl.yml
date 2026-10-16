@@ -1,0 +1,73 @@
+# npm への公開＝kairos-lang（2026-10-12 新設）: trusted publishing（OIDC）で CI から公開する。トークンは置かない
+# （id-token: write で GitHub が npm に名乗る）・来歴（provenance）は npm が自動で付ける。発火はタグ v1.0.x の push
+# （または tag を指定した手動実行）。job は environment「npm」の required reviewer が承認するまで始まらない＝
+# 「確認してから世に出る」の型はそのまま。下限＝Node 22.14・npm 11.5.1（Node 24 同梱の npm は v24.5.0 以降 11.5.1 以上）。
+# 公開ビルドはキャッシュを使わない（npm の手引きに同じ・毎回レジストリから入れる）。
+name: Publish impl
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '公開するタグ（例: v1.0.10）'
+        required: true
+        type: string
+permissions:
+  id-token: write   # OIDC（npm への名乗り）
+  contents: read
+concurrency:
+  group: publish-impl
+  cancel-in-progress: false   # 公開は途中で止めない・重なったら順番に
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/kairos-lang
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: impl
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: 版の照合（タグ v1.0.x と package.json の version が一致）
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::タグの形が v1.0.x でない: $TAG"; exit 1; }
+          VERSION="${TAG#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          [ "$PKG" = "$VERSION" ] || { echo "::error::package.json は $PKG・タグは $TAG"; exit 1; }
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+      - name: npm が 11.5.1 以上であること（満たさなければ上げる）
+        run: |
+          node --version && npm --version
+          node -e "const [a,b,c]=process.argv[1].split('.').map(Number); process.exit(a>11||a===11&&(b>5||b===5&&c>=1)?0:1)" "$(npm --version)" || npm i -g npm@latest
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx vitest run --testTimeout=90000
+      - name: 配布物の中身（prepack→build を含む）
+        run: npm pack --dry-run
+      - run: npm publish
+      - name: 公開後の実測（版・shasum・来歴）
+        run: |
+          set -euo pipefail
+          # staged publishing: publish 直後は数分レジストリに見えないことがある（1.0.9 の mcp で 4 分）。30 秒おきに最長 10 分待つ。
+          for i in $(seq 1 20); do
+            seen="$(npm view "kairos-lang@${VERSION}" version 2>/dev/null || true)"
+            if [ "$seen" = "$VERSION" ]; then
+              npm view "kairos-lang@${VERSION}" version dist.shasum dist.attestations
+              { echo "## kairos-lang@${VERSION}"; echo '```'; npm view "kairos-lang@${VERSION}" dist.shasum dist.attestations; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::warning::kairos-lang@${VERSION} がレジストリにまだ見えない。手元で npm view kairos-lang@${VERSION} dist.attestations を確かめる"

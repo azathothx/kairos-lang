@@ -1,0 +1,77 @@
+# MCP サーバ（kairos-lang-mcp）向けの issue フォーム（2026-10-12 新設）。tool は参照実装の CliReport をそのまま返すので、
+# 「どの tool に何を渡して何が返ったか」と、同じ定義を CLI／Playground で評価した結果の差を集める。
+name: MCP サーバ（kairos-lang-mcp） / MCP server
+description: kairos-lang-mcp の tool（kairos_list など）の不具合 / A bug in the kairos-lang-mcp tools (kairos_list, …)
+title: "[mcp] "
+labels: [mcp]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        kairos_list／kairos_next の結果は `kairos list --json` と同じ CliReport です（kairos_validate は診断、kairos_reference は文書）。同じ定義を CLI か [Playground](https://kairos-lang.org/playground/) で評価して差があるかを添えると切り分けが早くなります。
+        kairos_list and kairos_next return the same CliReport as `kairos list --json` (kairos_validate returns diagnostics, kairos_reference a page). Saying whether the CLI or the [Playground](https://kairos-lang.org/playground/) gives a different answer for the same definition speeds up triage.
+  - type: input
+    id: version
+    attributes:
+      label: kairos-lang-mcp の版 / kairos-lang-mcp version
+      description: "`npx -y kairos-lang-mcp --version` の出力、または kairos_validate が返す version / Output of `npx -y kairos-lang-mcp --version`, or the version field kairos_validate returns"
+      placeholder: "1.0.10"
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: MCP クライアントの名前と版 / MCP client and version
+      placeholder: "クライアント名 1.2.3 / client name 1.2.3"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS と Node / OS and Node
+      description: "OS の名前と版、`node --version` の出力（クライアントがサーバの起動に使う Node）/ OS name and version, output of `node --version` (the Node the client launches the server with)"
+      placeholder: "Windows 11 / v24.4.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: tool
+    attributes:
+      label: tool 名 / Tool
+      options:
+        - kairos_list
+        - kairos_next
+        - kairos_validate
+        - kairos_reference
+        - その他（resource・起動など） / Other (resources, startup, …)
+    validations:
+      required: true
+  - type: textarea
+    id: arguments
+    attributes:
+      label: 引数 / Arguments
+      description: "渡した引数をそのまま。source は定義全文、tz は必須（IANA 名）/ The arguments as passed: source is the whole definition, tz is required (IANA name)"
+      placeholder: '{ "source": "premise { … } …", "tz": "Asia/Tokyo", "from": "2026-01-01", "to": "2027-01-01" }'
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: 返ってきた内容 / What came back
+      description: "structuredContent をそのまま。isError なら返った JSON 全体（{command, version, error: {kind, message}}）/ The structuredContent verbatim; for isError, the whole JSON that came back ({command, version, error: {kind, message}})"
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待 / Expected
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足 / Anything else
+      description: "同じ定義を CLI や Playground で評価した結果・起動の設定（command と args）など / The CLI or Playground result for the same definition, the launch config (command and args), …"
+    validations:
+      required: false

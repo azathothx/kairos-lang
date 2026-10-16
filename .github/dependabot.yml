@@ -1,0 +1,29 @@
+# Dependabot（2026-10-12 新設）: 脆弱性アラートと security updates はリポジトリ設定（Code security）で有効にする。
+# ここは version updates＝月 1 回・ディレクトリごとに 1 本の PR にまとめる（雑音を抑える）。impl は実行時依存ゼロ
+# （devDependencies だけ）・mcp は SDK と zod。actions の版（.github/workflows）も月 1 回。ラベルは付けない。
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /impl
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      impl:
+        patterns: ['*']
+  - package-ecosystem: npm
+    directory: /mcp
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      mcp:
+        patterns: ['*']
+    ignore:
+      # 同じリポジトリの impl＝版は公開の手順で上げる（PR にしない）
+      - dependency-name: kairos-lang
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1

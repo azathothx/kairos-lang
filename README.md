@@ -133,7 +133,9 @@ lastCompleted |> snapTo(day) |> roll(Following, on: bizDay) |> shift(+3, unit: b
 
 Full explanation with sequence diagrams and runnable doctests:
 [spec §7.7–7.8](en/spec/90-examples.md); the full worked study is
-[design/40-examples/07](design/40-examples/07-injected-origin.md) (Japanese).
+[design/40-examples/07](design/40-examples/07-injected-origin.md) (Japanese). The conformance profile for
+firing layers — what a Kairos-compatible runtime must satisfy (re-evaluation, at-least-once with idempotency
+keys, wiring of operational signals) — is [spec appendix A](spec/60-firing-layer-profile.md) (Japanese).
 
 ## Quick start (reference implementation)
 
@@ -193,9 +195,9 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 ## Status and documentation
 
-**Version 1.0 (declared 2026-09-14; addenda through no. 26, 2026-10-10).** Semantics, the operator family, grammar (EBNF), and lexis are
+**Version 1.0 (declared 2026-09-14; addenda through no. 27, 2026-10-16).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (784 tests),
+is validated against 20 well-known schedule families and by a reference implementation (816 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |

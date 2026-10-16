@@ -1,0 +1,77 @@
+# 参照実装（kairos-lang）向けの issue フォーム（2026-10-12 新設）。評価結果は「定義・評価範囲・tz」の 3 つで決まるので、
+# その 3 つを必須にする。label と description は日本語 / English の併記（短く）。
+name: 参照実装・CLI・npm（kairos-lang） / Reference implementation, CLI, npm
+description: kairos-lang の CLI・--json・--ics・--tsv・npm 配布・Playground の不具合 / A bug in the kairos-lang CLI, its --json/--ics/--tsv output, the npm package or the Playground
+title: "[impl] "
+labels: [impl]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        結果は「定義・評価範囲（--from／--to）・tz」で決まります。同じ定義を [Playground](https://kairos-lang.org/playground/) で評価して差があれば、その URL も添えてください。
+        The result is determined by the definition, the range (--from/--to) and the tz. If the [Playground](https://kairos-lang.org/playground/) disagrees for the same definition, add its URL.
+  - type: input
+    id: version
+    attributes:
+      label: 版 / Version
+      description: "`kairos --version` の出力 / Output of `kairos --version`"
+      placeholder: "1.0.10"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS と Node / OS and Node
+      description: "OS の名前と版、`node --version` の出力 / OS name and version, output of `node --version`"
+      placeholder: "Windows 11 / v24.4.0"
+    validations:
+      required: true
+  - type: textarea
+    id: definition
+    attributes:
+      label: 定義ファイル / Definition (.kairos)
+      description: 再現に要る最小の定義を premise ごと貼る / The smallest definition that reproduces it, premise included
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: コマンド / Command
+      description: "--from／--to／--tz を含め、実行したとおりに / Exactly as run, including --from/--to/--tz"
+      placeholder: "kairos list --from 2026-01-01 --to 2027-01-01 --tz Asia/Tokyo sample.kairos"
+      render: shell
+    validations:
+      required: true
+  - type: dropdown
+    id: tz-declared
+    attributes:
+      label: 定義の premise に tz の宣言があるか / Does the premise declare tz?
+      description: "宣言があれば評価はその zone、--tz はラベルと端点の zone / If declared, evaluation uses that zone; --tz sets the zone for labels and endpoints"
+      options:
+        - ある / Yes
+        - ない（--tz か機械の tz に依る） / No (relies on --tz or the machine's zone)
+        - わからない / Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待した結果 / Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の結果 / Actual
+      description: "`--json` の抜粋（results[]・annotations[]）歓迎。エラーならメッセージをそのまま / `--json` excerpts (results[], annotations[]) are welcome; for an error, paste the message verbatim"
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足 / Anything else
+      description: "Playground の URL・`--explain` の出力・--supply の有無など / Playground URL, `--explain` output, whether --supply was used, …"
+    validations:
+      required: false

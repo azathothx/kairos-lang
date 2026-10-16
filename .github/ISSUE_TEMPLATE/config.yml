@@ -1,0 +1,11 @@
+# Issue フォームの入口（2026-10-12 新設）: 3 本のフォーム（impl・mcp・spec）に当てはまらない報告のために空白の issue も残す。
+# contact_links は「issue を書く前に試す場所」の案内。ラベル（impl・mcp・spec）はリポジトリ側に同名のものがあるときだけ付く
+# ＝公開リポジトリに無ければ先に作る: gh label create impl -R azathothx/kairos-lang -d "参照実装・CLI・npm / kairos-lang" -c 0075ca（mcp・spec も同様）。
+blank_issues_enabled: true
+contact_links:
+  - name: Playground（まず手元で再現） / Playground (reproduce it first)
+    url: https://kairos-lang.org/playground/
+    about: ブラウザで定義を評価できる。「URL に固定」のリンクを issue に貼ると再現が早い / Evaluate a definition in the browser and paste its pinned URL into the issue.
+  - name: 仕様 / Specification
+    url: https://kairos-lang.org/spec/
+    about: 言語の正本（日本語）。英語版は /en/spec/ の下にある / The canonical spec (Japanese); the English mirror is under /en/spec/

@@ -25,14 +25,15 @@ node src/cli.ts list examples/rokuyo.kairos      --from 2026-01-01 --to 2027-01-
 node src/cli.ts next -n 3 examples/payday.kairos             # 今日から次の 3 発火
 node src/cli.ts next --json examples/payday.kairos           # 機械可読（下記 CliReport）
 node src/cli.ts list --ics examples/payday.kairos > payday.ics   # カレンダーアプリに取り込む（1.0 追補 24）
+node src/cli.ts list --tsv examples/payday.kairos > payday.tsv   # Excel・PowerShell に渡す表（1.0 追補 27）
 ```
 
 ### CLI サブコマンド
 
-- **`list [--from] [--to] [--tz] [--json|--ics] [--explain] <file>`** — 範囲 `[from, to)` の全発火・区間註釈・被覆サマリ。
+- **`list [--from] [--to] [--tz] [--json|--ics|--tsv] [--explain] <file>`** — 範囲 `[from, to)` の全発火・区間註釈・被覆サマリ。
   - 既定は機械の tz（`Intl` の解決値・`--tz` で上書き）の今日から 1 年。
   - ラベルと `[from, to)` の端点はこの tz で読む。定義の premise tz と違うと、日粒度の点は時刻付き（例: NY の 0 時＝JST 13:00）で印字される（1.0.1）。
-- **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--json|--ics] [--explain] <file>`** — `from`（既定＝今日）以降の次の N 発火（既定 1）。
+- **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--json|--ics|--tsv] [--explain] <file>`** — `from`（既定＝今日）以降の次の N 発火（既定 1）。
   - 探索窓を 7 日から倍々に広げる（1 年以降は年単位・上限 `--horizon` 年・既定 10）。
   - 見つかったら [from, 最終発火日の翌日) で確定再評価する。区間註釈・残走路が答えの範囲と整合する。
   - 本体式 1 つのファイル向け。複数は明示エラー（`list` を使う）。
@@ -69,10 +70,54 @@ node src/cli.ts list --ics examples/payday.kairos > payday.ics   # カレンダ�
 
 - 先頭の点が `DTSTART`・残りは `RDATE`。展開点列のままで規則は書かない。
 - カレンダーでは 1 つの繰り返し予定として見える。削除は「すべての予定」の 1 回で全回が消える。期間を延ばして再生成したファイルを取り込み直すと同じ予定が更新される（`UID` は式ごと。PC の Google カレンダーで実測 2026-10-08）。
-- RDATE を読まないアプリ（Outlook 系・スマホの Google カレンダーアプリ）では初回の 1 回だけの単発予定になり、以後その `UID` の繰り返し予定を PC からも取り込めなくなる（「0 件の予定のうち 0 件・処理できません」・削除しても戻らない＝同実測）。このため CLI の既定にしない。
+- Outlook では取り込めない（2026-10-13 実測: 新しい Outlook は「予定表をインポートできませんでした」・従来の Outlook はエラーなしで 0 件）。Outlook には `--ics` を使う。
+- スマホの Google カレンダーアプリでは初回の 1 回だけの単発予定になり、以後その `UID` の繰り返し予定を PC からも取り込めなくなる（「0 件の予定のうち 0 件・処理できません」・削除しても戻らない＝2026-10-06 実測）。このため CLI の既定にしない。
 - Playground の既定: PC では series、スマホ（タッチ操作か狭い画面）では「1 点ずつ」（2026-10-08 決定）。「1 点ずつ別の予定にする（Outlook・スマホのアプリ向け）」で切り替える。
 - Google カレンダー（PC）での実測（2026-10-06）: 1 件の予定として取り込まれ全回が出る。詳細欄の繰り返しは「繰り返さない」と表示されるが、削除・編集は「定期的な予定」として扱われる。
 - 時刻付きと日粒度の点が 1 式に混在するときは全点を時刻付きとして出す（日粒度の点は 0:00 に通知）。1 つの予定の `DTSTART` と `RDATE` は値型を揃えるため。
+
+### `--tsv`（Excel・PowerShell 向けの表）
+
+`--json`・`--ics`・`--ics-series` と排他（1.0 追補 27）。結果を 1 点 1 行のタブ区切りで stdout に書き出す。Excel の利用者・Windows 管理者（PowerShell・VBA）向けの出力の橋。言語は不変。
+
+- 1 行目は見出し行、以降は 1 点 1 行。列は固定順の 7 つ。
+  - `expr`＝本体式の番号（1 起点・`--json` の `results` の順）。`source`＝式の字面（タブ・改行・復帰は 1 つの空白に）。`uid`＝`results[].uid`。
+  - `date`＝`YYYY-MM-DD`。`time`＝時刻（`09:00`・`09:00:30.250`。DST の重複は `01:30-04:00` のようにオフセット込み）。日粒度の点は空（`--tz` が定義の premise tz と違うと時刻付きになる＝人間表示と同じ）。
+  - `epoch_ms`＝`points[]`（整数・点の同一性）。`note`＝その点が区間註釈 `[fromMs, toMs)` に入るときの註釈文（複数は `; ` で連結・入らなければ空）。
+  - 日付と時刻を分けるのは Excel がそのまま日付型・時刻型に読むため。
+- stdout は見出し行と点の行だけ。被覆サマリ・区間註釈・警告・`# explain:`・0 点の知らせ・`next` の ⚠ 地平線行は stderr（Excel や `Import-Csv` が `#` 行を行として読んでしまうため）。
+- 0 点は見出し行だけを出して終了コード 0（`list`）。`next` の要求件数未達は従来どおり 2。
+- `--lang en` は行に影響しない（言語中立＝`--json` と同じ線引き）。`note` の註釈文は日本語が正。
+- UTF-8・BOM なし・クォートなし・改行は `\n`。
+
+実走例（`examples/payday.kairos`・2026 年 1〜3 月）:
+
+```text
+$ node src/cli.ts list --tsv --from 2026-01-01 --to 2026-04-01 examples/payday.kairos 2>/dev/null
+expr	source	uid	date	time	epoch_ms	note
+1	everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)	kairos-4f63ae78d212-series@kairos-lang.org	2026-01-23		1769094000000	
+1	everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)	kairos-4f63ae78d212-series@kairos-lang.org	2026-02-25		1771945200000	
+1	everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)	kairos-4f63ae78d212-series@kairos-lang.org	2026-03-25		1774364400000	
+```
+
+表の外に出た点は `note` に註釈が付く（祝日表の `covering` を 2026-07-15 で切った `everyDay \ national` を `--from 2026-07-14 --to 2026-07-18` で `list` した 7/15 と 7/16 の行）:
+
+```text
+1	everyDay \ national	kairos-aa6bf733e48d-series@kairos-lang.org	2026-07-15		1784041200000	
+1	everyDay \ national	kairos-aa6bf733e48d-series@kairos-lang.org	2026-07-16		1784127600000	範囲外 2026-07-16..2026-07-18（JP.national covering 2026-01-01..2026-07-15）
+```
+
+読み方:
+
+- **Excel**: ダブルクリックではなく「データ→テキストまたは CSV から」でファイルを選び、文字コードに UTF-8・区切り記号にタブを選ぶ。`date`・`time` は日付と時刻として、`epoch_ms` は数値として取り込める（列の型は「標準」のままでよい）。
+- **PowerShell**: stderr を捨ててファイルに落とし、``Import-Csv -Delimiter "`t" -Encoding utf8`` で読む。保存は `cmd /c` のリダイレクトで（PowerShell の `>` は版によって UTF-16 で書く）。
+
+  ```powershell
+  cmd /c "node src/cli.ts list --tsv examples/payday.kairos 2>nul > payday.tsv"
+  Import-Csv payday.tsv -Delimiter "`t" -Encoding utf8 | Where-Object note -ne ''
+  ```
+
+- **VBA**: `Shell` で同じコマンドを走らせてファイルに落とし、1 行ずつ読んで `Split(行, vbTab)` で列に分ける（1 行目は見出し）。`source`・`note` の日本語を正しく読むには `ADODB.Stream`（Charset utf-8）で開く。
 
 ### `--explain`（軽量 explain）
 
@@ -175,7 +220,7 @@ r.results[0].dates;   // ['2026-01-23', …]
 
 ## テスト
 
-（37 ファイル・784 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（38 ファイル・816 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・
@@ -246,6 +291,9 @@ r.results[0].dates;   // ['2026-01-23', …]
   （多バイト文字を割らない）・TEXT のエスケープ（`;` を含む）・CLI `--ics`（`--json` と排他・予定 0 件は書かず終了コード 2）と
   Playground の `buildIcs` が同じ文字列を出すこと・暮らしの例 3 本の日英の揃い・`--json` の `results[].uid` が .ics の 3 形の UID と
   同じ鍵（1.0 追補 26）。
+- `test/tsv.test.ts` — `--tsv`（1.0 追補 27・30 本）。見出し行と 7 列・`date`／`time` の分離（秒・ms・DST 重複の ± オフセット・日粒度は `time` 空）・
+  `epoch_ms`＝`points`・`note` の区間 `[fromMs, toMs)`・stdout と stderr の割り当て・0 点・`next`・`--json`／`--ics` との排他・`--lang en`・
+  使い方の記載を、単体（`renderTsv`）とサブプロセス実走で検査（詳細は CHANGELOG 追補 27）。
 - `test/doc-consistency.test.ts` — 文書の整合性（機械検査）。ADR 範囲表記 vs 実ファイル数・改名済み
   旧名の残存・仮称印・stdlib の .kairos↔解説 md の label: 同期。
 - `test/doctest.test.ts` — [`../reference/`](../reference/) と [`../stdlib/`](../stdlib/) の実行例

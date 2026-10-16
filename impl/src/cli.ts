@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Kairos CLI — サブコマンド: list（範囲の点列）・next（次の N 発火）
 // 使い方（kairos ＝ node src/cli.ts。配布名は 1.0 で npm bin / SEA に載せる）:
-//   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--json|--ics] <file.kairos>
-//   kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--json|--ics] <file.kairos>
+//   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--json|--ics|--tsv] <file.kairos>
+//   kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--json|--ics|--tsv] <file.kairos>
 // サブコマンド省略時（先頭引数がファイル）は list——旧形式の実行例を全て生かす後方互換。
 // 終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数を見つけられず（部分結果は表示する）。
 // external() は --supply <file.json> の静的束で解決できる（supplyResolver → RunOptions.resolve）。
@@ -249,6 +249,16 @@ const CLI_STRINGS = {
 
 /** 人間向け表示（stdout 行列）。--json と同じ CliReport から出す */
 export function renderHuman(rep: CliReport, lang: CliLang = 'ja'): string[] {
+  return renderLines(rep, lang, true);
+}
+
+/** 人間向け表示の補助行＝点の行以外（式の見出し・0 点の知らせ・区間註釈・# explain:・被覆サマリ）。
+ *  --tsv のとき stderr へ流す——stdout は見出し行と点の行だけにして、Excel／Import-Csv が # 行を行として読まないようにする（1.0.10） */
+export function renderHumanAux(rep: CliReport, lang: CliLang = 'ja'): string[] {
+  return renderLines(rep, lang, false);
+}
+
+function renderLines(rep: CliReport, lang: CliLang, withPoints: boolean): string[] {
   const T = CLI_STRINGS[lang];
   const out: string[] = [];
   rep.results.forEach((res, i) => {
@@ -256,7 +266,7 @@ export function renderHuman(rep: CliReport, lang: CliLang = 'ja'): string[] {
     // 単一式の 0 点は黙らない（複数式は見出し行が点数を出す・next は ⚠ 地平線行が出る）——# 接頭なので
     // 機械処理はコメントとして落とせる。exit 0 は不変＝空は正当な結果（手当て (a)・2026-09-29 裁定・1.0 追補 22）
     else if (rep.command === 'list' && res.dates.length === 0) out.push(T.empty(rep));
-    for (const d of res.dates) out.push(d);
+    if (withPoints) for (const d of res.dates) out.push(d);
     // 区間註釈（ADR-37 判断 5/7 (a)）: 結果の後に表示——対処は呼び手の責務（判定は外部）
     for (const a of res.annotations) out.push(`# ⚠ ${formatAnnotation(a)}`);
     // --explain: 段ごとの途中値と点数（SQL の実行計画に相当・# 接頭でコメント扱い）
@@ -274,10 +284,47 @@ export function renderHuman(rep: CliReport, lang: CliLang = 'ja'): string[] {
   return out;
 }
 
+/** --tsv の列（固定順）。date と time を分けるのは Excel がそのまま日付型・時刻型に読むため */
+export const TSV_HEADER = ['expr', 'source', 'uid', 'date', 'time', 'epoch_ms', 'note'] as const;
+
+/** dates[] のラベルの形（schema/cli-report.schema.json の dates pattern と同じ）: 日付・T 以降の時刻・DST 重複のオフセット */
+const DATE_LABEL = /^(\d{4,6}-\d{2}-\d{2})(?:T(\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?))?([+-]\d{2}:\d{2})?$/;
+
+/** ラベルを date 列と time 列に分ける。固定位置で切らない——日粒度の点にも DST 重複のオフセットが付く tz（America/Havana は
+ *  00:00 が二度ある＝2026-11-01-04:00）があり、切る位置がずれて符号を落とす。日粒度の点は time が空（オフセットが付いても空・
+ *  2 つの真夜中の識別は epoch_ms が持つ）・時刻付きの点はオフセットを time に残す（01:30-04:00）。 */
+function splitLabel(label: string): [date: string, time: string] {
+  const m = DATE_LABEL.exec(label);
+  if (!m) return [label, ''];                                   // 想定外の形は date に丸ごと残す（落とさない）
+  const [, date, time, offset] = m;
+  return [date, time ? time + (offset ?? '') : ''];
+}
+
+/** --tsv（1.0.10・2026-10-12 決定）: 1 行目は見出し行、以降は 1 点 1 行のタブ区切り。--json と同じ CliReport から出す。
+ *  Excel の利用者・Windows 管理者（PowerShell の Import-Csv -Delimiter "`t"・VBA から exe を叩いて行単位で読む層）向けの出力の橋。
+ *  - expr＝本体式の番号（1 起点）・source＝式の字面（タブ・改行・復帰は 1 つの空白に）・uid＝results[].uid
+ *  - date＝YYYY-MM-DD・time＝ラベルの T 以降（09:00・09:00:30.250・DST の重複なら 01:30-05:00。日粒度の点は空）・epoch_ms＝points[]
+ *  - note＝その点が results[].annotations のいずれかの区間 [fromMs, toMs) に入るときの註釈文（複数は「; 」で連結・入らなければ空）
+ *  --lang に依らない（言語中立）・note の註釈文は日本語が正・BOM なし・クォートなし（タブ・改行を含み得るのは source だけ） */
+export function renderTsv(rep: CliReport): string[] {
+  const out: string[] = [TSV_HEADER.join('\t')];
+  rep.results.forEach((res, i) => {
+    const source = res.source.replace(/[\t\r\n]/g, ' ');
+    res.points.forEach((ms, j) => {
+      const [date, time] = splitLabel(res.dates[j]);
+      const note = res.annotations
+        .filter(a => a.fromMs <= ms && ms < a.toMs)
+        .map(formatAnnotation).join('; ');
+      out.push([i + 1, source, res.uid, date, time, ms, note].join('\t'));
+    });
+  });
+  return out;
+}
+
 const USAGE_JA = `使い方（kairos ＝ node src/cli.ts）:
-  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json|--ics] [--explain] [--lang en] <file.kairos>
+  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json|--ics|--tsv] [--explain] [--lang en] <file.kairos>
       範囲 [from, to) の全発火・区間註釈・被覆サマリ（既定: 機械の tz の今日から 1 年）
-  kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--supply data.json] [--json|--ics] [--explain] [--lang en] <file.kairos>
+  kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--supply data.json] [--json|--ics|--tsv] [--explain] [--lang en] <file.kairos>
       from 以降の次の N 発火（既定: n=1・from=今日・地平線 10 年。本体式 1 つのファイル向け）
   --tz: ラベルと [from, to) の端点の tz（既定＝機械の tz。定義の premise tz と違うと日粒度の点は時刻付きで印字される）
   --supply: external の解決値を静的束で渡す——{束縛名: {dates|instants, covering, asof [, labels]}}
@@ -286,13 +333,15 @@ const USAGE_JA = `使い方（kairos ＝ node src/cli.ts）:
   --ics: 結果を iCalendar（.ics）で書き出す——1 点＝1 予定（時刻付きは 0 分で通知つき・範囲外の区間も予定として載る。--json と排他・--explain は出ない）
       予定 0 件なら何も書かず終了コード 2。日粒度の点を終日の予定にするには --tz を定義の premise tz に合わせる（違うと時刻付きになる）
   --ics-series: 同じく .ics だが 1 式＝1 つの繰り返し予定（RDATE）にまとめる（Google／Apple カレンダー向け。RDATE を読まないアプリでは初回だけになる）
+  --tsv: 1 点 1 行のタブ区切り（Excel・PowerShell の Import-Csv -Delimiter "\`t" 向け）。1 行目は見出し行 expr source uid date time epoch_ms note
+      日粒度の点は time が空・註釈の区間に入る点は note に註釈文。被覆サマリ・註釈・警告は stderr（stdout は見出し行と点の行だけ）。--json／--ics と排他
 サブコマンド省略時は list・--version で実装版。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達／--ics で予定 0 件`;
 
 const USAGE_EN = `Usage (kairos = node src/cli.ts):
-  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json|--ics] [--explain] [--lang en] <file.kairos>
+  kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json|--ics|--tsv] [--explain] [--lang en] <file.kairos>
       All firings in [from, to) plus interval annotations and the coverage summary
       (default: one year from today in the machine's time zone)
-  kairos next [-n count] [--from YYYY-MM-DD] [--horizon years] [--tz Zone] [--supply data.json] [--json|--ics] [--explain] [--lang en] <file.kairos>
+  kairos next [-n count] [--from YYYY-MM-DD] [--horizon years] [--tz Zone] [--supply data.json] [--json|--ics|--tsv] [--explain] [--lang en] <file.kairos>
       The next N firings at or after from (default: n=1, from=today, horizon 10 years;
       intended for files with a single body expression)
   --tz: zone for labels and the [from, to) endpoints (default: the machine's time zone; if it differs from
@@ -308,6 +357,10 @@ const USAGE_EN = `Usage (kairos = node src/cli.ts):
       definition's premise tz (otherwise they are timed).
   --ics-series: same, but one recurring event per expression (RDATE) — for Google/Apple Calendar; apps that ignore
       RDATE show only the first occurrence.
+  --tsv: tab-separated, one point per line (for Excel and PowerShell's Import-Csv -Delimiter "\`t"). The first line is the
+      header expr source uid date time epoch_ms note; time is empty for day-granular points; note carries the annotation
+      text when the point falls inside an annotated interval. Coverage summary, annotations and warnings go to stderr
+      (stdout holds only the header and the point lines). Exclusive with --json and --ics.
 Without a subcommand, list is assumed. --version prints the implementation version.
 Exit codes: 0=success, 1=error, 2=next found fewer firings than requested within the horizon / --ics with zero events`;
 
@@ -319,12 +372,12 @@ const OPTS = {
   list: {
     from: { type: 'string' }, to: { type: 'string' },
     tz: { type: 'string' }, supply: { type: 'string' }, json: { type: 'boolean' }, ics: { type: 'boolean' }, 'ics-series': { type: 'boolean' },
-    lang: { type: 'string' }, explain: { type: 'boolean' },
+    tsv: { type: 'boolean' }, lang: { type: 'string' }, explain: { type: 'boolean' },
   },
   next: {
     n: { type: 'string', short: 'n' }, from: { type: 'string' }, horizon: { type: 'string' },
     tz: { type: 'string' }, supply: { type: 'string' }, json: { type: 'boolean' }, ics: { type: 'boolean' }, 'ics-series': { type: 'boolean' },
-    lang: { type: 'string' }, explain: { type: 'boolean' },
+    tsv: { type: 'boolean' }, lang: { type: 'string' }, explain: { type: 'boolean' },
   },
 } as const;
 
@@ -391,6 +444,11 @@ export function main(argv: string[]): number {
     const icsSeries = (values as { 'ics-series'?: boolean })['ics-series'] === true;
     const ics = (values as { ics?: boolean }).ics === true || icsSeries;
     if (ics && values.json) throw new KairosError('--ics と --json はどちらか一方（stdout は 1 つの形）');
+    // --tsv: 同じ CliReport をタブ区切りに展開する（出力形式のみ・1.0.10）。--json／--ics とも排他
+    const tsv = (values as { tsv?: boolean }).tsv === true;
+    if (tsv && (values.json || ics)) {
+      throw new KairosError(`--tsv と ${values.json ? '--json' : icsSeries ? '--ics-series' : '--ics'} はどちらか一方（stdout は 1 つの形）`);
+    }
     let rep: CliReport;
     if (cmd === 'list') {
       const to = (values as { to?: string }).to ?? addYears(from, 1);
@@ -414,6 +472,11 @@ export function main(argv: string[]): number {
       process.stdout.write(toIcs(rep, { lang, source, series: icsSeries, fallbackTitle: basename(positionals[0]).replace(/\.[^.]+$/, '') }));
     }
     else if (values.json) console.log(JSON.stringify(rep, null, 2));
+    else if (tsv) {
+      // stdout は見出し行と点の行だけ（Excel／Import-Csv が # 行を行として読むため）。補助行は stderr へ
+      for (const line of renderTsv(rep)) console.log(line);
+      for (const line of renderHumanAux(rep, lang)) console.error(line);
+    }
     else for (const line of renderHuman(rep, lang)) console.log(line);
     for (const w of rep.warnings) console.error(T.warning(w));
     if (rep.command === 'next' && rep.found! < rep.requested!) {

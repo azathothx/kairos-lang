@@ -1,0 +1,52 @@
+# 仕様・文書向けの issue フォーム（2026-10-12 新設）。日本語版が正本、英語版は鏡＝日英の食い違いは両方の URL を集める。
+name: 仕様・文書（spec／reference／stdlib／recipes） / Spec and docs
+description: 仕様や文書の誤り・不明瞭・日英の食い違い / An error, an unclear passage or a ja/en mismatch in the spec or docs
+title: "[spec] "
+labels: [spec]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        日本語版が正本で、英語版（/en/）は鏡です。日英の食い違いは両方の URL を貼ってください。
+        Japanese is canonical and the English pages (/en/) mirror it. For a ja/en mismatch, give both URLs.
+  - type: input
+    id: url
+    attributes:
+      label: 該当ページの URL / Page URL
+      description: "日英の食い違いは両方の URL を空白区切りで / For a ja/en mismatch, both URLs separated by a space"
+      placeholder: "https://kairos-lang.org/spec/30-body-layer.html"
+    validations:
+      required: true
+  - type: textarea
+    id: quote
+    attributes:
+      label: 該当箇所の引用 / Quoted passage
+      description: 問題の文をそのまま（見出しや節番号も）/ The passage verbatim, with its heading or section number
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 問題の種類 / Kind
+      options:
+        - 誤り / Error
+        - 不明瞭 / Unclear
+        - 日英の食い違い / ja-en mismatch
+        - 欠落 / Missing
+        - その他 / Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 問題 / What is wrong
+      description: 何がどう違うか。実装の挙動と食い違うなら、その定義と結果も / What is wrong and how. If the implementation disagrees, include the definition and its result
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提案 / Proposal
+      description: 直し方の案（任意）/ A suggested wording or fix (optional)
+    validations:
+      required: false
