@@ -1,5 +1,5 @@
 ---
-source_sha: 6acc87299e2a
+source_sha: 33192324e6db
 ---
 
 # `snapTo` — map to the first point of the containing window (floor)
@@ -77,7 +77,7 @@ newMoons |> snapTo(day)
   [`coincides`](coincides.md) (for cross-tz, first unify the tz with rebase).
 
 - **A point moved across the edge of the evaluation range is not in the output** — evaluated over
-  `[2026-08-01, 2026-09-01)`, with a range starting on 8/15, 8/20 snaps to 8/1 under `snapTo(month)`, which is outside the range, so it disappears (the semantics are
+  `[2026-08-15, 2026-09-01)`, 8/20 snaps to 8/1 under `snapTo(month)`, which is outside the range, so it disappears (the semantics are
   range clipping, spec §7.8). The reference implementation emits the warning `window-clip: snapTo …` (1.0 addendum 22).
   Evaluate over a wider range.
 

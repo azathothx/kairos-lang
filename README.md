@@ -13,9 +13,12 @@ should happen*. It goes beyond cron-style patterns: schedules like "3 business d
 first-class expressions.
 
 ```text
-premise US { calendar-system: Gregorian; calendar: NYSE; tz: "America/New_York"; wkst: Sun }
+premise US { calendar-system: Gregorian; tz: "America/New_York"; wkst: Sun }
 
 @US
+federal2026 = [2026-01-01, 2026-01-19, 2026-02-16, 2026-05-25, 2026-06-19, 2026-07-03,
+               2026-09-07, 2026-10-12, 2026-11-11, 2026-11-26, 2026-12-25] covering: 2026..2026
+bizDay = everyDay \ ((everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)) | federal2026)
 monthEnd |> roll(Preceding, on: bizDay) |> shift(-3, unit: bizDay)   # 3 business days before month-end
 ```
 
@@ -197,7 +200,7 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 **Version 1.0 (declared 2026-09-14; addenda through no. 27, 2026-10-16).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (816 tests),
+is validated against 20 well-known schedule families and by a reference implementation (823 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |

@@ -14,6 +14,7 @@
     .dot { fill: #A9701F; } .hollow { fill: #FBFAF8; stroke: #C9A15F; stroke-width: 2; } .reddot { fill: #B5452E; }
     .arrow { fill: none; stroke: #A9701F; stroke-width: 3; } .arrowhead { fill: #A9701F; }
     @media (prefers-color-scheme: dark) {
+      .bg { fill: #1B1E22; }
       .ink { fill: #E8E6E3; } .sub { fill: #9BA1A8; } .gold { fill: #D9A44B; } .red { fill: #E58A74; } .pale { fill: #5A5E64; }
       .panel { fill: #23262B; stroke: #3A3F46; } .card { fill: #2A2E34; stroke: #3A3F46; }
       .axis { stroke: #9BA1A8; } .guide { stroke: #3A3F46; } .win { stroke: #E8E6E3; }
@@ -237,7 +238,7 @@
   <text x="1118.1612903225805" y="492" font-size="12" class="pale" text-anchor="middle">31</text>
   <text x="60" y="552" font-size="13" class="mono ink">month |&gt; first |&gt; filter(m =&gt; coincides(national, month, m))   #=&gt; 2026-05-01</text>
   <text x="60" y="574" font-size="13" class="mono ink">month |&gt; first |&gt; filter(m =&gt; not coincides(national, month, m))   #=&gt; 2026-06-01</text>
-  <text x="60" y="598" font-size="13" class="mono red" font-weight="700"># ⚠ out-of-coverage 2026-07-01..2026-08-01 (JP.national covering 2026-01-01..2026-07-15)</text>
+  <text x="60" y="598" font-size="13" class="mono red" font-weight="700"># ⚠ 範囲外 2026-07-01..2026-08-01（JP.national covering 2026-01-01..2026-07-15）</text>
   <text x="760" y="598" font-size="12" class="red">← attached to both</text>
   <text x="60" y="634" font-size="12" class="sub">True and false are asymmetric: true is settled by one witness and depends on no unknown data; false depends on the coverage being complete (ADR-38 decision 4).</text>
   <text x="60" y="656" font-size="12" class="sub">Out-of-coverage does not turn true under not (7/1 is dropped by both expressions). If unwanted, extend covering to the end of July and it disappears.</text>

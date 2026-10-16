@@ -1,5 +1,5 @@
 ---
-source_sha: 23e1621f18a5
+source_sha: 30a14a9953be
 ---
 
 # Kairos for Windows administrators — PowerShell and Task Scheduler, nothing else
@@ -60,7 +60,7 @@ kairos list --from 2026-10-01 --to 2026-12-31 --tz Asia/Tokyo C:\kairos\patch.ka
 Reading the output:
 
 - One line per point, in the wall-clock time of `--tz`. 10:00 Pacific is Wednesday 2 or 3 am in Tokyo.
-- **Always write `--tz`.** Without it the machine's time zone (Windows "Date & time") is used; on a UTC server that is Tuesday 17:00.
+- **Always write `--tz`.** Without it the machine's time zone (Windows "Date & time") is used; on a UTC server that is Tuesday 17:00 or 18:00 (it changes with daylight saving).
 - `--from` is included, `--to` is not. Dates only (`YYYY-MM-DD`); a time is an error.
 - Next three only: `kairos next -n 3 --tz Asia/Tokyo C:\kairos\patch.kairos`.
 
@@ -75,7 +75,7 @@ Definitions that carry a holiday table may add annotation lines starting with `#
 ```
 
 - `# ⚠ 範囲外` ("out of range"): the points there came out beyond the holiday table — present, but blind to holidays.
-- `# 被覆サマリ` is the coverage summary (`--lang en` prints `# coverage summary`). The **runway** (残走路) is how many days the table lasts from today; negative means it has run out.
+- `# 被覆サマリ` is the coverage summary (`--lang en` prints `# coverage summary`). The **runway** (残走路) is how many days the table lasts beyond the end of the range you asked for (`--to`); negative means it ran out inside that range.
 - Fix: extend the table, `covering:` included. Tables: [Last day of the month](cron-last-day-of-month.md).
 
 ## Receiving it in PowerShell — `--json`
@@ -264,7 +264,7 @@ PT.release |> snapTo(day) |> at(T09:00)
 
 | Pitfall | What happens | What to do |
 |---|---|---|
-| No `--tz` | Points print in the machine's time zone. On a UTC server that is Tuesday 17:00 | Always `--tz Asia/Tokyo`. The definition's tz and the display tz are two different things |
+| No `--tz` | Points print in the machine's time zone. On a UTC server that is Tuesday 17:00 or 18:00 (daylight saving) | Always `--tz Asia/Tokyo`. The definition's tz and the display tz are two different things |
 | `>` in PowerShell 5.1 | The file is UTF-16 and other tools cannot read it | `cmd /c "kairos … > out.json"` — works in every version |
 | Garbled non-ASCII text | PowerShell decodes UTF-8 with its default code page | Run `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` first |
 | Execution policy | The `.ps1` stops with "running scripts is disabled" | `powershell -ExecutionPolicy Bypass -File …` — affects that process only |
@@ -276,9 +276,10 @@ PT.release |> snapTo(day) |> at(T09:00)
 | `/SD` in schtasks | Fails depending on the regional date format | Do not use it. `/SC DAILY /ST` alone starts today |
 | No task output kept | Task Scheduler does not save standard output | Read the exit code in "Last Result". If you need a record, write it from the notification script |
 
-## Next version
+## Handing results to Excel
 
-The next version adds a tab-separated table output for Excel.
+Use `--tsv` (since 1.0.10): one point per line, tab-separated, and `date` imports as a date. The columns and the import steps are in
+[Schedules that are awkward in Excel's WORKDAY/EOMONTH](excel-workday.md).
 
 ## Try it in your browser
 

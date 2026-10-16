@@ -1,5 +1,5 @@
 ---
-source_sha: 6d01d2dd8ff5
+source_sha: d15f2f39a61e
 ---
 
 # Recipes — practical forms of the schedules long said to be unwritable
@@ -20,7 +20,7 @@ first, the background after.
 | [What is a 4-4-5 calendar?](4-4-5-calendar.md) | Definition, the 4-5-4/5-4-4 variants, the 53rd week, a 2026 period table; the carry rule falls out of the definition |
 | [Nearest weekday to the 15th](quartz-15w-nearest-weekday.md) | The general form of Quartz `15W`, extendable to holidays |
 | [US Election Day, Black Friday and the Sunday after Thanksgiving](us-election-day-and-thanksgiving.md) | Dates relative to a computed date; RRULE's `BYMONTHDAY=2..8` encoding written in the order the law states it |
-| [Patch Tuesday](patch-tuesday.md) | The second Tuesday at 10:00 Pacific, shown in any time zone from one definition; why "second Wednesday, 3 am" in Tokyo is wrong in 10 of 12 months |
+| [Patch Tuesday](patch-tuesday.md) | The second Tuesday at 10:00 Pacific, shown in any time zone from one definition; why "second Wednesday, 3 am" in Tokyo is wrong in 8 of 12 months |
 | [Kairos for Windows administrators](windows-admin.md) | PowerShell and Task Scheduler, nothing else: definition → `list` → `--json` → a daily check → .ics for Outlook. For people who run commands but do not write software |
 | [Schedules that are hard to write with Excel's WORKDAY and EOMONTH](excel-workday.md) | Last business day of the month, payment on the 25th, the 10th business day, three business days before quarter-end — side by side with the Excel formulas. An expired holiday table is not allowed to stay silent. Results go to Excel as TSV |
 

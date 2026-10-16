@@ -174,6 +174,18 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     expect(stale).toEqual([]);
   });
 
+  it('図（assets/figures/*.svg）にも仮称印・placeholder が残っていない（外部レビュー第 13 回 F2＝.md だけの走査では SVG が網の外だった）', () => {
+    const svgs = readdirSync(new URL('assets/figures/', root)).filter(f => f.endsWith('.svg'));
+    expect(svgs.length).toBeGreaterThan(0);
+    const stale: string[] = [];
+    for (const f of svgs) {
+      for (const [i, line] of read(`assets/figures/${f}`).split('\n').entries()) {
+        if (/仮称|placeholder/i.test(line)) stale.push(`assets/figures/${f}:${i + 1}: ${line.trim().slice(0, 60)}`);
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
   it('「残る仮称」の主張がどこにも残っていない（rephase 裁定〈2026-07-26〉で仮称ゼロ——2026-07-13 レビュー指摘 A の検査を状態遷移）', () => {
     // 歴史記録（ADR・作業ジャーナル・CHANGELOG・綻びログ・命名裁定材料）は対象外。draft は「作業層だが現状主張を含む」
     // ため対象。70-release は現在形の計画文書のため対象（外部レビュー第 5 回 N5——対象外だったため自己矛盾を見逃した）

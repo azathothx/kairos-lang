@@ -11,7 +11,7 @@
 
 **設計上の主眼**。設計記録が `label:` 付与式の初例と整理した ISO 週番号（F40）を、等価変形により**確定語彙だけ**で書き切ったことにある（§4）。
 
-**語の名は仮**。`isoWeek` などは premise 公開語であり、1.0 で一括確定の流儀に従う。言語の**記述語**の命名確定状況は spec §5.4——premise 公開語はその表の外。
+**語の名は 1.0 で確定**。`isoWeek` などは premise 公開語で、1.0 宣言（2026-09-14）で一括確定した。言語の**記述語**の命名確定状況は spec §5.4——premise 公開語はその表の外。
 
 ## 1. 完全定義
 
@@ -32,7 +32,7 @@ premise ISOWeek = Gregorian with {
 同梱ソース `../impl/stdlib/isoweek.kairos` は本節と一字一句同じ。使う語彙のうち言語の**記述語**
 （`filter`・`segmentBy`・二窓 `ordinalIn`・三項条件）は名が確定済み（spec §5.4）、残りは `Gregorian` の
 premise 公開語（曜日ラベルの `weekday`/`Mon`・原子 `day`・暦座標糖衣 `yearNo`/`monthNo`/`dayNo`。
-spec §4.9）で名は仮だがすべてリファレンス実装済み——`label:` 付与式を使わない（ADR-34 で確定・実装済みだが、等価変形により不要。§4）。
+spec §4.9）で名は確定済み・すべてリファレンス実装済み——`label:` 付与式を使わない（ADR-34 で確定・実装済みだが、等価変形により不要。§4）。
 
 派生なので `Gregorian` の公開語（`day`・`month`・`year`・`quarter`・`weekday`・`week`・公開境界語・
 暦座標糖衣）はすべて継承され、既存語は**一つも上書きしない**。`isoYear` と `year`、`isoWeek` と `week` は

@@ -10,7 +10,7 @@
 - RRULE には「別規則の日 + n 日」が無い。選挙日は `BYDAY=TU;BYMONTHDAY=2,3,4,5,6,7,8`（火曜で、かつ 2〜8 日）
   という**意図の消えた符号化**でしか書けない——読んだ人が「第 1 月曜の翌日」に戻せない。
 - 「感謝祭の次の日曜」は月を跨ぐ年（2024 年は 12/1）があり、[BYYEARDAY の負値で数えるハックは月跨ぎで破綻する](https://stackoverflow.com/questions/72777808/rrule-and-ical-complex-recurrence)。
-- cron は曜日と日を OR で結ぶため、この種の条件はそもそも書けない（[レシピ: 月末最終営業日](cron-last-day-of-month.md) の冒頭を参照）。
+- cron は曜日と日を OR で結ぶため、この種の条件はそもそも書けない（日と曜日の OR の実例は [Patch Tuesday](patch-tuesday.md) の冒頭に）。
 
 ## Kairos で書く——法律の言葉の順に
 

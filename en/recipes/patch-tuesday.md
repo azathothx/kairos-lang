@@ -1,5 +1,5 @@
 ---
-source_sha: c0128f05bcee
+source_sha: b7f03844fede
 ---
 
 # Patch Tuesday: the second Tuesday at 10:00 Pacific, shown in any time zone
@@ -21,8 +21,8 @@ producing the *scheduled* points, in any time zone, from a single definition.
 
 - cron has no notion of a time zone.
   - Read the rule as "second Wednesday, 3 am" in Tokyo and write `0 3 8-14 * 3`, and 2026 is wrong in
-    10 months out of 12.
-  - Eight of them are off by an hour (daylight saving).
+    8 months out of 12 (March to October). cron also reads day-of-month and weekday as OR, so that line fires every Wednesday too.
+  - All eight are off by an hour (daylight saving).
   - In April and July the month starts on a Wednesday, so the right day is the **third** Wednesday and the
     line is off by a full week (see the wrong example below).
 - iCalendar can express it.

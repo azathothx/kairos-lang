@@ -198,7 +198,7 @@ Rules for the time part:
 
 - Label equality is **textual**: an identifier label and a string literal with the same text (`立春` and `"立春"`) are equal.
 - However, **only an identifier declaration in label position introduces the name into the vocabulary** — referencing a string-declared label with a bare identifier is an "unresolved name".
-- Declare labels in identifier form (the native role of string literals is the value of `tz:` and `source:` — ADR-32).
+- Labels are best declared in identifier form (recommended; the native role of string literals is the value of `tz:` and `source:` — ADR-32).
 
 **Comments**: from `#` to the end of the line.
 

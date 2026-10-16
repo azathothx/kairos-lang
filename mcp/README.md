@@ -14,6 +14,8 @@ never as silently dropped points.
 
 ## Install
 
+Listed in the official MCP Registry as `io.github.azathothx/kairos-lang-mcp` (https://registry.modelcontextprotocol.io — clients that read the registry can install it by that name).
+
 Node.js 20 or later. The server speaks MCP over stdio.
 
 ```sh

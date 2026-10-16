@@ -14,6 +14,8 @@ English: [README.md](README.md)
 
 ## 導入
 
+公式 MCP Registry に `io.github.azathothx/kairos-lang-mcp` の名で登録済み（https://registry.modelcontextprotocol.io ・登録簿を読むクライアントはこの名で導入できる）。
+
 Node.js 20 以上。サーバは stdio で MCP を話します。
 
 ```sh

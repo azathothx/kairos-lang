@@ -14,6 +14,7 @@
     .dot { fill: #A9701F; } .hollow { fill: #FBFAF8; stroke: #C9A15F; stroke-width: 2; } .reddot { fill: #B5452E; }
     .arrow { fill: none; stroke: #A9701F; stroke-width: 3; } .arrowhead { fill: #A9701F; }
     @media (prefers-color-scheme: dark) {
+      .bg { fill: #1B1E22; }
       .ink { fill: #E8E6E3; } .sub { fill: #9BA1A8; } .gold { fill: #D9A44B; } .red { fill: #E58A74; } .pale { fill: #5A5E64; }
       .panel { fill: #23262B; stroke: #3A3F46; } .card { fill: #2A2E34; stroke: #3A3F46; }
       .axis { stroke: #9BA1A8; } .guide { stroke: #3A3F46; } .win { stroke: #E8E6E3; }

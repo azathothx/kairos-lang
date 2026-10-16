@@ -14,6 +14,7 @@
     .dot { fill: #A9701F; } .hollow { fill: #FBFAF8; stroke: #C9A15F; stroke-width: 2; } .reddot { fill: #B5452E; }
     .arrow { fill: none; stroke: #A9701F; stroke-width: 3; } .arrowhead { fill: #A9701F; }
     @media (prefers-color-scheme: dark) {
+      .bg { fill: #1B1E22; }
       .ink { fill: #E8E6E3; } .sub { fill: #9BA1A8; } .gold { fill: #D9A44B; } .red { fill: #E58A74; } .pale { fill: #5A5E64; }
       .panel { fill: #23262B; stroke: #3A3F46; } .card { fill: #2A2E34; stroke: #3A3F46; }
       .axis { stroke: #9BA1A8; } .guide { stroke: #3A3F46; } .win { stroke: #E8E6E3; }
@@ -114,9 +115,9 @@
   <text x="390" y="300" font-size="12" class="gold" text-anchor="middle" font-weight="700">(1) January's point is 1/23 (Fri); all 12 points are inside</text>
   <text x="870" y="300" font-size="12" class="gold" text-anchor="middle" font-weight="700">(2) December's point 12/30 (Wed) is a business day; stays</text>
   <text x="60" y="322" font-size="13" class="mono ink">(1) 25th payday: everyDay |&gt; within(month) |&gt; nth(25) |&gt; roll(Preceding, on: bizDay)</text>
-  <text x="60" y="342" font-size="13" class="mono red" font-weight="700"># ⚠ out-of-coverage 2026-01-01..2026-01-02 (JP.national covering 2026-01-01..2026-12-31)</text>
+  <text x="60" y="342" font-size="13" class="mono red" font-weight="700"># ⚠ 範囲外 2026-01-01..2026-01-02（JP.national covering 2026-01-01..2026-12-31）</text>
   <text x="60" y="370" font-size="13" class="mono ink">(2) 30th payday: (day30 | short) |&gt; roll(Following, on: bizDay)</text>
-  <text x="60" y="390" font-size="13" class="mono red" font-weight="700"># ⚠ out-of-coverage 2026-12-31..2027-01-01 (JP.national covering 2026-01-01..2026-12-31)</text>
+  <text x="60" y="390" font-size="13" class="mono red" font-weight="700"># ⚠ 範囲外 2026-12-31..2027-01-01（JP.national covering 2026-01-01..2026-12-31）</text>
   <text x="60" y="424" font-size="13" class="sub">All 12 points come out settled. The annotation is not part of the value; it runs alongside and says only "this interval may depend on what lies outside the table" (ADR-37, I6).</text>
   <text x="60" y="446" font-size="13" class="sub">Nothing is silently returned as 2025-12-31 and nothing is silently dropped. If unwanted, extend covering to the previous year end and next year start and it disappears.</text>
   <rect x="60" y="468" width="18" height="14" rx="3" class="band"/>

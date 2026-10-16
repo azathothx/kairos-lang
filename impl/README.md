@@ -220,12 +220,16 @@ r.results[0].dates;   // ['2026-01-23', …]
 
 ## テスト
 
-（38 ファイル・816 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（38 ファイル・823 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・
 `test/at-time-of-day.test.ts`〔ADR-51〕・`test/memoization.test.ts`〔ADR-53＝遮断・順序独立・
-間接参照 witness 3 経路・診断全文固定〕・`test/table-postfix.test.ts`〔束縛後置 covering〕がある。）
+間接参照 witness 3 経路・診断全文固定〕・`test/table-postfix.test.ts`〔束縛後置 covering〕・
+`test/memo-key-order-independence.test.ts`〔メモ化の文脈キーと評価順の独立・F114〕・`test/member-self-reference.test.ts`〔前文メンバーの自己参照・F115〕・
+`test/premise-member-inheritance.test.ts`〔前文メンバーの派生継承・ADR-35 改訂 3〕・`test/window-clip.test.ts`〔window-clip 警告・追補 22〕・
+`test/final-window-open-end.test.ts`〔覆域端で閉じた最終窓の終端・ADR-37 改訂 6〕・`test/next-window-and-playground.test.ts`〔next の探索窓と Playground の表示〕・
+`test/schema-and-explain.test.ts`〔JSON Schema 2 本と `--explain`・追補 23〕・`test/boundary-checklist.test.ts`〔境界チェックリスト 10 件の witness〕がある。）
 
 
 - `test/examples.test.ts` — spec §7 の全代表例。糖衣形と core 展開形の一致、JS Date による独立オラクル照合

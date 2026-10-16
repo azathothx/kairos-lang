@@ -1,5 +1,5 @@
 ---
-source_sha: afa4a3738b51
+source_sha: c4c8469e0fec
 ---
 
 # US Election Day, Black Friday and the Sunday after Thanksgiving: dates relative to a computed date
@@ -21,7 +21,7 @@ that stream into the next rule (closure).
 - "The Sunday after Thanksgiving" crosses a month boundary in some years (2024: December 1), and
   [the BYYEARDAY negative-offset hack breaks exactly there](https://stackoverflow.com/questions/72777808/rrule-and-ical-complex-recurrence).
 - cron ORs the day-of-month and day-of-week fields, so conditions of this kind cannot be written at all
-  (see the opening of [the last-business-day recipe](cron-last-day-of-month.md)).
+  (for a real example of cron's day/weekday OR, see the opening of [Patch Tuesday](patch-tuesday.md)).
 
 ## Writing it in Kairos, in the order the law states it
 
