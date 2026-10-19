@@ -101,8 +101,9 @@ const mb = (statSync(outPath).size / 1024 / 1024).toFixed(1);
 // ---- 5. 実走検証: 参照実装と出力バイト一致（台を実行できる環境のみ。Linux から --win は注入まで） ----
 const canRun = !winBase || process.platform === 'win32';
 if (canRun) {
+  // 検証の tz は固定する（CI のランナーは UTC＝日粒度の点が前日 15:00 に見え、下の期待日付と食い違う。2026-10-19 の実測）
   const args = ['list', join(IMPL, 'examples', 'payday.kairos'),
-    '--from', '2026-01-01', '--to', '2027-01-01'];
+    '--from', '2026-01-01', '--to', '2027-01-01', '--tz', 'Asia/Tokyo'];
   const ref = execFileSync(process.execPath, [join(IMPL, 'src', 'cli.ts'), ...args],
     { encoding: 'utf8' });
   const sea = execFileSync(outPath, args, { encoding: 'utf8' });
@@ -110,7 +111,7 @@ if (canRun) {
     throw new Error('SEA 実行ファイルの出力が参照実装（node src/cli.ts）と一致しない');
   }
   const rep = JSON.parse(execFileSync(outPath,
-    ['next', '--json', '--from', '2026-08-06', join(IMPL, 'examples', 'payday.kairos')],
+    ['next', '--json', '--from', '2026-08-06', '--tz', 'Asia/Tokyo', join(IMPL, 'examples', 'payday.kairos')],
     { encoding: 'utf8' }));
   if (rep.version !== version || rep.results[0].dates[0] !== '2026-08-25') {
     throw new Error('SEA 実行ファイルの next --json が期待と一致しない');

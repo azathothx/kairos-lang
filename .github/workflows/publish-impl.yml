@@ -14,6 +14,11 @@ on:
         description: '公開するタグ（例: v1.0.10）'
         required: true
         type: string
+      exe_only:
+        description: 'npm 公開を飛ばして Windows exe だけ組む（タグの後に組む手順を直したとき。ref は main・impl のソースがタグと同一であることを照合して組む）'
+        required: false
+        type: boolean
+        default: false
 permissions:
   id-token: write   # OIDC（npm への名乗り）
   contents: read
@@ -22,6 +27,7 @@ concurrency:
   cancel-in-progress: false   # 公開は途中で止めない・重なったら順番に
 jobs:
   publish:
+    if: ${{ !inputs.exe_only }}
     runs-on: ubuntu-latest
     environment:
       name: npm
@@ -78,8 +84,11 @@ jobs:
   # （impl/scripts/strip-authenticode.mjs・注入後は剥がせない）→ impl/scripts/build-sea.mjs --win（Windows 上なので実走検証＝参照実装と
   # 出力バイト一致まで走る）→ zip（exe＋README 日英）＋ .sha256 → gh release upload。1.0.10 で手作業だった手順（runbook v1.0.10 ④）の機械化。
   # Release はタグの後・承認の前に人が作る（runbook §3）。無ければこの job は失敗する＝Release を作ってから gh run rerun --failed。
+  # やり直し（2026-10-19 追加）: タグの後に組む手順（scripts・この job）を直したときは、workflow_dispatch で ref=main・tag=v1.0.x・exe_only=true
+  # ＝npm 公開を飛ばし、impl のソース（src・stdlib・package.json・lock）がタグと同一であることを git diff で照合してから組む＝配布物は常にタグのソースから。
   windows-exe:
     needs: publish
+    if: ${{ always() && (needs.publish.result == 'success' || inputs.exe_only) }}
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
@@ -93,16 +102,23 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          ref: ${{ inputs.exe_only && github.ref || (github.event_name == 'workflow_dispatch' && inputs.tag || github.ref) }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - name: 版の照合（タグ＝package.json）と Release の存在
+      - name: 版の照合（タグ＝package.json）・impl のソースがタグと同一・Release の存在
         run: |
           set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::タグの形が v1.0.x でない: $TAG"; exit 1; }
           VERSION="${TAG#v}"
           PKG="$(node -p "require('./impl/package.json').version")"
           [ "$PKG" = "$VERSION" ] || { echo "::error::package.json は $PKG・タグは $TAG"; exit 1; }
+          git fetch --no-tags --depth=1 origin "+refs/tags/$TAG:refs/tags/$TAG"
+          if ! git diff --quiet "refs/tags/$TAG" -- impl/src impl/stdlib impl/package.json impl/package-lock.json; then
+            echo "::error::impl のソースがタグ $TAG と異なる（配布物はタグのソースから組む）"
+            git diff --stat "refs/tags/$TAG" -- impl/src impl/stdlib impl/package.json impl/package-lock.json
+            exit 1
+          fi
           gh release view "$TAG" --json tagName --jq .tagName >/dev/null || { echo "::error::Release $TAG が無い。Release を作ってから gh run rerun --failed"; exit 1; }
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "NODE_V=$(node --version)" >> "$GITHUB_ENV"
@@ -118,7 +134,7 @@ jobs:
           pwsh -NoProfile -Command "Expand-Archive -LiteralPath 'base/node-$NODE_V-win-x64.zip' -DestinationPath 'base/unz'"
           cp "base/unz/node-$NODE_V-win-x64/node.exe" base/node.exe
           node impl/scripts/strip-authenticode.mjs base/node.exe base/node-unsigned.exe
-      - name: SEA を組む（Windows 上＝参照実装と出力バイト一致の実走検証つき）
+      - name: SEA を組む（Windows 上＝参照実装と出力バイト一致の実走検証つき・検証の tz は固定）
         run: node impl/scripts/build-sea.mjs --win base/node-unsigned.exe
       - name: zip（exe＋README 日英）と sha256
         run: |
