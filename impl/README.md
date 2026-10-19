@@ -47,7 +47,7 @@ node src/cli.ts list --tsv examples/payday.kairos > payday.tsv   # Excel・Power
 - `points`／`fromMs` は「判定は外部」（ADR-37）の交差計算を呼び手が epoch ms のまま行うための器＝点の同一性。
 - `dates` はその市民ラベル。秒・ms は 0 でないときだけ（`:ss`・`.SSS`）。DST の重複（同じ壁時計が二度ある瞬間）はオフセット `±HH:MM` 付き。`points` と一対一（1.0 追補 23）。
 - `uid` は `.ics` の series の `UID` と同じ値。1 点の `UID` は `-series@` を `-<ms>@` に。同一性ではなく指紋（1.0 追補 26）。
-- エラーも JSON: stdout に `{command, version, error: {kind: usage|supply|static, message}}`。終了コード 1 は不変。
+- エラーも JSON: stdout に `{command, version, error: {kind: usage|supply|static, message}}`。終了コード 1 は不変。`supply` は供給側の責任（解決失敗・`--supply` の束の形・解決値の契約違反＝1.0 追補 28）。
 - 形の正本は JSON Schema `schema/cli-report.schema.json`（https://kairos-lang.org/schema/cli-report.schema.json・draft 2020-12・後方互換の改訂のみ）。
 
 ### `--ics`（iCalendar の書き出し）
@@ -220,7 +220,7 @@ r.results[0].dates;   // ['2026-01-23', …]
 
 ## テスト
 
-（38 ファイル・823 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（38 ファイル・827 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・

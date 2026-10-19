@@ -12,8 +12,8 @@ Windows のシステム管理者向けのページ。PowerShell とタスク ス
 - **Playground**（インストール不要）: [https://kairos-lang.org/playground/](../playground/) に定義を貼って実行する。「URL に固定」で定義と期間を含んだ URL を同僚に渡せる。「カレンダーに入れる（.ics）」で結果をカレンダー用のファイルにできる。ブラウザ内で完結し、何も送信しない。
 - **CLI**: Node.js 20 以上を入れて `npm i -g kairos-lang`。コマンド名は `kairos`。入れずに試すなら `npx -y kairos-lang list …`（初回はダウンロードが走る）。動作確認は `kairos --version`。
 
-- **単体の exe**（Node.js 不要）: [Release v1.0.10](https://github.com/azathothx/kairos-lang/releases/tag/v1.0.10) の `kairos-1.0.10-win-x64.zip` を展開して
-  `kairos.exe` を置く（SHA256 は同じ場所の `.sha256`）。npm の `kairos-lang@1.0.10` と同一のソースから作成。署名はないので、ダウンロード直後の初回だけ
+- **単体の exe**（Node.js 不要）: [Release v1.0.11](https://github.com/azathothx/kairos-lang/releases/tag/v1.0.11) の `kairos-1.0.11-win-x64.zip` を展開して
+  `kairos.exe` を置く（SHA256 は同じ場所の `.sha256`）。npm の `kairos-lang@1.0.11` と同一のソースから作成。署名はないので、ダウンロード直後の初回だけ
   SmartScreen の警告が出ることがある（「詳細情報」→「実行」）。以下の `kairos` を `.\kairos.exe` に読み替えればそのまま使える。
 
 ## 最初の 1 本——定義を書いて `list` で聞く

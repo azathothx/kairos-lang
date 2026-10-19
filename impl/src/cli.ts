@@ -514,7 +514,7 @@ export function main(argv: string[]): number {
 // vitest からの import では実行しない（テストは cmdList/cmdNext/renderHuman を直接呼ぶ）。
 // npm の bin は node_modules/.bin/kairos → dist/cli.js のシンボリックリンクで、argv[1] がリンク側・import.meta.url が
 // 実体側になる——URL の文字列一致では main() が走らず黙って終了した（2026-09-07 pack→install 実走で検出）。
-// realpath で比較する。SEA（tools/build-sea）は import.meta.url を undefined に潰すので偽に落ち、二重実行しない。
+// realpath で比較する。SEA（impl/scripts/build-sea）は import.meta.url を undefined に潰すので偽に落ち、二重実行しない。
 const isMain = (() => {
   if (!process.argv[1] || typeof import.meta.url !== 'string') return false;
   try { return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url); } catch { return false; }

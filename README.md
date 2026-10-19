@@ -198,9 +198,9 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 ## Status and documentation
 
-**Version 1.0 (declared 2026-09-14; addenda through no. 27, 2026-10-16).** Semantics, the operator family, grammar (EBNF), and lexis are
+**Version 1.0 (declared 2026-09-14; addenda through no. 28, 2026-10-19).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (823 tests),
+is validated against 20 well-known schedule families and by a reference implementation (827 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
@@ -212,6 +212,7 @@ including cross-checks against the official ephemeris of the National Astronomic
 | [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype — Japanese) |
 | [`mcp/`](mcp/) | MCP server `kairos-lang-mcp` — evaluate (list/next), validate and look up the reference from an MCP client; `tz` is required (English) |
 | [`design/`](design/) | Design records: 53 ADRs, domain model, expressiveness studies incl. the ["impossible schedules" catalog](en/design/40-examples/11-impossible-schedules.md) (Japanese; catalog mirrored in English) |
+| [`MAINTENANCE.md`](MAINTENANCE.md) | Maintenance guide — the yearly holiday-table update, the freshness check, what a red CI means, how releases are published (Japanese, with an English summary). Policy: [design/75-stewardship.md](design/75-stewardship.md) |
 
 Study materials for the Kairos language exam — graded textbooks (reading, writing, operational
 semantics) and sample questions, every example executed against the reference implementation — live at

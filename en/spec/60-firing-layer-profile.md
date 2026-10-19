@@ -1,5 +1,5 @@
 ---
-source_sha: df0902a1dc2d
+source_sha: fc667a92d00c
 ---
 
 # Kairos Language Specification — Appendix A. Firing Layer Profile (the contract for conformant implementations)
@@ -161,7 +161,7 @@ The language returns danger as annotations, the coverage summary, and warnings. 
 
 - MUST: The only `error.kind` on which the boot check does not stop is `supply`. `static` (a defect of the definition — a lexical, syntactic, static, or evaluation error) and `usage` (a defect on the caller's side — arguments, files, or the `--supply` JSON itself) stop it.
 - MUST: On `supply` (a supply resolution failure), do not stop: boot with an empty plan and retry at every wake-up (degraded operation).
-- Note: In the reference implementation (1.0.10), `supply` covers resolution failures (no supply arrives, no resolver) and a malformed `--supply` bundle (missing covering/asof and the like). `static` covers, beyond defects of the definition, the violations caught by the evaluator's contract checks (disorder, outside the coverage, a length mismatch, a non-existent date, undeclared labels — ADR-46 decision 7).
+- Note: In the reference implementation 1.0.10, `supply` covered only resolution failures (no supply arrives, no resolver) and a malformed `--supply` bundle (missing covering/asof and the like); the violations caught by the evaluator's contract checks (unordered values, points outside the coverage, length mismatch, non-existent dates, undeclared labels; ADR-46 decision 7) fell under `static`. **From 1.0.11 (addendum 28) these contract violations are `supply` too**, so everything that is the supplier's responsibility reports as `supply`.
 - Note: `usage` is a failure before the evaluation runs, and nothing of the supply is missing. It is not a case for degraded operation (booting with an empty plan and retrying).
 - MUST: Distinguish by type "nothing yet" (empty table + covering = a legitimate empty, zero instants, runway warning) from "resolution failed" (supply error), and make them readable apart in logs (ADR-45, ADR-46).
 - SHOULD: During degraded operation keep the old snapshot, and record recovery (a successful materialization) as information.

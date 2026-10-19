@@ -29,9 +29,9 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 <p align="center"><img src="assets/figures/compare-composability.ja.svg" width="880"
   alt="合成が要である理由: cron は固定パターンまで・RRULE は繰り返し規則まで。Kairos は式が合成でき、結果は常にストリームとして次の定義へ流せる（閉包）。"></p>
 
-**ステータス: 1.0（2026-09-14 宣言・追補 27〈2026-10-16〉まで反映）**。意味論・演算子族・文法（EBNF）・字句は確定、命名も
+**ステータス: 1.0（2026-09-14 宣言・追補 28〈2026-10-19〉まで反映）**。意味論・演算子族・文法（EBNF）・字句は確定、命名も
 **全語確定**（最後の仮称 `shiftBoundary` は `rephase` に裁定済み＝2026-07-26）。表現力は既知スケジュール 20 要素のサンプル
-検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・823 テスト）で実証済み。
+検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・827 テスト）で実証済み。
 
 ## 構成
 
@@ -44,6 +44,7 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 | [`impl/`](impl/) | リファレンス実装（TypeScript・実行時依存ゼロ。プロトタイプ） |
 | [`mcp/`](mcp/)（[日本語](mcp/README.ja.md)） | MCP サーバ `kairos-lang-mcp`——MCP クライアントから評価（list／next）・検証・リファレンス参照。tz は必須（英語） |
 | [`design/`](design/) | 設計記録（ADR-01〜53・ドメインモデル・構文ドラフト・表現力検証〈[「書けないスケジュール」の博物誌](design/40-examples/11-impossible-schedules.md) 含む〉・綻びログ） |
+| [`MAINTENANCE.md`](MAINTENANCE.md) | 保守の手引き——年 1 回の祝日表の更新・鮮度の検査・CI が赤のときの見分け・公開の仕組み（方針は [design/75-stewardship.md](design/75-stewardship.md)） |
 
 設計の履歴を遡るときは [`design/INDEX.md`](design/INDEX.md) から。
 

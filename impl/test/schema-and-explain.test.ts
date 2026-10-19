@@ -196,6 +196,31 @@ describe('--json のエラー表面（CliErrorReport・stdout・終了コード 
     expect(rep.error.kind).toBe('supply');
     expect(validReport(rep), errorsOf(validReport)).toBe(true);
   });
+  // 解決値の契約違反（昇順・覆域の包含・labels の同長と値域）は供給側の責任＝kind supply（1.0 追補 28。それまでは static に落ちていた＝
+  // schema の説明「supply: the supply contract (external) was violated」と食い違っていた）。4 本とも実装を追補前に戻すと static で赤。
+  const EXT = 'premise H { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon; source: "x"\n  h = external(kind: dates, labels: [a, b])\n}\n@H\nh\n';
+  const supplyKindOf = (name: string, h: Record<string, unknown>) => {
+    const def = put(`${name}.kairos`, EXT);
+    const sup = put(`${name}.json`, JSON.stringify({ h: { covering: '2026..2026', asof: '2026-01-05', ...h } }));
+    const r = cli('list', ...RANGE, '--json', '--supply', sup, def);
+    expect(r.status).toBe(1);
+    const rep = JSON.parse(r.stdout) as CliErrorReport;
+    expect(validReport(rep), errorsOf(validReport)).toBe(true);
+    expect(rep.error.message).toMatch(/^契約違反: /);
+    return rep.error.kind;
+  };
+  it('supply: 解決値が昇順でない（契約違反）は kind supply', () => {
+    expect(supplyKindOf('unsorted', { dates: ['2026-01-07', '2026-01-05'], labels: ['a', 'b'] })).toBe('supply');
+  });
+  it('supply: 解決値の点が covering の外（契約違反）は kind supply', () => {
+    expect(supplyKindOf('outside', { dates: ['2026-01-05', '2027-02-07'], labels: ['a', 'b'] })).toBe('supply');
+  });
+  it('supply: labels が時点列と同長でない（契約違反）は kind supply', () => {
+    expect(supplyKindOf('len', { dates: ['2026-01-05', '2026-01-07'], labels: ['a'] })).toBe('supply');
+  });
+  it('supply: 宣言値域の外のラベル（契約違反）は kind supply', () => {
+    expect(supplyKindOf('domain', { dates: ['2026-01-05', '2026-01-07'], labels: ['a', 'zzz'] })).toBe('supply');
+  });
   it('--json 無しのエラーは従来どおり stderr（stdout は空）', () => {
     const r = cli('list', ...RANGE, put('bad2.kairos', JP + 'everyDay |> within(month) |> nth(0)\n'));
     expect(r.status).toBe(1);

@@ -714,3 +714,40 @@ F51・F66/F97。仮称 9 語のうち 8 語を正式名に確定。**ADR-43**＝
 
 - `--tsv` の witness 30 本（単体 15＝`renderTsv` の構造・実走 15＝サブプロセスで stdout／stderr の割り当てと終了コード）。見出し行と列の固定順・`date`／`time` の分離（秒・ms・DST 重複のオフセット・日粒度の点にオフセットが付く tz でも `time` は空）・`note` の区間 `[fromMs, toMs)`（右端は含まない）・0 点・排他（`list`／`next`）・`--lang en` の不変。変異で赤を実測してから数えた。
 - **823 テスト**（公開時 816。公開後に Excel 対照レシピの doctest 6 本と図の用語検査 1 本を追加）。
+
+## 1.0 追補 28（2026-10-19）——`error.kind`: 解決値の契約違反を `supply` に（言語不変）
+
+言語は不変。参照実装 npm `kairos-lang` **1.0.11**・`kairos-lang-mcp` も同じ関数を使うので揃う。
+
+### 変更（2026-10-15 決定）
+
+- `--json`（と MCP の `kairos_list`／`kairos_next`）のエラー面 `error.kind` で、**供給の解決値が契約を破る違反を `supply` に分類する**。
+  これまでは評価の途中で割れるため `static`（定義の誤り）に落ちていた。
+
+対象＝評価器の契約検査が割るもの全部:
+
+- 昇順・重複なし。covering の包含。`labels` の同長と宣言値域。
+- `kind: dates`／`instants` の形（日付の形式・実在・epoch ms の範囲）。covering／asof の欠落。
+
+変わらないもの:
+
+- `usage`（引数・ファイル・`--supply` の JSON 自体の誤り）と `static`（字句・構文・静的・評価のエラー）の範囲。
+- メッセージの文言（「契約違反: …」）と終了コード 1。
+- [`schema/cli-report.schema.json`](../schema/cli-report.schema.json) の説明文（`supply: the supply contract (external) was violated`）。実装がこれに揃った。
+
+理由: 消費側（供給側）が「自分のデータが悪い」と「定義が悪い」を `kind` で見分けられなかった。
+発報層プロファイル（[付録 A](60-firing-layer-profile.md) A.4）の「`supply` では止めず劣化運転」の規則が、契約違反のデータでも効くようになる。
+
+### 同梱物と配布（1.0.11 で配布・言語不変）
+
+- `kairos-lang-mcp` の同梱 reference（`resources` で配る文書）の相対リンクと画像を、公開サイトの絶対 URL に書き換えて同梱する（外部レビュー第 13 回 E5）。MCP クライアントが文書だけを受け取っても参照先が切れない。
+- `kairos-lang-mcp` の依存 `kairos-lang` を `^1.0.10`（lock 1.0.10）に（同 E6）。
+- `kairos-lang-mcp` の README 日英に、公式 MCP Registry（`io.github.azathothx/kairos-lang-mcp`）への登録済みの 1 行。
+- **Windows 単体 exe を公開 workflow が組む**。npm 公開の成功後に windows-latest で nodejs.org の node.exe（SHASUMS256.txt で照合）から署名を剥がし、SEA を注入し、参照実装と出力バイト一致を実走で確かめてから `kairos-<版>-win-x64.zip`（exe＋README 日英）と `.sha256` を Release の資産に添付する。1.0.10 は手作業だった。道具は `impl/scripts/build-sea.mjs`・`strip-authenticode.mjs`（公開リポジトリから呼べる位置に移した）。
+- 開発依存の更新（Dependabot 月次）: vitest 5・@types/node・esbuild・zod。TypeScript は 6 系に留める（7.0 は `lib/typescript.js` を同梱せず、Playground 構築の `transpileModule` が使えない）。CI の actions/checkout・setup-node は v7（実行基盤 Node 24）。配布物に影響なし。
+
+### テスト
+
+- witness 4 本（`impl/test/schema-and-explain.test.ts`＝昇順・covering の外・labels の同長・宣言値域の外）。追補前の実装に戻すと 4 本とも `static` で赤。
+- **827 テスト**。
+

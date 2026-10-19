@@ -1154,14 +1154,14 @@ export class Evaluator {
     externalToTable(owner, name, kind, declLabels, data, env) {
         const src = `${owner.name}.${name}`;
         if (typeof data.covering !== 'string' || data.covering.trim() === '') {
-            this.err(`契約違反: covering がない——external ${src}（解決値は覆域の主張を必ず運ぶ。ADR-46）`);
+            this.supplyErr(`契約違反: covering がない——external ${src}（解決値は覆域の主張を必ず運ぶ。ADR-46）`);
         }
         let claim;
         try {
             claim = parseCoveringText(data.covering);
         }
         catch (err) {
-            this.err(`契約違反: covering が読めない——external ${src}: ${err.message}`);
+            this.supplyErr(`契約違反: covering が読めない——external ${src}: ${err.message}`);
         }
         let r;
         try {
@@ -1169,11 +1169,11 @@ export class Evaluator {
         }
         catch (err) {
             if (err instanceof KairosError)
-                this.err(`契約違反: ${err.message}——external ${src}`);
+                this.supplyErr(`契約違反: ${err.message}——external ${src}`);
             throw err;
         }
         if (typeof data.asof !== 'string' || data.asof.trim() === '') {
-            this.err(`契約違反: asof がない——external ${src}（データの観測日はデータと一緒に来る。ADR-46）`);
+            this.supplyErr(`契約違反: asof がない——external ${src}（データの観測日はデータと一緒に来る。ADR-46）`);
         }
         let asof = data.asof;
         const staticAsof = this.asofOf(env.members);
@@ -1183,17 +1183,17 @@ export class Evaluator {
         let pts;
         if (kind === 'dates') {
             if (!Array.isArray(data.dates)) {
-                this.err(`契約違反: kind: dates の解決値は dates（"YYYY-MM-DD" の列）を運ぶ——external ${src}`);
+                this.supplyErr(`契約違反: kind: dates の解決値は dates（"YYYY-MM-DD" の列）を運ぶ——external ${src}`);
             }
             if (data.instants)
-                this.err(`契約違反: kind: dates に instants が来た——external ${src}`);
+                this.supplyErr(`契約違反: kind: dates に instants が来た——external ${src}`);
             const tz = this.tzObjOf(env); // 定義側 tz（覆域端と同じ解決＝判断 4）で錨打ち——派生の tz 上書きで再錨可能
             pts = data.dates.map(s => {
                 const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s))
-                    ?? this.err(`契約違反: 日付の形式が不正——external ${src}: ${s}（"YYYY-MM-DD"）`);
+                    ?? this.supplyErr(`契約違反: 日付の形式が不正——external ${src}: ${s}（"YYYY-MM-DD"）`);
                 const y = +m[1], mo = +m[2], d = +m[3];
                 if (!isRealDate(y, mo, d)) {
-                    this.err(`契約違反: 実在しない日付——external ${src}: ${s}`
+                    this.supplyErr(`契約違反: 実在しない日付——external ${src}: ${s}`
                         + '（黙ったロールオーバーの封止＝ADR-43 の字句検査の解決値向け再執行。ADR-46）');
                 }
                 return tz.civilDayStart(y, mo, d);
@@ -1201,46 +1201,46 @@ export class Evaluator {
         }
         else {
             if (!Array.isArray(data.instants)) {
-                this.err(`契約違反: kind: instants の解決値は instants（epoch ms の列）を運ぶ——external ${src}`);
+                this.supplyErr(`契約違反: kind: instants の解決値は instants（epoch ms の列）を運ぶ——external ${src}`);
             }
             if (data.dates)
-                this.err(`契約違反: kind: instants に dates が来た——external ${src}`);
+                this.supplyErr(`契約違反: kind: instants に dates が来た——external ${src}`);
             for (const v of data.instants) {
                 if (typeof v !== 'number' || !Number.isInteger(v)) {
-                    this.err(`契約違反: instants は有限整数の epoch ms——external ${src}: ${v}`);
+                    this.supplyErr(`契約違反: instants は有限整数の epoch ms——external ${src}: ${v}`);
                 }
                 // 時刻として表せない値（±8.64e15 ms の外）は黙って通り、診断の日付が NaN-NaN-NaN になっていた（三巡目・F140）
                 if (Math.abs(v) > 8.64e15) {
-                    this.err(`契約違反: instants が時刻の表現範囲の外——external ${src}: ${v}（epoch ms は ±8.64e15 以内。秒やマイクロ秒で渡していないか）`);
+                    this.supplyErr(`契約違反: instants が時刻の表現範囲の外——external ${src}: ${v}（epoch ms は ±8.64e15 以内。秒やマイクロ秒で渡していないか）`);
                 }
             }
             pts = data.instants.slice();
         }
         for (let i = 1; i < pts.length; i++) {
             if (pts[i] <= pts[i - 1])
-                this.err(`契約違反: 解決値は昇順・重複なし——external ${src}（§3.8 と同じ整列則）`);
+                this.supplyErr(`契約違反: 解決値は昇順・重複なし——external ${src}（§3.8 と同じ整列則）`);
         }
         for (const p of pts) {
             if (!ivContainsPoint(r.iv, p)) {
-                this.err(`契約違反: 解決値の点が covering の外——external ${src}: ${this.rt.fmt(p)}`
+                this.supplyErr(`契約違反: 解決値の点が covering の外——external ${src}: ${this.rt.fmt(p)}`
                     + '（列の全要素は covering に包含——ADR-37 判断 1）');
             }
         }
         let labels;
         if (declLabels) {
             if (!Array.isArray(data.labels))
-                this.err(`契約違反: labels 宣言つきの external にラベルが来ない——${src}`);
+                this.supplyErr(`契約違反: labels 宣言つきの external にラベルが来ない——${src}`);
             if (data.labels.length !== pts.length)
-                this.err(`契約違反: labels は時点列と同長——external ${src}（ADR-30）`);
+                this.supplyErr(`契約違反: labels は時点列と同長——external ${src}（ADR-30）`);
             for (const l of data.labels) {
                 if (!declLabels.includes(l)) {
-                    this.err(`契約違反: 宣言値域の外のラベル——external ${src}: ${l}（域外の封止＝ADR-42 判断 7 の契約版）`);
+                    this.supplyErr(`契約違反: 宣言値域の外のラベル——external ${src}: ${l}（域外の封止＝ADR-42 判断 7 の契約版）`);
                 }
             }
             labels = data.labels.slice();
         }
         else if (data.labels) {
-            this.err(`契約違反: labels 無宣言の external にラベルが来た——${src}（黙って捨てない＝ADR-39 の統治）`);
+            this.supplyErr(`契約違反: labels 無宣言の external にラベルが来た——${src}（黙って捨てない＝ADR-39 の統治）`);
         }
         // 整列は宣言から静的に決まる（空でも宣言どおり＝ADR-46 判断 2。dates の目盛り所属は錨打ちの構成で保証）
         const align = kind === 'dates' ? this.dayGrain(env) : null;
@@ -3534,5 +3534,9 @@ export class Evaluator {
     }
     err(msg) {
         throw new KairosError(msg);
+    }
+    /** 解決値の契約違反（昇順・覆域の包含・labels の同長と値域・形）は供給側の責任＝SupplyError（CLI／MCP の error.kind は supply。1.0 追補 28） */
+    supplyErr(msg) {
+        throw new SupplyError(msg);
     }
 }

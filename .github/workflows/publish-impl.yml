@@ -3,6 +3,7 @@
 # （または tag を指定した手動実行）。job は environment「npm」の required reviewer が承認するまで始まらない＝
 # 「確認してから世に出る」の型はそのまま。下限＝Node 22.14・npm 11.5.1（Node 24 同梱の npm は v24.5.0 以降 11.5.1 以上）。
 # 公開ビルドはキャッシュを使わない（npm の手引きに同じ・毎回レジストリから入れる）。
+# 2026-10-17 追加（1.0.11 から）: npm 公開の成功後に job windows-exe が Windows 単体 exe を組み、Release の資産に添付する（下の注記）。
 name: Publish impl
 on:
   push:
@@ -32,10 +33,10 @@ jobs:
     env:
       TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
@@ -71,3 +72,64 @@ jobs:
             sleep 30
           done
           echo "::warning::kairos-lang@${VERSION} がレジストリにまだ見えない。手元で npm view kairos-lang@${VERSION} dist.attestations を確かめる"
+
+  # Windows 単体 exe（2026-10-17 新設・1.0.11 から）: npm 公開の成功後に windows-latest で SEA を組み、Release v1.0.x の資産に添付する。
+  # 台＝nodejs.org の node.exe（ランナーの Node と同じ版・SHASUMS256.txt で照合）→ 注入の前に Authenticode 署名を剥がす
+  # （impl/scripts/strip-authenticode.mjs・注入後は剥がせない）→ impl/scripts/build-sea.mjs --win（Windows 上なので実走検証＝参照実装と
+  # 出力バイト一致まで走る）→ zip（exe＋README 日英）＋ .sha256 → gh release upload。1.0.10 で手作業だった手順（runbook v1.0.10 ④）の機械化。
+  # Release はタグの後・承認の前に人が作る（runbook §3）。無ければこの job は失敗する＝Release を作ってから gh run rerun --failed。
+  windows-exe:
+    needs: publish
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write   # Release の資産を添付する（この job だけ）
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: 版の照合（タグ＝package.json）と Release の存在
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          PKG="$(node -p "require('./impl/package.json').version")"
+          [ "$PKG" = "$VERSION" ] || { echo "::error::package.json は $PKG・タグは $TAG"; exit 1; }
+          gh release view "$TAG" --json tagName --jq .tagName >/dev/null || { echo "::error::Release $TAG が無い。Release を作ってから gh run rerun --failed"; exit 1; }
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "NODE_V=$(node --version)" >> "$GITHUB_ENV"
+      - run: npm ci
+        working-directory: impl
+      - name: 台の node.exe（nodejs.org・ランナーと同じ版・SHASUMS256.txt で照合）→ 署名を剥がす
+        run: |
+          set -euo pipefail
+          mkdir -p base
+          curl -fsSL -o "base/node-$NODE_V-win-x64.zip" "https://nodejs.org/dist/$NODE_V/node-$NODE_V-win-x64.zip"
+          curl -fsSL -o base/SHASUMS256.txt "https://nodejs.org/dist/$NODE_V/SHASUMS256.txt"
+          (cd base && grep " node-$NODE_V-win-x64.zip\$" SHASUMS256.txt | sha256sum -c -)
+          pwsh -NoProfile -Command "Expand-Archive -LiteralPath 'base/node-$NODE_V-win-x64.zip' -DestinationPath 'base/unz'"
+          cp "base/unz/node-$NODE_V-win-x64/node.exe" base/node.exe
+          node impl/scripts/strip-authenticode.mjs base/node.exe base/node-unsigned.exe
+      - name: SEA を組む（Windows 上＝参照実装と出力バイト一致の実走検証つき）
+        run: node impl/scripts/build-sea.mjs --win base/node-unsigned.exe
+      - name: zip（exe＋README 日英）と sha256
+        run: |
+          set -euo pipefail
+          ZIP="kairos-$VERSION-win-x64.zip"
+          sed "s/{{VERSION}}/$VERSION/g; s/{{NODE}}/$NODE_V/g" impl/scripts/README-windows.template.txt > dist/README-windows.txt
+          pwsh -NoProfile -Command "Compress-Archive -LiteralPath 'dist/kairos.exe','dist/README-windows.txt' -DestinationPath 'dist/$ZIP'"
+          (cd dist && sha256sum "$ZIP" > "$ZIP.sha256" && cat "$ZIP.sha256" && sha256sum kairos.exe)
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+      - name: Release の資産に添付
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG" "dist/$ZIP" "dist/$ZIP.sha256" --clobber
+          { echo "## Windows 単体 exe（$TAG）"; echo '```'; cat "dist/$ZIP.sha256"; echo "node.exe: $NODE_V（nodejs.org・署名を剥がして注入）"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

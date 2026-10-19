@@ -15,7 +15,7 @@ body:
     attributes:
       label: kairos-lang-mcp の版 / kairos-lang-mcp version
       description: "`npx -y kairos-lang-mcp --version` の出力、または kairos_validate が返す version / Output of `npx -y kairos-lang-mcp --version`, or the version field kairos_validate returns"
-      placeholder: "1.0.10"
+      placeholder: "1.0.11"
     validations:
       required: true
   - type: input
