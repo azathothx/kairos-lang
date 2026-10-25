@@ -15,12 +15,16 @@
 //    （「0 件のうち 0 件・処理できません」・削除しても戻らない＝同実測）＝黙って落ちるので CLI の既定にせず、Playground もスマホでは「1 点ずつ」を既定にする。
 //  - 区間註釈（範囲外）は終日の VEVENT（半開 [from, to) を DTSTART/DTEND に・TRANSP:TRANSPARENT＝予定を塞がない）として載せる
 //    ＝表の外は黙らない（ADR-37 判断 5）。「表を更新して再生成する」の一文を DESCRIPTION に。
+//    点が 0 でも註釈があれば註釈の予定だけを書く（1.0.12・1.0 追補 29）。予定（VEVENT）が 0 のときだけ書かない（CLI は終了コード 2）。
 //  - 決定性: DTSTAMP は各 VEVENT の DTSTART と同じ瞬間（UTC）。UID は式の字面・ファイル内の順番・tz・点（ms）から決定的（FNV-1a 64）
 //    ＝同じ定義の再取り込みで予定が重複しない（取り込み側は同じ UID を同じ予定として更新する）・式を変えれば別の予定になる・前文〈表〉だけの
 //    更新では UID は変わらない（＝表を更新して再生成すれば同じ予定が更新される）。鍵（uidKey）は `--json` の `results[].uid`
 //    （series の UID と同一）と共有＝.ics を経由しない実装が同じ鍵で予定を更新できる（1.0 追補 26）。
 //    時計を読まない（評価は不変に決定的）。
 //  - SUMMARY（予定の名前）: opts.title → 定義の先頭コメント行（# …）→ opts.fallbackTitle → 式の 1 行目。式が複数なら「名前 · 式」。
+//    1 点 1 予定の形で、その点に結果の出口のラベル（results[].labels・1.0 追補 29）があれば SUMMARY（と通知の文）は「名前 · ラベル」
+//    （「二十四節気 · 立春」。名前を残すのは「12」のような短いラベルだけでは予定が読めないため）。ラベルの無い点・labels の無い式は
+//    上の名前。series の 1 予定は名前のまま。UID は不変。
 //  - 行は CRLF・75 オクテットで折り返す（RFC 5545 §3.1。UTF-8 の多バイト文字の途中では切らない）。TEXT 値は \ ; , 改行をエスケープ。
 import type { ResultAnnotation } from './eval.ts';
 import { formatAnnotation } from './eval.ts';
@@ -31,7 +35,7 @@ export interface IcsInput {
   tz: string;
   from: string;
   to: string;
-  results: { source: string; dates: string[]; points: number[]; annotations: ResultAnnotation[] }[];
+  results: { source: string; dates: string[]; points: number[]; annotations: ResultAnnotation[]; labels?: (string | null)[] }[];
 }
 
 export interface IcsOptions {
@@ -112,7 +116,7 @@ const STR = {
   en: { annotationNote: 'This interval depends on data outside the table — update the table and regenerate' },
 } as const;
 
-/** 評価結果を .ics の文字列にする（CRLF 終端）。予定の件数は dates の総数（註釈の予定は数えない） */
+/** 評価結果を .ics の文字列にする（CRLF 終端）。予定の件数は icsEventCount（点＋範囲外の註釈） */
 export function toIcs(rep: IcsInput, opts: IcsOptions = {}): string {
   const lang = opts.lang ?? 'ja';
   const title = opts.title ?? titleFromSource(opts.source) ?? opts.fallbackTitle;
@@ -135,10 +139,10 @@ export function toIcs(rep: IcsInput, opts: IcsOptions = {}): string {
     // UID の鍵＝式の字面・ファイル内の順番（idx）・tz。順番を含めるのは、同じ字面の式が 2 つ（別の前文の下など）あっても
     // UID が衝突しない（RFC 5545 §3.8.4.7 の MUST）ため——字面だけだと series で別の点列の 2 予定が 1 つに潰れる（公開前レビュー 2026-10-07）
     const key = uidKey(idx, res.source, rep.tz);
-    const alarm = () => {
+    const alarm = (text: string) => {
       push('BEGIN', 'VALARM');
       push('ACTION', 'DISPLAY');
-      push('DESCRIPTION', escapeText(name));
+      push('DESCRIPTION', escapeText(text));
       push('TRIGGER', 'PT0M');
       push('END', 'VALARM');
     };
@@ -162,24 +166,26 @@ export function toIcs(rep: IcsInput, opts: IcsOptions = {}): string {
         push('X-KAIROS-COUNT', String(res.dates.length));
         push('X-KAIROS-LABEL', res.dates[0]);
         push('TRANSP', 'TRANSPARENT');
-        if (!allDay) alarm();
+        if (!allDay) alarm(name);
         push('END', 'VEVENT');
       }
     } else {
       res.dates.forEach((label, i) => {
         const ms = res.points[i];
         const allDay = isDateLabel(label);
+        const l = res.labels?.[i];
+        const summary = l == null ? name : `${name} · ${l}`;   // 出口のラベルがあれば題は「名前 · ラベル」（1.0 追補 29。名前は残す）
         push('BEGIN', 'VEVENT');
         push('UID', pointUid(key, ms));
         push('DTSTAMP', icsUtc(ms));
         if (allDay) lines.push(`DTSTART;VALUE=DATE:${dateValue(label)}`);
         else { push('DTSTART', icsUtc(ms)); push('DTEND', icsUtc(ms)); }
-        push('SUMMARY', escapeText(name));
+        push('SUMMARY', escapeText(summary));
         push('DESCRIPTION', escapeText(`${label}\n${res.source}`));
         push('X-KAIROS-POINT', String(ms));
         push('X-KAIROS-LABEL', label);
         push('TRANSP', 'TRANSPARENT');
-        if (!allDay) alarm();
+        if (!allDay) alarm(summary);
         push('END', 'VEVENT');
       });
     }
@@ -219,7 +225,8 @@ export function pointUid(key: string, ms: number): string { return `kairos-${key
 /** 区間註釈の予定の UID＝`-ann-<fromMs>-<toMs>@` */
 export function annotationUid(key: string, fromMs: number, toMs: number): string { return `kairos-${key}-ann-${fromMs}-${toMs}@kairos-lang.org`; }
 
-/** 予定の件数（dates の総数）——Playground の保存メッセージと CLI の検査で共有 */
+/** 予定（VEVENT）の件数＝点の総数＋範囲外の区間註釈の数（1 点 1 予定の形）——Playground の保存メッセージと CLI の「0 件なら書かない」で共有。
+ *  註釈も数える＝点が 0 でも註釈があれば書く（1.0.12・1.0 追補 29）。VEVENT の無い VCALENDAR だけを出さない */
 export function icsEventCount(rep: IcsInput): number {
-  return rep.results.reduce((n, r) => n + r.dates.length, 0);
+  return rep.results.reduce((n, r) => n + r.dates.length + r.annotations.length, 0);
 }

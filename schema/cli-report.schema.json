@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://kairos-lang.org/schema/cli-report.schema.json",
   "title": "Kairos CliReport (kairos list|next --json)",
-  "description": "Output of the reference CLI with --json. Success: command/version/tz/from/to/results/coverage/warnings. Failure (exit code 1): command/version/error. Points are instants on the base time axis (epoch ms = identity); dates are their civil labels in the report's tz and correspond one-to-one to points. Published with kairos-lang 1.0.6 (1.0 addendum 23); later revisions are backward compatible. 1.0.9 (addendum 26) adds results[].uid.",
+  "description": "Output of the reference CLI with --json. Success: command/version/tz/from/to/results/coverage/warnings. Failure (exit code 1): command/version/error. Points are instants on the base time axis (epoch ms = identity); dates are their civil labels in the report's tz and correspond one-to-one to points. Published with kairos-lang 1.0.6 (1.0 addendum 23); later revisions are backward compatible. 1.0.9 (addendum 26) adds results[].uid. 1.0.12 (addendum 29) adds the optional results[].labels.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -160,6 +160,16 @@
             "$ref": "#/$defs/stage"
           },
           "description": "only with --explain: the pipe's head and each stage, with the point count after it (the lightweight explain)"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": "1.0.12 (addendum 29), optional: present only when the body expression refers to exactly one labelled binding (an external or table literal with labels:, a cycle, or a segmentBy with labels:). Then one entry per point, same length and order as dates: the label that binding's projection B(d) gives the point — the label of the point's row in the table, or of the window the point falls in — or null when the projection does not apply (the point is not in the table, e.g. after shift, or is outside the windows or out of coverage). Absent when the expression refers to no labelled binding or to two or more. Labels are the declared words as written (not affected by --lang). The same values fill the label column of --tsv and the SUMMARY of each point's event in --ics"
         }
       }
     },

@@ -1,7 +1,7 @@
 {
   "name": "kairos-lang",
-  "version": "1.0.11",
-  "description": "Kairos schedule definition language — reference implementation (CLI + evaluator, zero runtime dependencies)",
+  "version": "1.0.12",
+  "description": "Kairos schedule definition language — 決めたら、いつでも。Write the rule once; list the dates. Reference implementation (CLI + evaluator, zero runtime dependencies)",
   "keywords": [
     "schedule",
     "scheduling",

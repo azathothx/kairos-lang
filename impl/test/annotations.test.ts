@@ -5,6 +5,7 @@
 // - 実効被覆域の分類器（三分岐）・明示の被覆主張・被覆サマリ（残走路）・defCache×asof
 import { describe, it, expect } from 'vitest';
 import { run, evalDates } from '../src/index.ts';
+import { OutOfCoverageSignal, KairosError } from '../src/eval.ts';
 import { PRELUDE } from './helpers.ts';
 
 const JP2 = `
@@ -321,6 +322,33 @@ everyDay |> filter(d => epochOrdinal(lunarW, d) == 0)
 `, { from: '2026-01-19', to: '2026-05-01' });
     expect(r.results[0].dates).toEqual(days('2026-01-19', '2026-02-17'));
     expect(r.results[0].annotations.length).toBeGreaterThan(0);   // 2026-04-01 以降の照会が落ちて註釈
+  });
+
+  it('範囲外シグナルの構築はスタック採取を止め、Error.stackTraceLimit を元に戻す（90-open 2-1 ①・意味論不変）', () => {
+    // (c) 註釈の出力は変更前と同じ＝list の人間形「# ⚠ 範囲外 …」は cli.test.ts の黄金出力（GOLDEN_LIST）・
+    //     annotations の from/to/source は本 describe の上 3 本が担う。ここは (a) 戻し・(b) フレームなし だけを見る
+    const saved = Error.stackTraceLimit;
+    try {
+      Error.stackTraceLimit = 7;   // 既定（10）と違う値にして「戻した」ことを識別する
+      const ann = { from: 0, to: 1, source: 'x', covering: '..', covIv: [] };
+      const sig = new OutOfCoverageSignal('範囲外（out-of-coverage）: 試験', [ann], { start: 0, end: 1 });
+      // (a) 構築後に元の値に戻っている＝続く従来の診断はフレームを持つ
+      expect(Error.stackTraceLimit).toBe(7);
+      expect(new KairosError('従来の診断').stack).toMatch(/\n\s+at /);
+      // (b) シグナルの stack は先頭行（"Error: 範囲外…"）だけでフレーム行を持たない
+      expect(sig.stack!.split('\n')).toHaveLength(1);
+      expect(sig.stack).toMatch(/^Error: 範囲外（out-of-coverage）: 試験$/);
+      expect(sig.entries).toEqual([ann]);
+      expect(sig.window).toEqual({ start: 0, end: 1 });
+      // 実経路（filter の述語が覆域外の点を踏んで捕捉される形）を通しても戻っている
+      const r = run(JP2 + SEKKI + `
+(sekki | ([2027-02-04T05:00] covering: ..)) |> filter(s => sekki(s) == 立春)
+`, { from: '2026-01-01', to: '2028-01-01' });
+      expect(r.results[0].dates).toEqual(['2026-02-04T05:02']);
+      expect(Error.stackTraceLimit).toBe(7);
+    } finally {
+      Error.stackTraceLimit = saved;
+    }
   });
 });
 

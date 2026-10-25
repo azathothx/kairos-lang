@@ -69,7 +69,7 @@ const STR = {
     ja: { annotationNote: 'この区間は表の外に依存する——表を更新して再生成する' },
     en: { annotationNote: 'This interval depends on data outside the table — update the table and regenerate' },
 };
-/** 評価結果を .ics の文字列にする（CRLF 終端）。予定の件数は dates の総数（註釈の予定は数えない） */
+/** 評価結果を .ics の文字列にする（CRLF 終端）。予定の件数は icsEventCount（点＋範囲外の註釈） */
 export function toIcs(rep, opts = {}) {
     const lang = opts.lang ?? 'ja';
     const title = opts.title ?? titleFromSource(opts.source) ?? opts.fallbackTitle;
@@ -93,10 +93,10 @@ export function toIcs(rep, opts = {}) {
         // UID の鍵＝式の字面・ファイル内の順番（idx）・tz。順番を含めるのは、同じ字面の式が 2 つ（別の前文の下など）あっても
         // UID が衝突しない（RFC 5545 §3.8.4.7 の MUST）ため——字面だけだと series で別の点列の 2 予定が 1 つに潰れる（公開前レビュー 2026-10-07）
         const key = uidKey(idx, res.source, rep.tz);
-        const alarm = () => {
+        const alarm = (text) => {
             push('BEGIN', 'VALARM');
             push('ACTION', 'DISPLAY');
-            push('DESCRIPTION', escapeText(name));
+            push('DESCRIPTION', escapeText(text));
             push('TRIGGER', 'PT0M');
             push('END', 'VALARM');
         };
@@ -127,7 +127,7 @@ export function toIcs(rep, opts = {}) {
                 push('X-KAIROS-LABEL', res.dates[0]);
                 push('TRANSP', 'TRANSPARENT');
                 if (!allDay)
-                    alarm();
+                    alarm(name);
                 push('END', 'VEVENT');
             }
         }
@@ -135,6 +135,8 @@ export function toIcs(rep, opts = {}) {
             res.dates.forEach((label, i) => {
                 const ms = res.points[i];
                 const allDay = isDateLabel(label);
+                const l = res.labels?.[i];
+                const summary = l == null ? name : `${name} · ${l}`; // 出口のラベルがあれば題は「名前 · ラベル」（1.0 追補 29。名前は残す）
                 push('BEGIN', 'VEVENT');
                 push('UID', pointUid(key, ms));
                 push('DTSTAMP', icsUtc(ms));
@@ -144,13 +146,13 @@ export function toIcs(rep, opts = {}) {
                     push('DTSTART', icsUtc(ms));
                     push('DTEND', icsUtc(ms));
                 }
-                push('SUMMARY', escapeText(name));
+                push('SUMMARY', escapeText(summary));
                 push('DESCRIPTION', escapeText(`${label}\n${res.source}`));
                 push('X-KAIROS-POINT', String(ms));
                 push('X-KAIROS-LABEL', label);
                 push('TRANSP', 'TRANSPARENT');
                 if (!allDay)
-                    alarm();
+                    alarm(summary);
                 push('END', 'VEVENT');
             });
         }
@@ -191,7 +193,8 @@ export function seriesUid(key) { return `kairos-${key}-series@kairos-lang.org`; 
 export function pointUid(key, ms) { return `kairos-${key}-${ms}@kairos-lang.org`; }
 /** 区間註釈の予定の UID＝`-ann-<fromMs>-<toMs>@` */
 export function annotationUid(key, fromMs, toMs) { return `kairos-${key}-ann-${fromMs}-${toMs}@kairos-lang.org`; }
-/** 予定の件数（dates の総数）——Playground の保存メッセージと CLI の検査で共有 */
+/** 予定（VEVENT）の件数＝点の総数＋範囲外の区間註釈の数（1 点 1 予定の形）——Playground の保存メッセージと CLI の「0 件なら書かない」で共有。
+ *  註釈も数える＝点が 0 でも註釈があれば書く（1.0.12・1.0 追補 29）。VEVENT の無い VCALENDAR だけを出さない */
 export function icsEventCount(rep) {
-    return rep.results.reduce((n, r) => n + r.dates.length, 0);
+    return rep.results.reduce((n, r) => n + r.dates.length + r.annotations.length, 0);
 }

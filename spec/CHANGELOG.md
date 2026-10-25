@@ -751,3 +751,81 @@ F51・F66/F97。仮称 9 語のうち 8 語を正式名に確定。**ADR-43**＝
 - witness 4 本（`impl/test/schema-and-explain.test.ts`＝昇順・covering の外・labels の同長・宣言値域の外）。追補前の実装に戻すと 4 本とも `static` で赤。
 - **827 テスト**。
 
+## 1.0 追補 29（2026-10-26）——範囲外シグナルの構築を軽く・結果の出口にラベル・`next` の警告・`.ics` の註釈・文言の揃え（言語不変）
+
+言語は不変。参照実装 npm `kairos-lang` **1.0.12**・`kairos-lang-mcp` も同じ評価器を使うので揃う。束は 5 点＝範囲外シグナルの構築を軽く・`next` の確定再評価は `window-clip` を報告しない・`--ics` は点 0・註釈だけの範囲でも註釈の予定を書く・結果の出口にラベル・運用信号の文言と文書の揃え。小節は決定順。
+
+### 範囲外シグナルの構築を軽く（2026-10-18）
+
+- 評価器の内部シグナル `OutOfCoverageSignal`（範囲外の分類。ADR-37 判断 6）を組み立てる間だけ `Error.stackTraceLimit` を 0 にして、スタック採取を止める。組み立てが終わったら元の値に必ず戻す（try/finally）。
+- 対象はこの 1 クラスだけ。他のエラー（`KairosError`・`SupplyError`）は 1 回限りの診断なので、従来どおりスタックを持つ。
+
+変わらないもの:
+
+- 結果（点・註釈・警告・被覆サマリ）と、`--json`／`--tsv`／`.ics`／MCP の出力。文言も同じ。
+- 範囲外の分類と輸送（filter の「落として註釈」・窓の逆像への拡幅）。捕捉側は `instanceof` と `entries`／`window` しか読まない。
+- 変わるのは速度と、このシグナルを例外として捕まえたときの `stack` 文字列（先頭行だけになる）。利用者の面には出ない。
+
+理由: `at` 展開の内部述語は、覆域つき入力を参照すると覆域外の点を万単位で評価する。点ごとに投げる範囲外シグナルの構築（スタック採取）が支配項になっていた（実運用側の profile で自己時間の首位・33.9%）。採取を止めると出力は同じで 2.0〜2.5 倍（[design/90-open-questions.md](../design/90-open-questions.md) 2-1 ①。② tick 生成域の絞り込みは別途）。
+
+### `next` の確定再評価は window-clip を報告しない（2026-10-19）
+
+- `next` は見つかった後に [from, 最終発火日の翌日) で確定再評価する。右端は答えから決まるので、`shift(+1)` で最終発火日の翌日へ動く中間点が毎回 `window-clip` 警告になっていた（同梱例 `jp-holidays.kairos` の `next` 既定で再現）。値は正しいが、助言「範囲を広げて評価する」は `next` では実行できない。
+- 確定再評価の `window-clip` を報告しない。外へ動いた点は from より前（次の発火ではない）か最終発火日の翌日以降（N 件の後）で、答えの N 件に含まれない。
+- 変わらないもの: 点・註釈・残走路・`to`・終了コード。`list` の `window-clip`、地平線まで探して不足のときの `next`（`to`＝地平線＝`--horizon` で広げられる）、`horizon-clip` は従来どおり。`--json`／`--tsv`／`.ics`／MCP は同じ報告から出るので揃う。
+- 採らなかった案: `to` を 1 日余らせる。`shift(+2)` や `roll` の週末越えには届かず、残走路と註釈の右端が 1 日ずれる。
+- 文書: 発火層プロファイル A.4 の警告の註（日英）・`impl/README.md` の `next`。[design/90-open-questions.md](../design/90-open-questions.md) 2-6。
+
+### `--ics`／`--ics-series`: 点 0・註釈だけの範囲は註釈の予定だけを書く（2026-10-19）
+
+- 評価範囲に点が 1 つも無くても、範囲外の区間註釈があれば、註釈の予定（終日・`TRANSP:TRANSPARENT`）だけの .ics を stdout に書いて終了コード 0。stderr に「⚠ 点 0（[from, to) に点がない）・範囲外の註釈 N 件＝註釈の予定だけを書く」を知らせる（`--lang en` は英語形）。
+- 点も註釈も 0 のときだけ従来どおり何も書かず、「⚠ 予定 0 件（[from, to) に点も範囲外の註釈もない）——.ics は書き出さない」で終了コード 2（`VEVENT` の無い `VCALENDAR` は出さない）。
+- 件数の数え方（`icsEventCount`）を「点の総数」から「点＋範囲外の註釈」（予定の総数）に。Playground の「カレンダーに入れる」も同じ関数なので揃う（点 0・註釈だけでも作る。series の保存メッセージの「回数」は点の数のまま・点 0 のときは「予定 N 件」の形で知らせる）。
+- 理由: 文書は「区間註釈は終日の予定として載る。表の外は黙らない」と言うのに、点が 0 の範囲では何も載らなかった。発火層プロファイル A.4（範囲外は信号であって評価不能ではない）に沿う。例: 同梱例 `jp-holidays.kairos` を `[2026-12-01, 2027-02-01)` で `--ics` すると、範囲外の帯 2026-12-31..2027-02-01 の 1 件だけの .ics になる。
+- 変わらないもの: 点がある範囲の出力（予定・UID・名前・行の形）・`--json`／`--tsv`・MCP。言語は不変。
+- 文書: `--help`（日英）・`impl/README.md`（`--ics`／`--ics-series` 節・終了コードの要約に `--ics` の予定 0 件＝2 を明記）・`recipes/windows-admin.md`（日英）。[design/90-open-questions.md](../design/90-open-questions.md) 1-6・5-3 (1)(2)。
+
+### 結果の出口にラベルを添える（2026-10-19）
+
+規則は 2 行:
+
+- 本体式が参照するラベル付き束縛（`external`／テーブルリテラルの `labels:`・`cycle`・`segmentBy` の `labels:`）が**ちょうど 1 つ**のとき、結果の各点 d に既存の射影 `B(d)` を評価して添える。
+- ラベルの無い点（表に無い＝`shift` の後など・窓の外・範囲外）は `null`。参照が 0 か 2 つ以上なら添えない。
+
+出口だけが変わる:
+
+- `--json`（と MCP の `kairos_list`／`kairos_next`）: `results[].labels`（`dates` と同長・`string | null`・添えないときは鍵ごと無い）。[`schema/cli-report.schema.json`](../schema/cli-report.schema.json) に追加（必須ではない）。
+- `--tsv`: 固定順の 7 列の後ろに 8 列目 `label`（無ければ空）。見出し行も `label` が付く。7 列で読む既存の取り込みはそのまま使える。
+- `--ics`: 1 点 1 予定の形で、ラベルのある点は `SUMMARY`（と通知の文）が「名前 · ラベル」（「二十四節気 · 立春」）。名前を残すのは、`12` のような短いラベルだけでは予定が読めないため。`UID` は不変。`--ics-series` の 1 予定は名前のまま。
+- 変わらないもの: 点・註釈・警告・被覆サマリ・人間表示。言語は不変（値層の点はラベルを持たない。読みは射影のまま＝ADR-30/39/47）。
+- 出口の射影は後続の式の観測面を変えない: 射影が初めて強制した束縛のメモ化も巻き戻す（2026-10-24・レビュー所見）。準備中の版では、0 点の `filter` の述語内の名前を先行する式が射影で強制すると、後続の式の被覆サマリからその束縛の登録が消えていた（1.0.11 には出ていた）。
+- `--tsv` の `label` 列はタブ・改行を空白に（`source` と同じ・2026-10-24）。言語のラベルは名前だけでタブを含めないが、`renderTsv` は任意の `CliReport` を受ける。
+- 人間表示と `next` の探索窓では射影を計算しない（`RunOptions.labels: false`・結果は不変・2026-10-24）。
+- `label:` 付与式（計算ラベル）はラベル付き束縛に数えない。`cycle`（`weekday` など）は数える＝`everyDay |> filter(d => weekday(d) == Wed)` の各点に `Wed` が付く。
+- 文書: `--help`（日英）・`impl/README.md`（`--json`・`--tsv`・`--ics` 節）・`recipes/excel-workday.md`（日英・見出し行）。[design/90-open-questions.md](../design/90-open-questions.md) 2-7。
+
+### 運用信号の文言と文書を揃える（2026-10-19）
+
+文書の訂正（言語・実装は不変）。表の終端跨ぎの実地検証（同梱例 `jp-holidays.kairos` を 2026-12〜2027-02 で評価）で見えた 3 点:
+
+- 残走路の起点: 発火層プロファイル A.4 の註・A.9・用語集（日英）に 1 文——起点は covering 末尾の翌日 0 時（排他端）。表示の末尾（閉端）から演繹すると 1 日ずれる。例: covering `..2026-12-31` を `to` 2027-02-01 で評価すると −31 日（12-31 から数えると −32）。`coverage[].runwayDays` の値は変えない。
+- 範囲外の註釈が表の最終日（12-31）から始まる機序: [`reference/shift.md`](../reference/shift.md) の落とし穴（日英）と同梱例 `jp-holidays.kairos` の頭註に 1 文——`shift(-1, unit: day)` の平行移動像と `roll(Following)` の依存像が各 1 日手前へ広がり、`|` の和で残る（素の表と `shift(+1)` は 01-01 開始。ADR-37 判断 4・spec §4.10）。
+- asof 欠落の診断は経路で 2 文言（`--supply` の束の形の検査＝「asof（文字列）が必須」／評価器の契約検査＝「契約違反: asof がない——external …」）。1 本に寄せず、両方を witness で固定。どちらも `error.kind: supply`。
+- [design/90-open-questions.md](../design/90-open-questions.md) 5-3 (3)(4)(5)（(1)(2) は `--ics` の小節で済み）。
+
+### テスト
+
+- witness 1 本（`impl/test/window-clip.test.ts`＝同梱例 `jp-holidays` の `next` で `window-clip` が出ず点・`to`・残走路は不変・同じ範囲の `list` では出る・from 側も同じ・地平線まで探して不足のときは従来どおり出る）。抑止を外すと `next` の warnings で赤・`to` を 1 日余らせると `to` と残走路で赤・接頭辞を変えると赤。
+- witness 1 本（`impl/test/annotations.test.ts`＝構築後に `Error.stackTraceLimit` が元の値に戻る・シグナルの `stack` がフレーム行を持たない・filter の実経路を通しても戻る）。追補前の実装に戻すと `stack` の行数で赤・戻しを落とすと値で赤。註釈の出力が変わらないことは既存の黄金出力（`impl/test/cli.test.ts`）が担う。
+- witness（`impl/test/ics.test.ts`）＝新設 1 本（点 0・註釈 1 の範囲で `--ics`／`--ics-series` とも註釈の予定 1 件・終了コード 0・stderr の知らせ（日英）・同梱例 `jp-holidays` の再現）・既存の予定 0 件の 1 本を「点も註釈も 0」の文言と `--ics-series`・点がある範囲では知らせないことまで広げ・Playground の `buildIcs` も点 0・註釈だけで件数 1。件数を点だけに戻すと終了コードで赤・判定を点だけにすると赤・知らせの条件を外すと点がある範囲で赤・知らせを落とすと赤・文言を変えると赤。
+- witness（`impl/test/result-labels.test.ts`・新設）＝`external` の `labels:` で各点にラベル・部分集合（filter）も同じ射影・2 束縛参照（`weekday` と表・表 2 つ）で無し・`shift` 後の点は表に無ければ `null`（`segmentBy` の窓なら属する窓のラベル・窓の外は `null`）・`cycle` だけの式・`--tsv` の 8 列目と見出し・`.ics` の `SUMMARY`＝「名前 · ラベル」（ラベルだけの題は出ない・`UID` 不変・series は名前のまま）・`next` の切り詰め・Schema（`null` は通り数値は通らない・実物の `--json` が通る）・出口が被覆サマリと警告を変えない・同梱例 `rokuyo`。hook を外す・2 つでも添える・`null` を空文字に・列を落とす・題を名前のままに・題をラベルだけに・`next` の切り詰めを外す・被覆サマリの復元を外す・Schema の型を絞る、の変異で赤を実測。`impl/test/tsv.test.ts` は 8 列に合わせた。
+- witness 1 本（`impl/test/schema-and-explain.test.ts`＝asof 欠落の 2 文言: `--supply` の束の検査の文言と kind supply・評価器の文言（`run()` の解決子で `SupplyError`）・空白だけの asof は CLI でも評価器の文言で kind supply）。cli.ts か eval.ts の文言を変えると赤・評価器の検査を外すと赤・束の検査を外すと欠落が評価器へ届いて文言が変わり赤。
+- witness 4 本（`result-labels.test.ts` 3 本＝メモ化の巻き戻し〈後続の式の被覆サマリが 1.0.11 と同じ〉・`labels: false` の run／cmdList／cmdNext、`tsv.test.ts` 1 本＝`label` 列の無害化）＝2026-10-24 のレビュー所見の処置。変異（巻き戻しを外す・フラグを無視する・置換を外す）で赤を実測。
+- **862 テスト**（物流レシピの doctest 10 本・レビュー所見の witness 4 本を含む）。
+
+
+### 文書
+
+- レシピ「休配日と着日——物流の営業日カレンダーを定義から作る」（`recipes/logistics-delivery.md`・日英・doctest・Playground リンク）を追加。
+- 付録 A（発報層プロファイル）A.7 の観測例に、2026-10-23 の節気配信の 3 つの時刻（発火 +0.001 秒・配信の予約 +0.048 秒・送信完了 +3.568 秒）の標本を日英で追加。発火 ≤ 予約 ≤ 送信完了の順序が本番で揃った最初の標本（供給側の事前確認済み・2026-10-24）。
+- タグライン「決めたら、いつでも。／Write the rule once; list the dates.」を README（日英）・サイトの設定・Playground（日英）・`llms.txt`・npm の説明（`kairos-lang`・`kairos-lang-mcp`）と README に掲げた（2026-10-20 決定・言語不変）。

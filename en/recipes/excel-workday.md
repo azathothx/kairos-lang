@@ -1,5 +1,5 @@
 ---
-source_sha: a20406da47c0
+source_sha: da3e0f5ae333
 ---
 
 # Schedules that are hard to write with Excel's WORKDAY and EOMONTH — do not let an expired holiday table stay silent
@@ -199,16 +199,18 @@ kairos list --tsv --from 2026-01-01 --to 2027-01-01 month-end.kairos > month-end
 ```
 
 ```text
-expr	source	uid	date	time	epoch_ms	note
-1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-01-30		1769698800000	
-1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-02-27		1772118000000	
-1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-03-31		1774882800000	
+expr	source	uid	date	time	epoch_ms	note	label
+1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-01-30		1769698800000		
+1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-02-27		1772118000000		
+1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-03-31		1774882800000		
 ```
 
 **Excel**: do not double-click the file. Use "Data → From Text/CSV", pick the file, choose UTF-8 as the file
 origin and Tab as the delimiter. `date` comes in as a date and `epoch_ms` as a number.
 `time` is filled only for definitions that carry a time of day. `note` is the annotation text when the point
-falls in an interval "outside the table"; empty means the computation stayed inside the table.
+falls in an interval "outside the table"; empty means the computation stayed inside the table. `label` (from 1.0.12)
+holds the point's label (a solar-term name, say) when the expression refers to exactly one labelled table (`labels:`);
+it is empty in this example.
 
 - **PowerShell**: ``Import-Csv month-end.tsv -Delimiter "`t" -Encoding utf8 | Format-Table date, note``.
 - **VBA**: call `kairos` through `Shell`, have it write the TSV, and read it line by line.

@@ -118,7 +118,7 @@ describe('.ics 書き出し: series（1 式 1 予定＋RDATE＝1 つの繰り返
     expect(ev[0]).toContain('TRANSP:TRANSPARENT');
     expect(ev[0]).not.toContain('VALARM');
     expect(ev[1]).toContain('SUMMARY:⚠ 範囲外');
-    expect(icsEventCount(rep)).toBe(4);                                // 件数は点のまま
+    expect(icsEventCount(rep)).toBe(5);                                // 件数は点 4＋註釈の予定 1（1.0 追補 29＝註釈も数える）
   });
   it('時刻付きの式は DTSTART/DTEND（0 分）＋ RDATE の UTC 列・VALARM は 1 つ・25 個ずつ複数行・点列は 1 点 1 予定の形と同じ', () => {
     const rep = cmdList(ALARM, { from: '2026-10-05', to: '2026-12-01', tz: 'Asia/Tokyo' });
@@ -251,24 +251,68 @@ describe('.ics 書き出し: CLI --ics と Playground の「カレンダーに�
     expect(cli('--help').stdout).toContain('--ics');
     expect(cli('--help', '--lang', 'en').stdout).toContain('--ics');
   });
-  it('予定 0 件なら .ics を書かず stderr に知らせて終了コード 2（VEVENT の無い VCALENDAR は出さない＝Playground「0 件なら作らない」と同じ。公開前レビュー 2026-10-07）', () => {
+  it('点も註釈も 0 なら .ics を書かず stderr に知らせて終了コード 2（VEVENT の無い VCALENDAR は出さない＝Playground「0 件なら作らない」と同じ。公開前レビュー 2026-10-07・1.0.12 で「点も註釈も」に）', () => {
     const f = join(dir, 'day31.kairos');
     writeFileSync(f, JP + 'everyDay |> within(month) |> nth(31)\n');
-    const r = cli('list', '--from', '2026-02-01', '--to', '2026-03-01', '--tz', 'Asia/Tokyo', '--ics', f);   // 2 月に 31 日は無い
+    const r = cli('list', '--from', '2026-02-01', '--to', '2026-03-01', '--tz', 'Asia/Tokyo', '--ics', f);   // 2 月に 31 日は無い・covering 内＝註釈も無い
     expect(r.status).toBe(2);
     expect(r.stdout).toBe('');
     expect(r.stderr).toContain('予定 0 件');
+    expect(r.stderr).toContain('点も範囲外の註釈もない');
     const en = cli('list', '--from', '2026-02-01', '--to', '2026-03-01', '--tz', 'Asia/Tokyo', '--ics', '--lang', 'en', f);
     expect(en.status).toBe(2);
     expect(en.stdout).toBe('');
     expect(en.stderr).toContain('no events');
+    expect(en.stderr).toContain('no points and no out-of-coverage annotations');
     const ok = cli('list', '--from', '2026-01-01', '--to', '2026-02-01', '--tz', 'Asia/Tokyo', '--ics', f);   // 1 月は 31 日がある
     expect(ok.status).toBe(0);
     expect(events(ok.stdout).length).toBe(1);
+    expect(ok.stderr).not.toContain('点 0');                                                   // 点がある範囲では知らせない
+    const ser = cli('list', '--from', '2026-02-01', '--to', '2026-03-01', '--tz', 'Asia/Tokyo', '--ics-series', f);
+    expect(ser.status).toBe(2);
+    expect(ser.stdout).toBe('');
+  });
+  it('点 0・註釈だけの範囲は註釈の予定だけの .ics を書いて終了コード 0・stderr に「点 0・註釈 N 件」（日英）。--ics-series も同じ器・同梱例 jp-holidays で再現（1.0 追補 29）', () => {
+    const src = JP + 'national\n';
+    const f = join(dir, 'national.kairos');
+    writeFileSync(f, src);
+    const rep = cmdList(src, { from: '2027-01-01', to: '2027-02-01', tz: 'Asia/Tokyo' });   // 2027 年は表（covering 2026）の外
+    expect(rep.results[0].dates.length).toBe(0);
+    expect(rep.results[0].annotations.length).toBe(1);
+    expect(icsEventCount(rep)).toBe(1);                                                        // 件数は点＋註釈
+    const r = cli('list', '--from', '2027-01-01', '--to', '2027-02-01', '--tz', 'Asia/Tokyo', '--ics', f);
+    expect(r.status).toBe(0);
+    expect(r.stdout.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
+    expect(r.stdout).toBe(toIcs(rep, { source: src, fallbackTitle: 'national' }));
+    const ev = events(r.stdout);
+    expect(ev.length).toBe(1);
+    expect(ev[0]).toContain('SUMMARY:⚠ 範囲外 2027-01-01..2027-02-01');
+    expect(ev[0]).toContain('DTSTART;VALUE=DATE:20270101');
+    expect(ev[0]).toContain('DTEND;VALUE=DATE:20270201');
+    expect(ev[0]).toContain('TRANSP:TRANSPARENT');
+    expect(r.stderr).toContain('⚠ 点 0（[2027-01-01, 2027-02-01) に点がない）・範囲外の註釈 1 件＝註釈の予定だけを書く');
+    expect(r.stderr).not.toContain('予定 0 件');
+    const en = cli('list', '--from', '2027-01-01', '--to', '2027-02-01', '--tz', 'Asia/Tokyo', '--ics', '--lang', 'en', f);
+    expect(en.status).toBe(0);
+    expect(events(en.stdout).length).toBe(1);
+    expect(en.stderr).toContain('⚠ no points in [2027-01-01, 2027-02-01); 1 out-of-coverage annotation(s) — writing the annotation events only');
+    const ser = cli('list', '--from', '2027-01-01', '--to', '2027-02-01', '--tz', 'Asia/Tokyo', '--ics-series', f);
+    expect(ser.status).toBe(0);
+    expect(events(ser.stdout).length).toBe(1);
+    expect(events(ser.stdout)[0]).toContain('SUMMARY:⚠ 範囲外');
+    expect(ser.stdout).not.toContain('-series@');                                             // 点の無い式に繰り返し予定は無い
+    expect(ser.stderr).toContain('範囲外の註釈 1 件＝註釈の予定だけを書く');
+    // 同梱例: 12 月に祝日は無く、1 月は表の外＝範囲外の帯（12-31 から＝shift(-1) 側）1 件だけ
+    const jp = cli('list', '--from', '2026-12-01', '--to', '2027-02-01', '--tz', 'Asia/Tokyo', '--ics', 'examples/jp-holidays.kairos');
+    expect(jp.status).toBe(0);
+    expect(events(jp.stdout).length).toBe(1);
+    expect(events(jp.stdout)[0]).toContain('DTSTART;VALUE=DATE:20261231');
+    expect(events(jp.stdout)[0]).toContain('DTEND;VALUE=DATE:20270201');
+    expect(jp.stderr).toContain('範囲外の註釈 1 件');
   });
   it('Playground の buildIcs は CLI の toIcs と同じ文字列を出し、暮らしの例 3 本が日英の HTML と core.js に揃う', async () => {
     const { buildIcs, rollingWindow } = await import(new URL('../../playground/core.js', import.meta.url).href) as
-      { buildIcs: (s: string, o: { from: string; to: string; tz: string; lang: string; series?: boolean }) => { text: string; name: string; count: number };
+      { buildIcs: (s: string, o: { from: string; to: string; tz: string; lang: string; series?: boolean }) => { text: string; name: string; count: number; events: number; points: number };
         rollingWindow: (tz: string, days: number, now?: Date) => { from: string; to: string } };
     // 目覚ましの例は「今日から先の有視界の窓」（選んだ日から 4 週間・2026-10-07 決定）: JST 10/7 01:00 ＝ UTC 10/6 16:00 でも from は tz の今日
     expect(rollingWindow('Asia/Tokyo', 28, new Date(Date.UTC(2026, 9, 6, 16, 0, 0)))).toEqual({ from: '2026-10-07', to: '2026-11-04' });
@@ -281,6 +325,9 @@ describe('.ics 書き出し: CLI --ics と Playground の「カレンダーに�
     const pgs = buildIcs(ALARM, { ...W, lang: 'ja', series: true });
     expect(pgs.text).toBe(toIcs(cmdList(ALARM, W), { source: ALARM, series: true }));
     expect(buildIcs(JP + 'everyDay |> within(month) |> nth(31)\n', { from: '2026-02-01', to: '2026-03-01', tz: 'Asia/Tokyo', lang: 'en' }).count).toBe(0);
+    // 点 0・註釈だけの範囲は CLI と同じく作る（件数は註釈の予定 1・1.0 追補 29）。series の「回数」は点の数
+    const ann = buildIcs(JP + 'national\n', { from: '2027-01-01', to: '2027-02-01', tz: 'Asia/Tokyo', lang: 'ja', series: true });
+    expect([ann.count, ann.events, ann.points]).toEqual([1, 0, 0]);
     const root = new URL('../../', import.meta.url);
     const core = readFileSync(new URL('playground/core.js', root), 'utf8');
     for (const html of ['playground/index.html', 'en/playground/index.html']) {

@@ -12,8 +12,8 @@ Windows のシステム管理者向けのページ。PowerShell とタスク ス
 - **Playground**（インストール不要）: [https://kairos-lang.org/playground/](../playground/) に定義を貼って実行する。「URL に固定」で定義と期間を含んだ URL を同僚に渡せる。「カレンダーに入れる（.ics）」で結果をカレンダー用のファイルにできる。ブラウザ内で完結し、何も送信しない。
 - **CLI**: Node.js 20 以上を入れて `npm i -g kairos-lang`。コマンド名は `kairos`。入れずに試すなら `npx -y kairos-lang list …`（初回はダウンロードが走る）。動作確認は `kairos --version`。
 
-- **単体の exe**（Node.js 不要）: [Release v1.0.11](https://github.com/azathothx/kairos-lang/releases/tag/v1.0.11) の `kairos-1.0.11-win-x64.zip` を展開して
-  `kairos.exe` を置く（SHA256 は同じ場所の `.sha256`）。npm の `kairos-lang@1.0.11` と同一のソースから作成。署名はないので、ダウンロード直後の初回だけ
+- **単体の exe**（Node.js 不要）: [Release v1.0.12](https://github.com/azathothx/kairos-lang/releases/tag/v1.0.12) の `kairos-1.0.12-win-x64.zip` を展開して
+  `kairos.exe` を置く（SHA256 は同じ場所の `.sha256`）。npm の `kairos-lang@1.0.12` と同一のソースから作成。署名はないので、ダウンロード直後の初回だけ
   SmartScreen の警告が出ることがある（「詳細情報」→「実行」）。以下の `kairos` を `.\kairos.exe` に読み替えればそのまま使える。
 
 ## 最初の 1 本——定義を書いて `list` で聞く
@@ -213,7 +213,7 @@ cmd /c "kairos list --from 2026-10-01 --to 2027-01-01 --tz Asia/Tokyo --ics C:\k
 
 - 1 つの点が 1 つの予定になる。予定の名前は定義の 1 行目のコメント。
 - 時刻付きの点は、その時刻に通知が出る 0 分の予定。空き時間は塞がない。この定義では水曜の 2 時か 3 時に通知が出る。
-- 期間に点が 1 つも無いと、ファイルは書かれず終了コード 2。
+- 期間に点が 1 つも無くても、表の外の区間（註釈）があればその予定だけが書かれ終了コード 0（1.0.12 から）。点も註釈も無いと、ファイルは書かれず終了コード 2。
 
 Outlook への取り込み（2026-10-13 に新しい Outlook と従来の Outlook で実測）:
 

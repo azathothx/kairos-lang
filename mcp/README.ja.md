@@ -1,5 +1,8 @@
 # kairos-lang-mcp（日本語）
 
+**決めたら、いつでも。**  
+<sub>Write the rule once; list the dates.</sub>
+
 スケジュール定義言語 **Kairos**（https://kairos-lang.org）の [MCP](https://modelcontextprotocol.io/) サーバです。
 AI クライアントから、定義を決定的に評価できます（範囲内の全発火、または次の N 回）。定義の検証と、記述語のリファレンスの参照もできます。
 

@@ -1,8 +1,8 @@
 {
   "name": "kairos-lang-mcp",
   "mcpName": "io.github.azathothx/kairos-lang-mcp",
-  "version": "1.0.11",
-  "description": "MCP server for the Kairos schedule definition language — evaluate definitions (list/next), validate them, and look up the descriptor reference, from any MCP client",
+  "version": "1.0.12",
+  "description": "MCP server for the Kairos schedule definition language — 決めたら、いつでも。Write the rule once; list the dates. Evaluate definitions (list/next), validate them, and look up the descriptor reference, from any MCP client",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -53,7 +53,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
-    "kairos-lang": "^1.0.10",
+    "kairos-lang": "^1.0.11",
     "zod": "^4.0.0"
   },
   "devDependencies": {

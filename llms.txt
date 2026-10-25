@@ -1,5 +1,7 @@
 # Kairos
 
+> **決めたら、いつでも。** — Write the rule once; list the dates.
+>
 > Kairos is a schedule definition language: a composable time-stream DSL with first-class calendars,
 > business days, windows, and projections. Every expression maps a time stream to a time stream
 > (closure), so derived dates — substitute holidays, fiscal periods, lunisolar months — can feed
@@ -16,7 +18,7 @@ Key facts:
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 827 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 862 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
 - Documentation language: Japanese documentation is canonical; the spec, the descriptor reference,
@@ -43,9 +45,10 @@ Key facts:
   recurring event (DTSTART + RDATE) for Google/Apple Calendar on a PC (phone calendar apps ignore RDATE — use one
   event per point there). The Playground's "Add to calendar (.ics)" builds the same file in the browser;
   its everyday examples (recycling pickup, payday, alarm clock) are calendar-ready.
-- Tabular export (1.0.10): `--tsv` writes one point per line, tab-separated, header `expr source uid date time epoch_ms note`
+- Tabular export (1.0.10): `--tsv` writes one point per line, tab-separated, header `expr source uid date time epoch_ms note label`
   (date and time in separate columns so Excel reads them as date/time cells; time is empty for day-granular points; note carries
-  the annotation text when the point lies in an annotated interval). Only the header and point lines reach stdout (coverage
+  the annotation text when the point lies in an annotated interval; label, added in 1.0.12, is the point's label when the
+  expression refers to exactly one labelled binding — the same value as `results[].labels` in `--json` — and empty otherwise). Only the header and point lines reach stdout (coverage
   summary, annotations, warnings go to stderr), so Excel ("Data > From Text/CSV", UTF-8, tab) and PowerShell
   (Import-Csv -Delimiter "`t" -Encoding utf8) read it as is. Exclusive with `--json`/`--ics`; language-neutral like `--json`.
 - Disambiguation: this Kairos is the schedule definition language at https://kairos-lang.org (npm package

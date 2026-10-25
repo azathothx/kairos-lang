@@ -39,7 +39,17 @@ export class OutOfCoverageSignal extends KairosError {
     /** 述語が読んだ窓の区間（窓越し参照＝coincides 等）。filter の輸送はこの逆像へ拡幅する（F75・ADR-37 改訂 2） */
     window;
     constructor(msg, entries, window) {
-        super(msg);
+        // 構築の間だけスタック採取を止める（90-open 2-1 ①・意味論不変）: at 展開の述語は覆域外の点を万単位で
+        // 評価し、この構築が支配項になる（profile 首位）。捕捉側は instanceof と entries/window しか読まず
+        // stack は見ない。他の KairosError は 1 回限りの診断なのでここだけ。finally で元の値に必ず戻す
+        const limit = Error.stackTraceLimit;
+        Error.stackTraceLimit = 0;
+        try {
+            super(msg);
+        }
+        finally {
+            Error.stackTraceLimit = limit;
+        }
         this.entries = entries;
         this.window = window;
     }
@@ -99,6 +109,8 @@ export class Runtime {
     warnings = [];
     /** 本体式の段ごとの記録を残す（RunOptions.explain） */
     explain = false;
+    /** 結果の出口のラベルを計算する（RunOptions.labels。false＝人間表示・next の探索窓では計算しない） */
+    labels = true;
     /** external の解決子（ADR-46。RunOptions.resolve から） */
     resolver;
     /** 被覆サマリの収集（ADR-37 判断 7 (b)）: 評価が参照した各データ源・被覆主張 */
@@ -156,6 +168,105 @@ function argLabel(a) {
 function stageLabel(st) {
     const name = `${st.ns ? `${st.ns}.` : ''}${st.name}`;
     return st.args.length ? `${name}(${st.args.map(argLabel).join(', ')})` : name;
+}
+// ---- 補助: 結果の出口のラベル（1.0 追補 29・90-open 2-7）——本体式が参照する束縛の列挙 ----
+/** 本体式の自由名（name・qualified）を文書順に・重複なく集める。ラムダの仮引数で束縛された名前・core 語・段名は除く
+ *  （段名は糖衣＝ラムダでラベル源にならない）。字面で数える＝評価が走らなかった枝（0 点の filter の述語）も参照に数える */
+function freeNames(e, bound, out) {
+    const go = (x) => freeNames(x, bound, out);
+    switch (e.t) {
+        case 'name':
+            if (!bound.has(e.name) && !CORE_WORDS.has(e.name) && !out.has(e.name))
+                out.set(e.name, e);
+            break;
+        case 'qualified': {
+            const k = `${e.ns}.${e.name}`;
+            if (!out.has(k))
+                out.set(k, e);
+            break;
+        }
+        case 'num':
+        case 'date':
+        case 'time':
+        case 'width':
+        case 'str': break;
+        case 'list':
+            for (const el of e.elems) {
+                if (el.t === 'range') {
+                    go(el.a);
+                    go(el.b);
+                }
+                else
+                    go(el);
+            }
+            for (const c of e.covering ?? []) {
+                if (c.a)
+                    go(c.a);
+                if (c.b)
+                    go(c.b);
+            }
+            if (e.labels)
+                go(e.labels);
+            break;
+        case 'cycleLabels':
+            go(e.list);
+            go(e.anchor);
+            break;
+        case 'lambda':
+            freeNames(e.body, new Set([...bound, ...e.params]), out);
+            break;
+        case 'call':
+            go(e.callee);
+            for (const a of e.args)
+                go(a.value);
+            break;
+        case 'index':
+            go(e.target);
+            go(e.index);
+            break;
+        case 'pipe':
+            go(e.head);
+            for (const st of e.stages)
+                for (const a of st.args)
+                    go(a.value);
+            break;
+        case 'combine':
+        case 'bin':
+            go(e.l);
+            go(e.r);
+            break;
+        case 'not':
+        case 'neg':
+            go(e.e);
+            break;
+        case 'ternary':
+            go(e.c);
+            go(e.a);
+            go(e.b);
+            break;
+        case 'gen':
+            go(e.operand);
+            go(e.arg);
+            for (const v of Object.values(e.named))
+                go(v);
+            break;
+    }
+    return out;
+}
+/** ラベル付き束縛の判定（2-7 の規則）: external／テーブルリテラルの `labels:`（点列への並行ラベル）・cycle（周期ラベル）・
+ *  segmentBy の `labels:`（窓列への並行・周期ラベル）。`label:` 付与式（計算ラベル）は含めない */
+function isLabeledV(v) {
+    if (!isObj(v))
+        return false;
+    if (v.k === 'cycle')
+        return true;
+    if (v.k === 'table')
+        return v.labels !== undefined;
+    if (v.k === 'stream' && v.wins.length > 0) {
+        const top = v.wins[v.wins.length - 1];
+        return top.labels !== undefined || top.labelsCycle !== undefined;
+    }
+    return false;
 }
 // ---- 補助: 区間・点列 ----
 /** start でソート済みの区間列から ms を含む区間の添字（なければ -1） */
@@ -553,8 +664,10 @@ export class Evaluator {
                             from: disp(a.from), to: disp(a.to), fromMs: a.from, toMs: a.to,
                             source: a.source, covering: a.covering, ...(a.asof ? { asof: a.asof } : {}),
                         }));
+                        // 結果の出口のラベル（1.0 追補 29・90-open 2-7）: 値層は不変——点列が決まった後に、出口だけが射影を読む
+                        const labels = this.rt.labels ? this.resultLabels(st.expr, cur, trimmed) : undefined;
                         results.push({ source: '', line: st.line ?? 0, points: trimmed, dates: trimmed.map(p => this.rt.fmt(p)), annotations,
-                            ...(stages ? { stages } : {}) });
+                            ...(stages ? { stages } : {}), ...(labels ? { labels } : {}) });
                         break;
                     }
                 }
@@ -563,6 +676,69 @@ export class Evaluator {
         };
         execStatements(program.statements, env);
         return results;
+    }
+    /** 結果の出口のラベル（1.0 追補 29・90-open 2-7）。規則: 本体式が参照するラベル付き束縛（external／テーブルリテラルの
+     *  `labels:`・cycle・segmentBy の `labels:`）が**ちょうど 1 つ**のとき、結果の各点 d に既存の射影 B(d)（applyValue の
+     *  束縛名射影＝ADR-30/39/47 と同じ経路）を評価して添える。射影が立たない点（B の表に無い・窓の外・範囲外）は null。
+     *  0 か 2 つ以上なら添えない（undefined＝`--json` に鍵が出ない）。値層・言語は不変——点列・註釈・警告・被覆サマリは
+     *  このあとも同じ（射影が触った警告・被覆サマリ・メモ化は元に戻す＝出口が観測面を変えない。メモ化を残すと後続の式が被覆サマリに登録しなくなる）。
+     *  参照は字面（本体式の自由名）で数える・解決できない名前（列挙名の裸書き・premise 名）は飛ばす */
+    resultLabels(expr, env, pts) {
+        const refs = freeNames(expr, new Set(), new Map());
+        if (refs.size === 0)
+            return undefined;
+        const warnN = this.rt.warnings.length;
+        const covKeys = new Set(this.rt.coverage.keys());
+        const defKeys = new Set(this.defCache.keys());
+        const fineKeys = new Set(this.fineCache.keys());
+        try {
+            let hit;
+            for (const [name, ref] of refs) {
+                let v;
+                try {
+                    v = this.evalExpr(ref, env);
+                }
+                catch (e) {
+                    if (e instanceof KairosError)
+                        continue;
+                    throw e;
+                }
+                if (!isLabeledV(v))
+                    continue;
+                if (hit)
+                    return undefined; // 2 つ以上＝添えない（式を分けて書けば各式に付く）
+                hit = { name, v };
+            }
+            if (!hit)
+                return undefined;
+            const { name, v } = hit;
+            return pts.map(ms => {
+                try {
+                    const l = this.applyValue(v, [{ k: 'point', ms }], env, name);
+                    return typeof l === 'string' ? l : typeof l === 'number' || typeof l === 'boolean' ? String(l) : null;
+                }
+                catch (e) {
+                    if (e instanceof KairosError)
+                        return null; // 範囲外シグナルも「表に無い・窓の外」の硬エラーも、出口では null
+                    throw e;
+                }
+            });
+        }
+        finally {
+            this.rt.warnings.length = warnN;
+            for (const k of [...this.rt.coverage.keys()])
+                if (!covKeys.has(k))
+                    this.rt.coverage.delete(k);
+            // メモ化も巻き戻す（2026-10-24・レビュー所見）: 射影が初めて強制した束縛（0 点の filter の述語内の名前など）を defCache に残すと、
+            // 後続の式がキャッシュに当たり、被覆サマリへの登録と警告が二度と走らない（1.0.11 には出ていた後続の式の登録が消えた）。
+            // socketCache（external の一評価一解決）は残す＝再評価は同じスナップショットを読む
+            for (const k of [...this.defCache.keys()])
+                if (!defKeys.has(k))
+                    this.defCache.delete(k);
+            for (const k of [...this.fineCache.keys()])
+                if (!fineKeys.has(k))
+                    this.fineCache.delete(k);
+        }
     }
     registerPremise(st) {
         const members = new Map();

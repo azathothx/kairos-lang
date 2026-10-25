@@ -22,6 +22,7 @@ export function run(source, opts) {
     const rt = new Runtime(d(opts.from), d(opts.to), tz);
     if (opts.resolve)
         rt.resolver = opts.resolve; // external の解決子（ADR-46）
+    rt.labels = opts.labels !== false; // 出口のラベル（1.0 追補 29）。false＝人間表示・next の探索窓では計算しない
     rt.explain = opts.explain === true; // 段ごとの記録（軽量 explain・1.0 追補 23）
     const ev = new Evaluator(rt);
     const stdlib = parse(stdlibSource);

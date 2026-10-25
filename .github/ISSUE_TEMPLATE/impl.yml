@@ -15,7 +15,7 @@ body:
     attributes:
       label: 版 / Version
       description: "`kairos --version` の出力 / Output of `kairos --version`"
-      placeholder: "1.0.11"
+      placeholder: "1.0.12"
     validations:
       required: true
   - type: input

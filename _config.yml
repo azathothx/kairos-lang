@@ -1,8 +1,9 @@
 # GitHub Pages (Jekyll) — ドキュメントサイトの設定
 # 公開 URL: https://kairos-lang.org/（正準ドメイン。旧 azathothx.github.io/kairos-lang はパス保存 301）
 title: Kairos
-tagline: A schedule definition language
+tagline: "決めたら、いつでも。— Write the rule once; list the dates."
 description: >-
+  決めたら、いつでも。Write the rule once; list the dates.
   Kairos is a schedule definition language — a composable time-stream DSL with
   first-class calendars, business days, windows, and projections.
   「月末 3 営業日前」のようなスケジュールを式で書けるスケジュール定義言語。

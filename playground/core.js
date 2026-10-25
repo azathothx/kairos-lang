@@ -299,13 +299,15 @@ bizDay`,
 export function buildIcs(source, { from, to, tz, lang, series }) {
   const r = run(source, { from, to, tz: tz || undefined });
   const rep = { version: IMPL_VERSION, tz: tz || 'Asia/Tokyo', from, to,
-    results: r.results.map(res => ({ source: res.source, dates: res.dates, points: res.points, annotations: res.annotations })) };
+    results: r.results.map(res => ({ source: res.source, dates: res.dates, points: res.points, annotations: res.annotations,
+                                     ...(res.labels ? { labels: res.labels } : {}) })) };   // 出口のラベル＝1 点 1 予定の題（1.0.12）。CLI --ics と同じ
   const title = titleFromSource(source);
   // ファイル名＝予定の名前（使えない文字は -）。上限 80 字（40 字だと英語の暮らしの例の題が語の途中で切れた＝2026-10-07）
   const name = (title ? title.replace(/[\\/:*?"<>|]+/g, '-').slice(0, 80) : `kairos-${from}_${to}`) + '.ics';
-  const count = icsEventCount(rep);                                                   // 点の総数（註釈の予定は数えない）
-  const events = series === true ? rep.results.filter(r => r.dates.length > 0).length : count;   // カレンダー上の件数（series は式ごと 1）
-  return { text: toIcs(rep, { lang, source, series: series === true }), name, count, events };
+  const points = rep.results.reduce((n, r) => n + r.dates.length, 0);                 // 点の総数（series の「回数」）
+  const count = icsEventCount(rep);                                                   // 予定の総数＝点＋範囲外の註釈。0 なら作らない＝CLI --ics と同じ（点 0 でも註釈があれば作る・1.0.12）
+  const events = series === true ? rep.results.filter(r => r.dates.length > 0).length : count;   // カレンダー上の件数（series は式ごと 1・註釈の予定は別）
+  return { text: toIcs(rep, { lang, source, series: series === true }), name, count, events, points };
 }
 
 /** 今日（tz の市民日）から days 日の半開区間 [from, to) を YYYY-MM-DD で返す——例の「有視界の窓」用。
@@ -435,7 +437,9 @@ export function init(lang) {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-      say(T.icsSaved(r.name, r.count, r.events, !split));
+      // series の「回数」は点の数・1 点ずつは予定の数。点 0・註釈だけのときは series でも「予定 N 件」の形（「繰り返し予定 0 件・0 回分」とは言わない）
+      const asSeries = !split && r.points > 0;
+      say(T.icsSaved(r.name, asSeries ? r.points : r.count, r.events, asSeries));
     } catch (e) {
       out.textContent = String(e && e.message ? e.message : e);
     }

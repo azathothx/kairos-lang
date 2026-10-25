@@ -40,6 +40,8 @@ export interface CliReport {
     points: number[];                  // epoch ms——「判定は外部」の交差計算用の器（点の同一性）
     annotations: ResultAnnotation[];   // 区間註釈（fromMs/toMs 込み・ADR-37 判断 5/7 (a)）
     stages?: StageTrace[];             // --explain のときだけ: 段ごとの途中値と点数（軽量 explain・1.0 追補 23）
+    labels?: (string | null)[];        // 本体式が参照するラベル付き束縛が 1 つのときだけ: 各点に射影 B(d) のラベル・無い点は null
+                                       // （dates と同長・1.0 追補 29）。0 か 2 つ以上なら鍵ごと無い
   }[];
   coverage: CoverageEntry[];           // 被覆サマリ（ADR-37 判断 7 (b)。残走路は評価 to 起点）
   warnings: string[];
@@ -83,7 +85,7 @@ const addDays = (s: string, n: number) => {
   return new Date(Date.UTC(y, mo - 1, d + n)).toISOString().slice(0, 10);
 };
 
-interface CmdOpts { from: string; to?: string; tz?: string; resolve?: ExternalResolver; explain?: boolean }
+interface CmdOpts { from: string; to?: string; tz?: string; resolve?: ExternalResolver; explain?: boolean; labels?: boolean }
 
 /** 入力ファイル（定義・--supply）を UTF-8 の文字列で読む。Windows の導線で踏む 3 形を CLI 境界で受ける
  *  （境界チェックリスト三巡目 2026-09-30・F142）:
@@ -164,6 +166,7 @@ function toReport(command: 'list' | 'next', r: RunResult, o: CmdOpts & { to: str
       source: res.source, line: res.line, uid: seriesUid(uidKey(idx, res.source, o.tz ?? 'Asia/Tokyo')),
       dates: res.dates, points: res.points, annotations: res.annotations,
       ...(res.stages ? { stages: res.stages } : {}),
+      ...(res.labels ? { labels: res.labels } : {}),
     })),
     coverage: r.coverage,
     warnings: r.warnings,
@@ -173,7 +176,8 @@ function toReport(command: 'list' | 'next', r: RunResult, o: CmdOpts & { to: str
 /** list: 範囲 [from, to) の全発火＋註釈＋被覆サマリ */
 export function cmdList(source: string, o: CmdOpts & { to: string }): CliReport {
   const r = run(source, { from: o.from, to: o.to,
-    ...(o.tz ? { tz: o.tz } : {}), ...(o.resolve ? { resolve: o.resolve } : {}), ...(o.explain ? { explain: true } : {}) });
+    ...(o.tz ? { tz: o.tz } : {}), ...(o.resolve ? { resolve: o.resolve } : {}), ...(o.explain ? { explain: true } : {}),
+    ...(o.labels === false ? { labels: false } : {}) });
   // 本体式の無いファイル（空・premise だけ）は exit 0 の空出力だった（境界チェックリスト 2026-09-29・F126）
   if (r.results.length === 0) throw new KairosError('本体式がない（評価する式を 1 行以上書く。premise だけのファイルは評価対象が無い）');
   return toReport('list', r, o);
@@ -192,7 +196,7 @@ export function cmdNext(source: string, o: CmdOpts & { n: number; horizonYears: 
   for (let y = 1; y < o.horizonYears; y *= 2) steps.push(addYears(o.from, y));
   steps.push(addYears(o.from, o.horizonYears));
   for (const to of steps) {
-    const r = run(source, { from: o.from, to, ...runOpts });
+    const r = run(source, { from: o.from, to, ...runOpts, labels: false });   // 探索窓では出口のラベルを計算しない（結果は確定再評価から）
     if (r.results.length === 0) throw new KairosError('本体式がない（評価する式を 1 行以上書く。premise だけのファイルは評価対象が無い）');
     if (r.results.length > 1) throw new KairosError(
       `next は本体式 1 つのファイル向け（${r.results.length} 式ある——list を使うか式を 1 つに）`);
@@ -200,10 +204,19 @@ export function cmdNext(source: string, o: CmdOpts & { n: number; horizonYears: 
     if (found.dates.length >= o.n) {
       // 確定再評価: 右端＝N 発火目の翌市民日（同日複数瞬間の切り落としは slice で）
       const toFinal = addDays(found.dates[o.n - 1].slice(0, 10), 1);
-      const rf = run(source, { from: o.from, to: toFinal, ...runOpts });
+      const rf = run(source, { from: o.from, to: toFinal, ...runOpts, ...(o.labels === false ? { labels: false } : {}) });
+      // 確定再評価の window-clip は報告しない（1.0 追補 29・90-open 2-6）。右端 toFinal は答え（N 発火目）から決まり、利用者が
+      // 選んだ範囲ではないので、助言「範囲を広げて評価する」が next では実行できない（同梱例 jp-holidays の shift(+1) で
+      // 最終発火日の翌日へ動く中間点が毎回この警告になっていた）。値は不変: 答えの N 件は探索窓 [from, to)（to ≥ toFinal）で
+      // 既に見つかっており、確定再評価で [from, toFinal) の外へ動いた点は from より前（次の発火ではない）か N 発火目の翌日以降
+      // （N 件の後）なので、答えに含まれ得ない。to を 1 日余らせる案は shift(+2) や roll の週末越えに届かず、残走路と註釈の
+      // 右端も 1 日ずれるので採らない。horizon-clip は別物（ADR-37 判断 8）で従来どおり。地平線まで探して不足のとき（下の
+      // return）は to＝地平線＝--horizon で広げられるので、従来どおり報告する
+      rf.warnings = rf.warnings.filter(w => !w.startsWith('window-clip: '));
       const res = rf.results[0];
       res.dates = res.dates.slice(0, o.n);
       res.points = res.points.slice(0, o.n);
+      if (res.labels) res.labels = res.labels.slice(0, o.n);   // 出口のラベルも点と並行に切る（1.0 追補 29）
       return toReport('next', rf, { ...o, to: toFinal }, { ...meta, found: o.n });
     }
     if (to === steps[steps.length - 1]) {
@@ -226,8 +239,10 @@ const CLI_STRINGS = {
     horizonShort: (rep: CliReport) =>
       `⚠ 地平線 ${rep.horizonYears} 年以内の発火は ${rep.found} 件（要求 ${rep.requested} 件）`,
     empty: (rep: CliReport) => `# 0 点（[${rep.from}, ${rep.to}) に該当なし）`,
-    icsEmpty: (rep: CliReport, ann: number) =>
-      `⚠ 予定 0 件（[${rep.from}, ${rep.to}) に点がない${ann ? `・範囲外の註釈 ${ann} 件` : ''}）——.ics は書き出さない`,
+    icsEmpty: (rep: CliReport) =>
+      `⚠ 予定 0 件（[${rep.from}, ${rep.to}) に点も範囲外の註釈もない）——.ics は書き出さない`,
+    icsAnnotationsOnly: (rep: CliReport, ann: number) =>
+      `⚠ 点 0（[${rep.from}, ${rep.to}) に点がない）・範囲外の註釈 ${ann} 件＝註釈の予定だけを書く`,
     explain: (st: StageTrace[]) => '# explain: ' + st.map(s =>
       `${s.stage} ${s.count}${s.windows !== undefined ? ` [窓 ${s.windows}]` : ''}${s.annotations ? ` ⚠${s.annotations}` : ''}`).join(' → '),
   },
@@ -240,8 +255,10 @@ const CLI_STRINGS = {
     horizonShort: (rep: CliReport) =>
       `⚠ only ${rep.found} firing(s) within the ${rep.horizonYears}-year horizon (requested ${rep.requested})`,
     empty: (rep: CliReport) => `# 0 points (nothing in [${rep.from}, ${rep.to}))`,
-    icsEmpty: (rep: CliReport, ann: number) =>
-      `⚠ no events (no points in [${rep.from}, ${rep.to})${ann ? `; ${ann} out-of-coverage annotation(s)` : ''}) — no .ics written`,
+    icsEmpty: (rep: CliReport) =>
+      `⚠ no events (no points and no out-of-coverage annotations in [${rep.from}, ${rep.to})) — no .ics written`,
+    icsAnnotationsOnly: (rep: CliReport, ann: number) =>
+      `⚠ no points in [${rep.from}, ${rep.to}); ${ann} out-of-coverage annotation(s) — writing the annotation events only`,
     explain: (st: StageTrace[]) => '# explain: ' + st.map(s =>
       `${s.stage} ${s.count}${s.windows !== undefined ? ` [${s.windows} window${s.windows === 1 ? '' : 's'}]` : ''}${s.annotations ? ` ⚠${s.annotations}` : ''}`).join(' → '),
   },
@@ -284,8 +301,10 @@ function renderLines(rep: CliReport, lang: CliLang, withPoints: boolean): string
   return out;
 }
 
-/** --tsv の列（固定順）。date と time を分けるのは Excel がそのまま日付型・時刻型に読むため */
-export const TSV_HEADER = ['expr', 'source', 'uid', 'date', 'time', 'epoch_ms', 'note'] as const;
+/** --tsv の列（固定順）。date と time を分けるのは Excel がそのまま日付型・時刻型に読むため。
+ *  8 列目 label は結果の出口のラベル（results[].labels・1.0 追補 29）——無い点・添えない式は空。後ろに足したので 7 列で読む既存の
+ *  取り込みはそのまま */
+export const TSV_HEADER = ['expr', 'source', 'uid', 'date', 'time', 'epoch_ms', 'note', 'label'] as const;
 
 /** dates[] のラベルの形（schema/cli-report.schema.json の dates pattern と同じ）: 日付・T 以降の時刻・DST 重複のオフセット */
 const DATE_LABEL = /^(\d{4,6}-\d{2}-\d{2})(?:T(\d{2}:\d{2}(?::\d{2}(?:\.\d{3})?)?))?([+-]\d{2}:\d{2})?$/;
@@ -305,7 +324,8 @@ function splitLabel(label: string): [date: string, time: string] {
  *  - expr＝本体式の番号（1 起点）・source＝式の字面（タブ・改行・復帰は 1 つの空白に）・uid＝results[].uid
  *  - date＝YYYY-MM-DD・time＝ラベルの T 以降（09:00・09:00:30.250・DST の重複なら 01:30-05:00。日粒度の点は空）・epoch_ms＝points[]
  *  - note＝その点が results[].annotations のいずれかの区間 [fromMs, toMs) に入るときの註釈文（複数は「; 」で連結・入らなければ空）
- *  --lang に依らない（言語中立）・note の註釈文は日本語が正・BOM なし・クォートなし（タブ・改行を含み得るのは source だけ） */
+ *  - label＝results[].labels の同じ添字（ラベルの無い点・labels の無い式は空。1.0 追補 29）
+ *  --lang に依らない（言語中立）・note の註釈文は日本語が正・BOM なし・クォートなし（タブ・改行は source と label で空白に置き換える） */
 export function renderTsv(rep: CliReport): string[] {
   const out: string[] = [TSV_HEADER.join('\t')];
   rep.results.forEach((res, i) => {
@@ -315,7 +335,8 @@ export function renderTsv(rep: CliReport): string[] {
       const note = res.annotations
         .filter(a => a.fromMs <= ms && ms < a.toMs)
         .map(formatAnnotation).join('; ');
-      out.push([i + 1, source, res.uid, date, time, ms, note].join('\t'));
+      const label = (res.labels?.[j] ?? '').replace(/[\t\r\n]/g, ' ');   // source と同じ無害化（2026-10-24・レビュー所見）
+      out.push([i + 1, source, res.uid, date, time, ms, note, label].join('\t'));
     });
   });
   return out;
@@ -331,11 +352,13 @@ const USAGE_JA = `使い方（kairos ＝ node src/cli.ts）:
   --lang en: 定型出力の枠組みを英語表示（エラー・註釈文は日本語が正のまま・--json は言語中立）
   --explain: 本体式の段ごとの点数と途中値を # explain: 行（--json では results[].stages）に出す
   --ics: 結果を iCalendar（.ics）で書き出す——1 点＝1 予定（時刻付きは 0 分で通知つき・範囲外の区間も予定として載る。--json と排他・--explain は出ない）
-      予定 0 件なら何も書かず終了コード 2。日粒度の点を終日の予定にするには --tz を定義の premise tz に合わせる（違うと時刻付きになる）
+      点が 0 でも範囲外の註釈があれば註釈の予定だけを書く（stderr に知らせ・終了コード 0）。点も註釈も 0 なら何も書かず終了コード 2
+      日粒度の点を終日の予定にするには --tz を定義の premise tz に合わせる（違うと時刻付きになる）
   --ics-series: 同じく .ics だが 1 式＝1 つの繰り返し予定（RDATE）にまとめる（Google／Apple カレンダー向け。RDATE を読まないアプリでは初回だけになる）
-  --tsv: 1 点 1 行のタブ区切り（Excel・PowerShell の Import-Csv -Delimiter "\`t" 向け）。1 行目は見出し行 expr source uid date time epoch_ms note
-      日粒度の点は time が空・註釈の区間に入る点は note に註釈文。被覆サマリ・註釈・警告は stderr（stdout は見出し行と点の行だけ）。--json／--ics と排他
-サブコマンド省略時は list・--version で実装版。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達／--ics で予定 0 件`;
+  --tsv: 1 点 1 行のタブ区切り（Excel・PowerShell の Import-Csv -Delimiter "\`t" 向け）。1 行目は見出し行 expr source uid date time epoch_ms note label
+      日粒度の点は time が空・註釈の区間に入る点は note に註釈文・label は式が参照するラベル付き束縛（labels:／cycle）が 1 つのときその点のラベル。
+      被覆サマリ・註釈・警告は stderr（stdout は見出し行と点の行だけ）。--json／--ics と排他
+サブコマンド省略時は list・--version で実装版。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達／--ics で予定 0 件（点も註釈もない）`;
 
 const USAGE_EN = `Usage (kairos = node src/cli.ts):
   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json|--ics|--tsv] [--explain] [--lang en] <file.kairos>
@@ -352,17 +375,19 @@ const USAGE_EN = `Usage (kairos = node src/cli.ts):
       --json output is language-neutral.
   --explain: print per-stage point counts and intermediate values as a # explain: line (results[].stages with --json).
   --ics: write the result as iCalendar (.ics) — one event per point (timed points are 0 minutes long with an alarm;
-      out-of-coverage intervals appear as events; exclusive with --json; --explain is not printed). With zero events
-      nothing is written and the exit code is 2. Day-granular points become all-day events only when --tz equals the
-      definition's premise tz (otherwise they are timed).
+      out-of-coverage intervals appear as events; exclusive with --json; --explain is not printed). With no points but
+      out-of-coverage annotations, only the annotation events are written (noted on stderr; exit code 0). With no points
+      and no annotations nothing is written and the exit code is 2. Day-granular points become all-day events only when
+      --tz equals the definition's premise tz (otherwise they are timed).
   --ics-series: same, but one recurring event per expression (RDATE) — for Google/Apple Calendar; apps that ignore
       RDATE show only the first occurrence.
   --tsv: tab-separated, one point per line (for Excel and PowerShell's Import-Csv -Delimiter "\`t"). The first line is the
-      header expr source uid date time epoch_ms note; time is empty for day-granular points; note carries the annotation
-      text when the point falls inside an annotated interval. Coverage summary, annotations and warnings go to stderr
+      header expr source uid date time epoch_ms note label; time is empty for day-granular points; note carries the annotation
+      text when the point falls inside an annotated interval; label is the point's label when the expression refers to exactly
+      one labelled binding (labels:/cycle). Coverage summary, annotations and warnings go to stderr
       (stdout holds only the header and the point lines). Exclusive with --json and --ics.
 Without a subcommand, list is assumed. --version prints the implementation version.
-Exit codes: 0=success, 1=error, 2=next found fewer firings than requested within the horizon / --ics with zero events`;
+Exit codes: 0=success, 1=error, 2=next found fewer firings than requested within the horizon / --ics with zero events (no points and no annotations)`;
 
 /** USAGE の言語選択——パース失敗経路でも使えるよう argv の素朴な走査で決める */
 const pickUsage = (argv: string[]) =>
@@ -449,25 +474,31 @@ export function main(argv: string[]): number {
     if (tsv && (values.json || ics)) {
       throw new KairosError(`--tsv と ${values.json ? '--json' : icsSeries ? '--ics-series' : '--ics'} はどちらか一方（stdout は 1 つの形）`);
     }
+    // 出口のラベル（1.0 追補 29）は --json／--tsv／--ics だけが読む——人間表示では計算しない（2026-10-24・レビュー所見）
+    const wantLabels = values.json === true || tsv || ics;
     let rep: CliReport;
     if (cmd === 'list') {
       const to = (values as { to?: string }).to ?? addYears(from, 1);
       phase = 'eval';
-      rep = cmdList(source, { from, to, tz, ...(resolve ? { resolve } : {}), ...(explain ? { explain } : {}) });
+      rep = cmdList(source, { from, to, tz, ...(resolve ? { resolve } : {}), ...(explain ? { explain } : {}), ...(wantLabels ? {} : { labels: false }) });
     } else {
       const n = posInt((values as { n?: string }).n ?? '1', '-n');
       const horizonYears = posInt((values as { horizon?: string }).horizon ?? '10', '--horizon');
       phase = 'eval';
-      rep = cmdNext(source, { from, n, horizonYears, tz, ...(resolve ? { resolve } : {}), ...(explain ? { explain } : {}) });
+      rep = cmdNext(source, { from, n, horizonYears, tz, ...(resolve ? { resolve } : {}), ...(explain ? { explain } : {}), ...(wantLabels ? {} : { labels: false }) });
     }
 
     if (ics) {
-      // 予定 0 件なら何も書かない（VEVENT の無い VCALENDAR は RFC 5545 §3.6 違反）＝Playground「0 件なら作らない」と同じ。
-      // stderr に知らせて終了コード 2（next の要求件数未達と同じ「結果はあるが器を満たせない」の段）——公開前レビュー 2026-10-07
+      // 予定（VEVENT）0 件なら何も書かない（VEVENT の無い VCALENDAR は RFC 5545 §3.6 違反）＝Playground「0 件なら作らない」と同じ。
+      // stderr に知らせて終了コード 2（next の要求件数未達と同じ「結果はあるが器を満たせない」の段）——公開前レビュー 2026-10-07。
+      // 点が 0 でも範囲外の註釈があれば註釈の予定だけを書いて終了コード 0（表の外は黙らない・1.0.12）。stderr に「点 0・註釈 N 件」を知らせる
       if (icsEventCount(rep) === 0) {
-        console.error(T.icsEmpty(rep, rep.results.reduce((n, r) => n + r.annotations.length, 0)));
+        console.error(T.icsEmpty(rep));
         for (const w of rep.warnings) console.error(T.warning(w));
         return 2;
+      }
+      if (rep.results.every(r => r.dates.length === 0)) {
+        console.error(T.icsAnnotationsOnly(rep, rep.results.reduce((n, r) => n + r.annotations.length, 0)));
       }
       process.stdout.write(toIcs(rep, { lang, source, series: icsSeries, fallbackTitle: basename(positionals[0]).replace(/\.[^.]+$/, '') }));
     }

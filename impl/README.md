@@ -1,5 +1,8 @@
 # Kairos リファレンス実装（プロトタイプ）
 
+**決めたら、いつでも。**  
+<sub>Write the rule once; list the dates.</sub>
+
 > **English readers**: this is the reference implementation of [Kairos](https://kairos-lang.org/), a schedule
 > definition language. The language docs are canonical in Japanese with a full English mirror —
 > [English spec](https://kairos-lang.org/en/spec/) · [recipes](https://kairos-lang.org/en/recipes/) ·
@@ -36,14 +39,16 @@ node src/cli.ts list --tsv examples/payday.kairos > payday.tsv   # Excel・Power
 - **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--json|--ics|--tsv] [--explain] <file>`** — `from`（既定＝今日）以降の次の N 発火（既定 1）。
   - 探索窓を 7 日から倍々に広げる（1 年以降は年単位・上限 `--horizon` 年・既定 10）。
   - 見つかったら [from, 最終発火日の翌日) で確定再評価する。区間註釈・残走路が答えの範囲と整合する。
+  - 確定再評価の `window-clip` は報告しない（右端は答えから決まり、そこで外へ動いた点は答えの N 件に含まれない。`list` は従来どおり・1.0.12）。
   - 本体式 1 つのファイル向け。複数は明示エラー（`list` を使う）。
-- **終了コード**: 0＝成功・1＝エラー・2＝`next` が地平線内に要求件数未達（部分結果は出力し、stderr に不足の内訳）。`--version` は実装版を出して 0 終了。
+- **終了コード**: 0＝成功・1＝エラー・2＝`next` が地平線内に要求件数未達（部分結果は出力し、stderr に不足の内訳）、または `--ics`／`--ics-series` で予定 0 件（点も範囲外の註釈もない。何も書かず stderr に知らせる）。`--version` は実装版を出して 0 終了。
 - `external` の解決子は持たない（解決時は供給エラー＝ADR-46 の既定）。警告は常に stderr。
 
 ### `--json`（機械可読の報告）
 
 - `CliReport` を書き出す: `command`・`version`・`tz`・`from`・`to`・`results`・`coverage`・`warnings`。人間表示と同じ器から直列化するため両表示は乖離しない。
-- `results[]` の項目: `source`（式の字面）・`line`（1 起点の行番号）・`uid`（式の指紋）・`dates`・`points`（epoch ms）・`annotations`（`fromMs`／`toMs` 込み）・`stages`（`--explain` のときだけ）。
+- `results[]` の項目: `source`（式の字面）・`line`（1 起点の行番号）・`uid`（式の指紋）・`dates`・`points`（epoch ms）・`annotations`（`fromMs`／`toMs` 込み）・`stages`（`--explain` のときだけ）・`labels`（下記のときだけ）。
+- `labels`（1.0 追補 29）: 本体式が参照するラベル付き束縛（`external`／テーブルリテラルの `labels:`・`cycle`・`segmentBy` の `labels:`）がちょうど 1 つのとき、各点にその束縛の射影 `B(d)` のラベルを添える（`dates` と同長・`string | null`）。表に無い点（`shift` の後など）・窓の外・範囲外は `null`。参照が 0 か 2 つ以上なら鍵ごと無い（式を分ければ各式に付く）。言語は不変＝点・註釈・被覆サマリは変わらない。
 - `points`／`fromMs` は「判定は外部」（ADR-37）の交差計算を呼び手が epoch ms のまま行うための器＝点の同一性。
 - `dates` はその市民ラベル。秒・ms は 0 でないときだけ（`:ss`・`.SSS`）。DST の重複（同じ壁時計が二度ある瞬間）はオフセット `±HH:MM` 付き。`points` と一対一（1.0 追補 23）。
 - `uid` は `.ics` の series の `UID` と同じ値。1 点の `UID` は `-series@` を `-<ms>@` に。同一性ではなく指紋（1.0 追補 26）。
@@ -61,9 +66,11 @@ node src/cli.ts list --tsv examples/payday.kairos > payday.tsv   # Excel・Power
 - 区間註釈は終日の予定として載る（表示形の半開 `[from, to)` を `DTSTART`／`DTEND` に。表示形が同じ 1 日なら `DTEND` を省く）。表の外は黙らない。
 - RRULE は書かない。展開点列のみで、規則の近似を出さない。
 - 予定の名前（`SUMMARY`）は定義の先頭コメント行（`# …`）→ファイル名の順。
+- その点に `results[].labels` のラベルがあれば、1 点 1 予定の形では `SUMMARY`（と通知の文）が「名前 · ラベル」になる（1.0 追補 29。二十四節気の表なら「二十四節気 · 立春」。名前を残すのは、旧暦の月番号のような短いラベルだけでは予定が読めないため）。ラベルの無い点・添えない式は名前のまま。`UID` は変わらない（同じ定義の再取り込みで予定が更新される）。
 - 決定性: `DTSTAMP` は各予定の `DTSTART` と同じ瞬間。`UID` は式の字面・ファイル内の順番・tz・点から決まる。同じ定義の再取り込みで重複しない（取り込み側は同じ `UID` を同じ予定として更新する。PC の Google カレンダーで実測 2026-10-08）。表（前文）だけの更新では `UID` は変わらない。同じ字面の式が 2 つあっても衝突しない。時計を読まない。
 - CRLF・75 オクテット折り返し・TEXT 値のエスケープ（`\` `;` `,` 改行）。折り返しはエスケープ列を割らない（1.0 追補 25）。
-- 予定 0 件なら何も書かず stderr に知らせて終了コード 2（`VEVENT` の無い `VCALENDAR` は出さない）。`--explain` は `--ics` では出力されない。
+- 点が 0 でも範囲外の註釈があれば、註釈の予定だけの .ics を書いて終了コード 0。stderr に「⚠ 点 0（… に点がない）・範囲外の註釈 N 件＝註釈の予定だけを書く」を知らせる（1.0.12）。
+- 点も註釈も 0 なら何も書かず stderr に知らせて終了コード 2（`VEVENT` の無い `VCALENDAR` は出さない）。`--explain` は `--ics` では出力されない。
 - Playground の「カレンダーに入れる（.ics）」は同じ関数（`src/ics.ts`）でブラウザ内に作る。
 
 ### `--ics-series`（1 式＝1 つの繰り返し予定）
@@ -75,15 +82,17 @@ node src/cli.ts list --tsv examples/payday.kairos > payday.tsv   # Excel・Power
 - Playground の既定: PC では series、スマホ（タッチ操作か狭い画面）では「1 点ずつ」（2026-10-08 決定）。「1 点ずつ別の予定にする（Outlook・スマホのアプリ向け）」で切り替える。
 - Google カレンダー（PC）での実測（2026-10-06）: 1 件の予定として取り込まれ全回が出る。詳細欄の繰り返しは「繰り返さない」と表示されるが、削除・編集は「定期的な予定」として扱われる。
 - 時刻付きと日粒度の点が 1 式に混在するときは全点を時刻付きとして出す（日粒度の点は 0:00 に通知）。1 つの予定の `DTSTART` と `RDATE` は値型を揃えるため。
+- 点 0・註釈だけの範囲（註釈の予定だけを書いて 0）と予定 0 件（書かず 2）の扱いは `--ics` と同じ。1 式 1 予定なので `SUMMARY` は名前のまま（点ごとのラベルは付けない）。
 
 ### `--tsv`（Excel・PowerShell 向けの表）
 
 `--json`・`--ics`・`--ics-series` と排他（1.0 追補 27）。結果を 1 点 1 行のタブ区切りで stdout に書き出す。Excel の利用者・Windows 管理者（PowerShell・VBA）向けの出力の橋。言語は不変。
 
-- 1 行目は見出し行、以降は 1 点 1 行。列は固定順の 7 つ。
+- 1 行目は見出し行、以降は 1 点 1 行。列は固定順の 8 つ。
   - `expr`＝本体式の番号（1 起点・`--json` の `results` の順）。`source`＝式の字面（タブ・改行・復帰は 1 つの空白に）。`uid`＝`results[].uid`。
   - `date`＝`YYYY-MM-DD`。`time`＝時刻（`09:00`・`09:00:30.250`。DST の重複は `01:30-04:00` のようにオフセット込み）。日粒度の点は空（`--tz` が定義の premise tz と違うと時刻付きになる＝人間表示と同じ）。
   - `epoch_ms`＝`points[]`（整数・点の同一性）。`note`＝その点が区間註釈 `[fromMs, toMs)` に入るときの註釈文（複数は `; ` で連結・入らなければ空）。
+  - `label`＝`results[].labels` の同じ点の値（1.0 追補 29。式が参照するラベル付き束縛が 1 つのときその点のラベル。無い点・添えない式は空）。後ろに足した列なので、7 列で読む既存の取り込みはそのまま使える。
   - 日付と時刻を分けるのは Excel がそのまま日付型・時刻型に読むため。
 - stdout は見出し行と点の行だけ。被覆サマリ・区間註釈・警告・`# explain:`・0 点の知らせ・`next` の ⚠ 地平線行は stderr（Excel や `Import-Csv` が `#` 行を行として読んでしまうため）。
 - 0 点は見出し行だけを出して終了コード 0（`list`）。`next` の要求件数未達は従来どおり 2。
@@ -94,18 +103,20 @@ node src/cli.ts list --tsv examples/payday.kairos > payday.tsv   # Excel・Power
 
 ```text
 $ node src/cli.ts list --tsv --from 2026-01-01 --to 2026-04-01 examples/payday.kairos 2>/dev/null
-expr	source	uid	date	time	epoch_ms	note
-1	everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)	kairos-4f63ae78d212-series@kairos-lang.org	2026-01-23		1769094000000	
-1	everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)	kairos-4f63ae78d212-series@kairos-lang.org	2026-02-25		1771945200000	
-1	everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)	kairos-4f63ae78d212-series@kairos-lang.org	2026-03-25		1774364400000	
+expr	source	uid	date	time	epoch_ms	note	label
+1	everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)	kairos-4f63ae78d212-series@kairos-lang.org	2026-01-23		1769094000000		
+1	everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)	kairos-4f63ae78d212-series@kairos-lang.org	2026-02-25		1771945200000		
+1	everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)	kairos-4f63ae78d212-series@kairos-lang.org	2026-03-25		1774364400000		
 ```
 
 表の外に出た点は `note` に註釈が付く（祝日表の `covering` を 2026-07-15 で切った `everyDay \ national` を `--from 2026-07-14 --to 2026-07-18` で `list` した 7/15 と 7/16 の行）:
 
 ```text
-1	everyDay \ national	kairos-aa6bf733e48d-series@kairos-lang.org	2026-07-15		1784041200000	
-1	everyDay \ national	kairos-aa6bf733e48d-series@kairos-lang.org	2026-07-16		1784127600000	範囲外 2026-07-16..2026-07-18（JP.national covering 2026-01-01..2026-07-15）
+1	everyDay \ national	kairos-aa6bf733e48d-series@kairos-lang.org	2026-07-15		1784041200000		
+1	everyDay \ national	kairos-aa6bf733e48d-series@kairos-lang.org	2026-07-16		1784127600000	範囲外 2026-07-16..2026-07-18（JP.national covering 2026-01-01..2026-07-15）	
 ```
+
+ラベル付きの表（`labels:`）を 1 つ参照する式では `label` にその点のラベルが入る（`examples/rokuyo.kairos` の `lunarMonth |> first` なら旧暦の月番号 `12`・`1`・`2`、二十四節気の表なら `立春`）。
 
 読み方:
 
@@ -220,7 +231,7 @@ r.results[0].dates;   // ['2026-01-23', …]
 
 ## テスト
 
-（38 ファイル・827 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（39 ファイル・862 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・
@@ -292,10 +303,12 @@ r.results[0].dates;   // ['2026-01-23', …]
   選択・不正値拒否）をサブプロセス実走で検査。
 - `test/ics.test.ts` — `.ics` 書き出し（1.0 追補 24・15 本＋追補 25・26）。終日／時刻付き（VALARM）／註釈の予定（ε 区間は DTEND を省く）・RRULE なし・
   決定性（DTSTAMP＝DTSTART・UID は式の字面と順番と点から＝同じ字面の式 2 つでも別）・名前の優先順・CRLF と 75 オクテット折り返し
-  （多バイト文字を割らない）・TEXT のエスケープ（`;` を含む）・CLI `--ics`（`--json` と排他・予定 0 件は書かず終了コード 2）と
+  （多バイト文字を割らない）・TEXT のエスケープ（`;` を含む）・CLI `--ics`（`--json` と排他・予定 0 件は書かず終了コード 2・点 0 で註釈だけなら註釈の予定だけを書いて 0＝追補 29）と
   Playground の `buildIcs` が同じ文字列を出すこと・暮らしの例 3 本の日英の揃い・`--json` の `results[].uid` が .ics の 3 形の UID と
   同じ鍵（1.0 追補 26）。
-- `test/tsv.test.ts` — `--tsv`（1.0 追補 27・30 本）。見出し行と 7 列・`date`／`time` の分離（秒・ms・DST 重複の ± オフセット・日粒度は `time` 空）・
+- `test/result-labels.test.ts` — 結果の出口のラベル（1.0 追補 29）。`external`／`segmentBy` の `labels:`・`cycle` で各点にラベル・2 束縛参照で無し・`shift` 後の点は表に無ければ `null`（窓なら属する窓のラベル）・
+  `--tsv` の 8 列目・`.ics` の `SUMMARY`（`UID` 不変・series は名前のまま）・`next` の切り詰め・Schema・出口が被覆サマリと警告を変えないこと・同梱例 `rokuyo`。
+- `test/tsv.test.ts` — `--tsv`（1.0 追補 27・30 本）。見出し行と 8 列（`label` は追補 29）・`date`／`time` の分離（秒・ms・DST 重複の ± オフセット・日粒度は `time` 空）・
   `epoch_ms`＝`points`・`note` の区間 `[fromMs, toMs)`・stdout と stderr の割り当て・0 点・`next`・`--json`／`--ics` との排他・`--lang en`・
   使い方の記載を、単体（`renderTsv`）とサブプロセス実走で検査（詳細は CHANGELOG 追補 27）。
 - `test/doc-consistency.test.ts` — 文書の整合性（機械検査）。ADR 範囲表記 vs 実ファイル数・改名済み

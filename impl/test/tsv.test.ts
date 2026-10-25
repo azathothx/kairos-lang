@@ -17,7 +17,7 @@ import { oraclePayday, MONTHS_2026 } from './helpers.ts';
 
 const IMPL = fileURLToPath(new URL('..', import.meta.url));
 const PAYDAY = readFileSync(new URL('../examples/payday.kairos', import.meta.url), 'utf8');
-const HEADER = 'expr\tsource\tuid\tdate\ttime\tepoch_ms\tnote';
+const HEADER = 'expr\tsource\tuid\tdate\ttime\tepoch_ms\tnote\tlabel';   // 8 列目 label は 1.0 追補 29（結果の出口のラベル）
 const PAYDAYS_2026 = MONTHS_2026.map(m => oraclePayday(2026, m));
 
 const JP = `premise JP {
@@ -54,17 +54,17 @@ const rows = (lines: string[]) => lines.slice(1).map(l => l.split('\t'));
 const O = { from: '2026-01-01', to: '2026-02-01', tz: 'Asia/Tokyo' };
 
 describe('renderTsv（単体）: --json と同じ CliReport から出す', () => {
-  it('1 行目は見出し行・列は固定順 expr source uid date time epoch_ms note', () => {
+  it('1 行目は見出し行・列は固定順 expr source uid date time epoch_ms note label', () => {
     expect(TSV_HEADER.join('\t')).toBe(HEADER);
     expect(renderTsv(cmdList(PAYDAY, { from: '2026-01-01', to: '2027-01-01', tz: 'Asia/Tokyo' }))[0]).toBe(HEADER);
   });
 
-  it('1 点 1 行・各行は 7 列・uid は results[].uid・expr は 1 起点', () => {
+  it('1 点 1 行・各行は 8 列・uid は results[].uid・expr は 1 起点', () => {
     const rep = cmdList(PAYDAY, { from: '2026-01-01', to: '2027-01-01', tz: 'Asia/Tokyo' });
     const lines = renderTsv(rep);
     expect(lines).toHaveLength(1 + 12);
     for (const r of rows(lines)) {
-      expect(r).toHaveLength(7);
+      expect(r).toHaveLength(8);
       expect(r[0]).toBe('1');
       expect(r[1]).toBe(rep.results[0].source);
       expect(r[2]).toBe(rep.results[0].uid);
@@ -113,12 +113,12 @@ describe('renderTsv（単体）: --json と同じ CliReport から出す', () =>
     expect(r[0][2]).not.toBe(r[1][2]);                 // uid は式ごと
   });
 
-  it('source のタブ・改行は 1 つの空白に（行が崩れない・列数は 7 のまま）', () => {
+  it('source のタブ・改行は 1 つの空白に（行が崩れない・列数は 8 のまま）', () => {
     const rep = cmdList(MULTILINE, O);
     expect(rep.results[0].source).toContain('\n');
     expect(rep.results[0].source).toContain('\t');
     const r = rows(renderTsv(rep));
-    expect(r.every(x => x.length === 7)).toBe(true);
+    expect(r.every(x => x.length === 8)).toBe(true);
     expect(r[0][1]).toBe('(wed |> within(month) |> nth(1))  | (wed |> within(month) |> nth(3))');
   });
 
@@ -336,12 +336,12 @@ describe('CLI 実走（サブプロセス）: --tsv の stdout／stderr の割�
     expect(ja.stderr).toContain('# 被覆サマリ');
   });
 
-  it('source のタブと改行は 1 つの空白になり、行は 7 列のまま', () => {
+  it('source のタブと改行は 1 つの空白になり、行は 8 列のまま', () => {
     const r = cli('list', '--from', '2026-01-01', '--to', '2026-02-01', '--tz', 'Asia/Tokyo', '--tsv', multi);
     expect(r.status).toBe(0);
     const t = rows(stdoutLines(r.stdout));
     expect(t).toHaveLength(2);
-    expect(t.every(x => x.length === 7)).toBe(true);
+    expect(t.every(x => x.length === 8)).toBe(true);
     expect(t[0][1]).toBe('(wed |> within(month) |> nth(1))  | (wed |> within(month) |> nth(3))');
   });
 
@@ -352,5 +352,20 @@ describe('CLI 実走（サブプロセス）: --tsv の stdout／stderr の割�
       expect(r.stdout.match(/\[--json\|--ics\|--tsv\]/g)).toHaveLength(2);
       expect(r.stdout).toMatch(/^  --tsv: /m);
     }
+  });
+});
+
+// ultra 5（2026-10-24）の所見: label 列も source と同じくタブ・改行を空白に。言語のラベルは名前だけでタブを含めない（テーブルリテラルの
+// labels: は名前・supply は宣言値域で止まる）が、renderTsv は公開関数で CliReport の labels は任意文字列（MCP 等の生成物も受ける）。
+describe('renderTsv: label 列の無害化（2026-10-24）', () => {
+  it('タブ・CR・LF を含むラベルでも行は 8 列のまま（空白に置き換える）', () => {
+    const rep = cmdList(PAYDAY, { from: '2026-01-01', to: '2027-01-01', tz: 'Asia/Tokyo' });
+    const res = rep.results[0];
+    const r = { ...rep, results: [{ ...res, labels: res.points.map((_, i) => (i === 0 ? 'a\tb\r\nc' : null)) }] };
+    const lines = renderTsv(r);
+    expect(lines).toHaveLength(1 + 12);
+    for (const row of rows(lines)) expect(row).toHaveLength(8);
+    expect(rows(lines)[0][7]).toBe('a b  c');
+    expect(rows(lines)[1][7]).toBe('');
   });
 });

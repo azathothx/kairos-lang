@@ -1,5 +1,5 @@
 ---
-source_sha: 84764b606e91
+source_sha: f6c600d47d76
 ---
 
 # Kairos for Windows administrators — PowerShell and Task Scheduler, nothing else
@@ -19,8 +19,8 @@ On the Tokyo calendar that is early Wednesday morning, and in April and July it 
 - **Playground** (nothing to install): [https://kairos-lang.org/en/playground/](../playground/). "Pin to URL" shares the definition and range as a URL; "Add to calendar (.ics)" gives a calendar file. Nothing leaves the browser.
 - **CLI**: Node.js 20 or later, then `npm i -g kairos-lang`; the command is `kairos`. Without installing: `npx -y kairos-lang list …`. Check: `kairos --version`.
 
-- **Standalone exe** (no Node.js): unzip `kairos-1.0.11-win-x64.zip` from [Release v1.0.11](https://github.com/azathothx/kairos-lang/releases/tag/v1.0.11)
-  and place `kairos.exe` (SHA256 in the `.sha256` file next to it). Built from the same source as npm `kairos-lang@1.0.11`. It is unsigned, so SmartScreen
+- **Standalone exe** (no Node.js): unzip `kairos-1.0.12-win-x64.zip` from [Release v1.0.12](https://github.com/azathothx/kairos-lang/releases/tag/v1.0.12)
+  and place `kairos.exe` (SHA256 in the `.sha256` file next to it). Built from the same source as npm `kairos-lang@1.0.12`. It is unsigned, so SmartScreen
   may warn once right after download ("More info" → "Run anyway"). Read `kairos` below as `.\kairos.exe` and everything else is the same.
 
 ## The first run — write a definition, ask with `list`
@@ -221,7 +221,7 @@ What is in the file:
 
 - One point becomes one event. The event name is the comment on line 1 of the definition.
 - A point with a time becomes a zero-minute event with a reminder at that time; it does not block free/busy time. Here the reminder fires on Wednesday at 2 or 3 am.
-- If the range has no points, no file is written and the exit code is 2.
+- No points but out-of-coverage intervals (annotations): only those events are written, exit code 0 (from 1.0.12). Neither: no file, exit code 2.
 
 Importing into Outlook (measured 2026-10-13 in the new Outlook and in classic Outlook):
 

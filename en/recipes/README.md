@@ -1,5 +1,5 @@
 ---
-source_sha: d15f2f39a61e
+source_sha: 43edd1da7a7c
 ---
 
 # Recipes — practical forms of the schedules long said to be unwritable
@@ -23,6 +23,7 @@ first, the background after.
 | [Patch Tuesday](patch-tuesday.md) | The second Tuesday at 10:00 Pacific, shown in any time zone from one definition; why "second Wednesday, 3 am" in Tokyo is wrong in 8 of 12 months |
 | [Kairos for Windows administrators](windows-admin.md) | PowerShell and Task Scheduler, nothing else: definition → `list` → `--json` → a daily check → .ics for Outlook. For people who run commands but do not write software |
 | [Schedules that are hard to write with Excel's WORKDAY and EOMONTH](excel-workday.md) | Last business day of the month, payment on the 25th, the 10th business day, three business days before quarter-end — side by side with the Excel formulas. An expired holiday table is not allowed to stay silent. Results go to Excel as TSV |
+| [Non-delivery days and arrival dates — a logistics business-day calendar](logistics-delivery.md) | Business days from Sundays, holidays, year-end and Obon closures; arrival date (ship date + N business days), the 15:00 order cutoff, scheduled pickups and the year-end band, all from one definition. Business-day and non-delivery masters as TSV; the yearly update is regenerate-and-compare |
 
 - Every code example is execution-verified by the reference implementation's doctests
   (`impl/test/doctest.test.ts`). `# eval:` gives the evaluation range and `#=>` the expected

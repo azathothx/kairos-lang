@@ -169,15 +169,16 @@ kairos list --tsv --from 2026-01-01 --to 2027-01-01 month-end.kairos > month-end
 ```
 
 ```text
-expr	source	uid	date	time	epoch_ms	note
-1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-01-30		1769698800000	
-1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-02-27		1772118000000	
-1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-03-31		1774882800000	
+expr	source	uid	date	time	epoch_ms	note	label
+1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-01-30		1769698800000		
+1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-02-27		1772118000000		
+1	bizDay |> within(month) |> last	kairos-3d28b4e324d5-series@kairos-lang.org	2026-03-31		1774882800000		
 ```
 
 **Excel** では、ダブルクリックではなく「データ → テキストまたは CSV から」でファイルを選び、文字コードに UTF-8、区切り記号にタブを選ぶ。
 `date` は日付型、`epoch_ms` は数値で入る。`time` は時刻付きの定義のときだけ埋まる。`note` はその点が「表の外」の区間に
-入るときの註釈文で、空なら表の内側の計算である。
+入るときの註釈文で、空なら表の内側の計算である。`label`（1.0.12 から）は、式がラベル付きの表（`labels:`）を 1 つ参照するときに
+その点のラベル（節気名など）が入る列で、この例では空。
 
 - **PowerShell**: ``Import-Csv month-end.tsv -Delimiter "`t" -Encoding utf8 | Format-Table date, note``。
 - **VBA**: `Shell` で `kairos` を呼んで TSV を書かせ、行単位で読む。

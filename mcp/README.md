@@ -1,5 +1,8 @@
 # kairos-lang-mcp
 
+**決めたら、いつでも。**  
+<sub>Write the rule once; list the dates.</sub>
+
 An [MCP](https://modelcontextprotocol.io/) server for **Kairos**, the schedule definition language
 (https://kairos-lang.org). It lets an AI client evaluate a schedule definition deterministically —
 every firing in a range, or the next N — validate a definition, and read the descriptor reference.

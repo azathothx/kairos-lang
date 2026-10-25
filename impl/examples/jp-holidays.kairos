@@ -1,6 +1,8 @@
 # 祝日カスケード: 法定祝日から振替休日・国民の休日を導出する（spec §7.5）
 # 実行: node src/cli.ts examples/jp-holidays.kairos --from 2026-01-01 --to 2027-01-01
 # 2026 年は 5/3(日)→振替 5/6、敬老 9/21・秋分 9/23 に挟まれた 9/22 が国民の休日になる。
+# 表の外（2027 年〜）は範囲外の註釈になり、表の最終日 12-31 から始まる: shift(-1, unit: day) の平行移動像と roll(Following) の依存像が
+# 各 1 日手前へ広がり | の和で残るため（素の表と shift(+1) は 01-01 開始。ADR-37 判断 4・spec §4.10）。
 
 premise JP {
   calendar-system: Gregorian

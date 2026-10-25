@@ -1,5 +1,5 @@
 ---
-source_sha: 0ab8a1bc8fb5
+source_sha: 940e634b4417
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -35,7 +35,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | evaluation annotation (out-of-coverage)（評価註釈（範囲外）） | A sequence of annotation intervals running alongside the result 〔[a,b), kind, source, covering, asof〕. For now the only kind is "out-of-coverage" = intervals where the result may depend on data outside the coverage. Attached even to non-empty results. Absence of annotations is not a proof of correctness | §4.10 · ADR-15/37 |
 | effective coverage（実効被覆域） | The settled region, computed via the transport table, of the bindings a reference actually reads (= the complement of the annotation intervals). The criterion for the error classifier (out-of-coverage vs. mix-up) — not the raw table's covering | §4.10 · ADR-37 |
 | coverage claim（被覆主張） | A binding-postfix `covering:` = the unverifiable explicit claim "this composition is complete over this range" (the sole outlet for offsetting; governance on a par with source/asof) | §3.8 · ADR-37 |
-| coverage summary / runway（被覆サマリ / 残走路） | For each data source the evaluation referenced: 〔source, covering, asof, completeness claim, days remaining from the evaluation `to` (the runway)〕. An unclipped vessel for monitoring (separate from annotations) | §4.10 · ADR-37 |
+| coverage summary / runway（被覆サマリ / 残走路） | For each data source the evaluation referenced: 〔source, covering, asof, completeness claim, days remaining from the evaluation `to` (the runway)〕. An unclipped vessel for monitoring (separate from annotations). The runway's origin is midnight of the day after the last covered day (the exclusive end) = deriving it from the displayed end (the closed end) is off by one day | §4.10 · ADR-37 |
 | closure（閉包） | Every operator is `(stream…, premise) → stream`. Derived results can be fed back in as inputs | §2.3 |
 | core family（core 族） | The body layer's minimal, strict operator set (generators, point transforms, combinators, filters, windows, selectors, strides) | §2.4 · §4 |
 | sugar（糖衣） | Shorthand that names a core composition. Erasable by expansion into core (one-way dependency) | §2.4 · §4.8 |

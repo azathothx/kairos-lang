@@ -1,5 +1,5 @@
 ---
-source_sha: fc667a92d00c
+source_sha: 22d9cbe5befe
 ---
 
 # Kairos Language Specification — Appendix A. Firing Layer Profile (the contract for conformant implementations)
@@ -146,7 +146,7 @@ The language returns danger as annotations, the coverage summary, and warnings. 
 **Runway → monitoring**
 
 - MUST: Compare `coverage[].runwayDays` with a threshold, and when it falls below, raise a warning or start a data-fetch job (example threshold: H+30 days).
-- Note: The runway is the number of days from the evaluation's `to` to the end of covering (not relative to today; may be negative; null when `concluded`). Keep it separate per source.
+- Note: The runway is the number of days from the evaluation's `to` to the end of covering (not relative to today; may be negative; null when `concluded`). The origin is midnight of the day after the last covered day (the exclusive end; 2027-01-01 for the display `..2026-12-31`) — deriving it from the displayed end (the closed end) is off by one day. Keep it separate per source.
 - SHOULD: The runway can be derived from covering and the evaluation's `to`. Make it possible to check the implementation's value against the derived one.
 - SHOULD: The runway warning fires again at every materialization. Deduplicate in the ledger and in monitoring by (job, source, day).
 - Note: Warnings go to monitoring; the remedy closes with a supply-side update. The permanent defense lies in updating the coverage, not in the shape of the expression.
@@ -171,6 +171,7 @@ The language returns danger as annotations, the coverage summary, and warnings. 
 
 - SHOULD: Collect `warnings[]`. `horizon-clip` is known behavior that does not affect the firing plan (ADR-37 decision 8), and its count depends on how the window is taken, so do not make it a monitoring threshold.
 - SHOULD: The fix for `window-clip` is to widen the evaluation range (§7.8).
+- Note: `next` does not report `window-clip` from its final re-evaluation (right end = the day after the last firing) — that end is derived from the answer, and an instant moved outside it cannot be among the N answers (`list` reports as before; reference implementation 1.0.12).
 - SHOULD: Count and record operational signals (missed-fires, supply resolutions, horizon-clips, false alarms and misses).
 
 **The signal ledger**
@@ -228,7 +229,8 @@ The language side's prototype measurements, and values recorded in the feedback 
 - Continuity of determinism (2026-08-07 to 2026-08-23): for the 16 days after the migration, next stayed unchanged across 10 generations of container rebuilds on the same host. The evidence across hosts is one pair (one machine → one machine) at the migration itself.
 - Two destinations (2026-09-07): one firing delivered to 2 destinations (claimed 2 / delivered 2). The delivery job ran 3 times that day; the remaining 2 re-executions were claimed 0 / delivered 0, and the delivery record stayed at 2 rows, one per destination.
 - Deviation from plan (all are differences of "the time delivery was reserved"; firing is earlier, completion of sending later): +0.728 s (about 0.7 s, 2026-07-23), +15.958 s (2026-08-07), +0.032 s (2026-08-23), +0.037 s (2026-09-07, the first of the two destinations).
-- Limits: each value is the record of one firing per event (the time delivery was reserved) and does not include the destination's response time. For 2026-07-23, the materialization and delivery-completion logs remain only in the supply side's feedback report (the delivery-record row remains in the supply side's database).
+- Three timestamps (2026-10-23, the solar-term delivery, 1 destination): against the plan 07:00, firing +0.001 s, reservation of delivery +0.048 s, completion of sending +3.568 s (completion of sending includes the destination's response). The first sample in which the order firing ≤ reservation ≤ completion of sending was recorded in production. Runway 381 days, evaluation warnings 0, delivery record 1 row.
+- Limits: for the values before 2026-10-23, each value is the record of one firing per event (the time delivery was reserved) and does not include the destination's response time. For the deviations before 2026-10-23, the value is the time delivery was reserved, and the time of firing was not recorded. For 2026-07-23, the materialization and delivery-completion logs remain only in the supply side's feedback report (the delivery-record row remains in the supply side's database).
 
 ## A.8 Self-declaration of conformance (checklist)
 
@@ -285,7 +287,7 @@ The list to attach when a firing layer calls itself "Kairos-conformant". Tick ev
 | idempotent claim | Taking a ledger row with the idempotency key before a side effect. Expressed as counts of claimed / delivered. One row per key (event × destination) | A.3 |
 | idempotency key | The key built from the identity of the definition (the firing layer's own record id), the instant (the civil day or the instant itself, by granularity), and asof (and the destination with multiple destinations) | A.3 |
 | uid | The expression's fingerprint, computed from position, text, and tz. Not a persistent ID | A.1 |
-| runway | For each source in the coverage summary, the number of days from the evaluation's to to the end of covering | §4.10 |
+| runway | For each source in the coverage summary, the number of days from the evaluation's to to the end of covering. The origin is midnight of the day after the last covered day (the exclusive end) = deriving it from the displayed end (the closed end) is off by one day | §4.10 |
 | interval annotation | An annotation interval of out-of-coverage origin. Runs alongside the result and attaches to non-empty results too | §4.10 |
 | coverage summary | For each source referenced: covering, asof, the completion claim, the runway. Not clipped to the evaluation range | §4.10 |
 | degraded operation | The state of booting with an empty plan on a supply resolution failure and retrying at every wake-up | A.4 |

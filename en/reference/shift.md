@@ -1,5 +1,5 @@
 ---
-source_sha: 9ddd8a70a5ce
+source_sha: 1ec9ca0cf8cc
 ---
 
 # `shift` — move by n units
@@ -80,6 +80,9 @@ To land on a date, add [`snapTo(day)`](snapTo.md) downstream.
   (spec §4.10 transport table). When the image of a coverage gap overlaps the evaluation range,
   an annotation appears even where no points fire — "no points came out" and "the absence is
   trustworthy" are different claims, and the transported annotation carries the latter.
+
+- **An out-of-coverage annotation can start on the table's last day**: in the bundled example `jp-holidays.kairos` (table covering 2026..2026) it starts on 12-31 — the translated image of
+  `shift(-1, unit: day)` and the dependency image of `roll(Following)` each widen it one day backwards, and the union `|` keeps it (the raw table and `shift(+1)` start on 01-01; ADR-37 decision 4, spec §4.10).
 
 - **A point moved across the edge of the evaluation range is not in the output** — evaluated over
   `[2026-08-01, 2026-09-01)`, 8/3 (Mon) moves to 7/31 under `shift(-1, unit: bizDay)`, which is outside the range, so it disappears (the semantics are

@@ -9,7 +9,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020.js';
-import { run } from '../src/index.ts';
+import { run, SupplyError } from '../src/index.ts';
+import type { ExternalData } from '../src/index.ts';
 import { cmdList, cmdNext, errorReport } from '../src/cli.ts';
 import type { CliReport, CliErrorReport } from '../src/cli.ts';
 
@@ -195,6 +196,33 @@ describe('--json のエラー表面（CliErrorReport・stdout・終了コード 
     const rep = JSON.parse(r.stdout) as CliErrorReport;
     expect(rep.error.kind).toBe('supply');
     expect(validReport(rep), errorsOf(validReport)).toBe(true);
+  });
+  // asof 欠落の診断は経路で 2 文言（1.0 追補 29）: `--supply` の束の形の検査（cli.ts の supplyResolver）と評価器の契約検査
+  // （eval.ts の externalToTable）。1 本に寄せず両方を固定する——どちらも kind supply。どちらかの文言を変えると赤・評価器の検査を外すと赤・
+  // 束の検査を外すと欠落が評価器へ届いて文言が変わり赤。
+  it('supply: asof 欠落の診断は 2 文言（--supply の束の検査／評価器の契約検査）で、どちらも kind supply', () => {
+    const DEF = 'premise H { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon; source: "x"\n  h = external(kind: dates)\n}\n@H\nh\n';
+    // 経路 1: 束に asof の鍵が無い＝JSON の形の検査で止まる（評価器には届かない）
+    const sup1 = put('asof-missing.json', JSON.stringify({ h: { dates: ['2026-01-05'], covering: '2026..2026' } }));
+    const r1 = cli('list', ...RANGE, '--json', '--supply', sup1, put('asof1.kairos', DEF));
+    expect(r1.status).toBe(1);
+    const rep1 = JSON.parse(r1.stdout) as CliErrorReport;
+    expect(rep1.error).toEqual({ kind: 'supply', message: `--supply ${sup1} の "h": asof（文字列）が必須` });
+    expect(validReport(rep1), errorsOf(validReport)).toBe(true);
+    // 経路 2: 解決子が asof の無い値を返した＝評価器の契約検査（run() の resolve・ADR-46）。SupplyError で文言は固定
+    const EVAL_MSG = '契約違反: asof がない——external H.h（データの観測日はデータと一緒に来る。ADR-46）';
+    const noAsof = () => ({ dates: ['2026-01-05'], covering: '2026..2026' }) as unknown as ExternalData;
+    let caught: unknown;
+    try { run(DEF, { ...W, resolve: noAsof }); } catch (e) { caught = e; }
+    expect(caught).toBeInstanceOf(SupplyError);
+    expect((caught as Error).message).toBe(EVAL_MSG);
+    // 評価器の文言は CLI の面にも出る: 束の検査は空文字だけを拒むので、空白だけの asof は評価器の trim で止まる＝kind supply
+    const sup2 = put('asof-blank.json', JSON.stringify({ h: { dates: ['2026-01-05'], covering: '2026..2026', asof: ' ' } }));
+    const r2 = cli('list', ...RANGE, '--json', '--supply', sup2, put('asof2.kairos', DEF));
+    expect(r2.status).toBe(1);
+    const rep2 = JSON.parse(r2.stdout) as CliErrorReport;
+    expect(rep2.error).toEqual({ kind: 'supply', message: EVAL_MSG });
+    expect(validReport(rep2), errorsOf(validReport)).toBe(true);
   });
   // 解決値の契約違反（昇順・覆域の包含・labels の同長と値域）は供給側の責任＝kind supply（1.0 追補 28。それまでは static に落ちていた＝
   // schema の説明「supply: the supply contract (external) was violated」と食い違っていた）。4 本とも実装を追補前に戻すと static で赤。
