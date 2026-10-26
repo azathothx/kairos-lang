@@ -220,8 +220,9 @@ everyDay |> filter(d => weekday(d) == Mon)           # 月曜だけ残す（ラ�
 | `strideBy(w, from:)` 幅刻み | 幅＝複数軸の物理量 | 幅（絶対量） | `strideBy(24h39m35.244s, from: …)`＝1 sol ごと |
 
 `stride`・`take`・`takeLast` は**入力相対**——何を数えるかは前段が決める（「3 営業日ごと」は先に `filter(on: bizDay)`）。
-数え起点は「`from:` 以上の**最初の入力点**」（そこが第 0 歩＝残る。from: が入力の点であることは
-要求しない）。軸で数えて別のストリームに当てる形は `(軸の stride 列) & input`（day 整列）または
+数え起点は「`from:` 以上の**最初の入力点**」（そこが第 0 歩＝残る。`from:` が入力の点であることは
+要求しない。`takeLast` の `until:` も同じ——「`until:` 以前〈含む〉の末尾 n 点」で、`until:` が入力の点である
+ことは要求しない）。軸で数えて別のストリームに当てる形は `(軸の stride 列) & input`（day 整列）または
 `filter(d => coincides(stride 列, day, d))`（時刻付き・§4.9）で合成する。
 
 `take` は RRULE の COUNT 相当だが、**除外後に数える**が合成順で出る——`(lessons \ cancelled) |>

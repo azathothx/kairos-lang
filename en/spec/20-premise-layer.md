@@ -1,5 +1,5 @@
 ---
-source_sha: 6a855b668994
+source_sha: b23f3b2a01b1
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -402,7 +402,7 @@ The resolved value is a table value itself, and the same governance checks as fo
       alt Acquisition succeeded
           R-->>X: Table value [point sequence, covering, asof (required), labels?]
           X->>X: Supply-contract check = the same governance as literals<br/>(kind alignment, containment, ascending order, labels domain/length, date existence)
-          Note over X: A contract violation is an evaluation error<br/>(boot-checked — the same wording system as literals)
+          Note over X: A contract violation is an evaluation error<br/>(error.kind supply since 1.0.11, addendum 28 — the firing layer<br/>degrades instead of stopping, Appendix A A.4; the same wording system as literals)
           X-->>E: Snapshot-pinned — later references in the evaluation see the same value<br/>(determinism is "relative to the same snapshot". §7.8)
           Note over E,X: "Nothing yet" is a legitimate empty = [] covering: … (ADR-45) —<br/>passes the checks by vacuous conformance. The value is empty, the danger observed via annotations (§4.10)
       else Acquisition failed

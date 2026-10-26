@@ -41,6 +41,9 @@ everyDay \ satSun
 ## 落とし穴
 
 - `|`（和）は段の連結 `|>` と別物——記号は三役に一対一（ADR-22）。
+- **段の連結 `|>` は結合子より先に結ぶ**（EBNF: `stream-expr = pipe-expr { combine-op pipe-expr }`・spec §5.6）——
+  `a \ b |> take(5, from: …)` は `a \ (b |> take(5, from: …))` と読まれ、`take` は `b` にだけ掛かる。差を先に取ってから
+  打ち切るなら括弧で閉じる: `(a \ b) |> take(5, from: …)`。和と選択子でも同じ（`a | b |> within(month) |> first` は右側だけ）。
 - 値式の論理は語（`and`/`or`/`not`）で書く。記号 `&`/`|` は結合子に温存されている（spec §3.5）。
 - カスケードの読み順は**左から**——`weekends | statutory | substitutes \ specialBiz` は
   「積んで、積んで、最後に例外を引く」。

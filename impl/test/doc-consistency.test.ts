@@ -25,6 +25,8 @@ const CURRENT_DOCS = [
   ...mdFiles('en/stdlib/'),
   ...mdFiles('en/design/40-examples/'), // カタログ＋需要順の研究英訳（11→10→05→09→06・2026-08-17 決定。旧: カタログのみ＝2026-08-06）
   ...mdFiles('en/recipes/'),
+  ...mdFiles('skills/kairos-authoring/'), // 記述スキル（AI と人の手引き・2026-10-26）
+  ...mdFiles('en/skills/kairos-authoring/'), // 記述スキルの英語ミラー
   'assets/logo/README.md', // ロゴ・アイコンの解説（/assets/ に公開＝2026-09-18 指摘: 表セルの \| が公開面に露出・網の外だった）
 ];
 
@@ -297,7 +299,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     // 日本語側が更新されたらここが割れる——英訳の追従漏れを黙らせない。
     const stale: string[] = [];
     for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'),
-                     ...mdFiles('en/design/40-examples/'), ...mdFiles('en/recipes/')]) {
+                     ...mdFiles('en/design/40-examples/'), ...mdFiles('en/recipes/'),
+                     ...mdFiles('en/skills/kairos-authoring/')]) {
       const m = /^---\n[\s\S]*?source_sha: ([0-9a-f]{12})[\s\S]*?\n---\n/.exec(read(p));
       if (!m) continue;   // ハッシュ宣言のないページ（README 等）は対象外
       const ja = p.replace('en/', '');

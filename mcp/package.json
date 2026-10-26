@@ -53,7 +53,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
-    "kairos-lang": "^1.0.11",
+    "kairos-lang": "^1.0.12",
     "zod": "^4.0.0"
   },
   "devDependencies": {

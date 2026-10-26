@@ -821,7 +821,7 @@ F51・F66/F97。仮称 9 語のうち 8 語を正式名に確定。**ADR-43**＝
 - witness（`impl/test/result-labels.test.ts`・新設）＝`external` の `labels:` で各点にラベル・部分集合（filter）も同じ射影・2 束縛参照（`weekday` と表・表 2 つ）で無し・`shift` 後の点は表に無ければ `null`（`segmentBy` の窓なら属する窓のラベル・窓の外は `null`）・`cycle` だけの式・`--tsv` の 8 列目と見出し・`.ics` の `SUMMARY`＝「名前 · ラベル」（ラベルだけの題は出ない・`UID` 不変・series は名前のまま）・`next` の切り詰め・Schema（`null` は通り数値は通らない・実物の `--json` が通る）・出口が被覆サマリと警告を変えない・同梱例 `rokuyo`。hook を外す・2 つでも添える・`null` を空文字に・列を落とす・題を名前のままに・題をラベルだけに・`next` の切り詰めを外す・被覆サマリの復元を外す・Schema の型を絞る、の変異で赤を実測。`impl/test/tsv.test.ts` は 8 列に合わせた。
 - witness 1 本（`impl/test/schema-and-explain.test.ts`＝asof 欠落の 2 文言: `--supply` の束の検査の文言と kind supply・評価器の文言（`run()` の解決子で `SupplyError`）・空白だけの asof は CLI でも評価器の文言で kind supply）。cli.ts か eval.ts の文言を変えると赤・評価器の検査を外すと赤・束の検査を外すと欠落が評価器へ届いて文言が変わり赤。
 - witness 4 本（`result-labels.test.ts` 3 本＝メモ化の巻き戻し〈後続の式の被覆サマリが 1.0.11 と同じ〉・`labels: false` の run／cmdList／cmdNext、`tsv.test.ts` 1 本＝`label` 列の無害化）＝2026-10-24 のレビュー所見の処置。変異（巻き戻しを外す・フラグを無視する・置換を外す）で赤を実測。
-- **862 テスト**（物流レシピの doctest 10 本・レビュー所見の witness 4 本を含む）。
+- **879 テスト**（物流レシピの doctest 10 本・レビュー所見の witness 4 本・記述スキルの doctest 17 本を含む。公開時点は 862）。
 
 
 ### 文書
@@ -829,3 +829,5 @@ F51・F66/F97。仮称 9 語のうち 8 語を正式名に確定。**ADR-43**＝
 - レシピ「休配日と着日——物流の営業日カレンダーを定義から作る」（`recipes/logistics-delivery.md`・日英・doctest・Playground リンク）を追加。
 - 付録 A（発報層プロファイル）A.7 の観測例に、2026-10-23 の節気配信の 3 つの時刻（発火 +0.001 秒・配信の予約 +0.048 秒・送信完了 +3.568 秒）の標本を日英で追加。発火 ≤ 予約 ≤ 送信完了の順序が本番で揃った最初の標本（供給側の事前確認済み・2026-10-24）。
 - タグライン「決めたら、いつでも。／Write the rule once; list the dates.」を README（日英）・サイトの設定・Playground（日英）・`llms.txt`・npm の説明（`kairos-lang`・`kairos-lang-mcp`）と README に掲げた（2026-10-20 決定・言語不変）。
+- 付録 B「供給側プロファイル」（`spec/61-supply-profile.md`・日英）を追加。表を配る側の契約＝静的束の形・`covering`＝完全性の主張・`asof`＝版の識別子・URL と版・更新の作法・受け入れ試験 4 本。`schema/supply.schema.json` の `labels` を文字列の配列に狭める（CLI の検査と一致）。ADR-46 に改訂 1（契約違反の `error.kind` は `supply`＝追補 28 への追従）。文書の追随 4 点（§3.8 の図の註記・`combinators` の落とし穴「段の連結は結合子より先」・§4.7 の `from:`／`until:` の双対・90-open 3-17）。
+- 記述スキル「Kairos を書く——要件から定義へ」（`skills/kairos-authoring/SKILL.md`・日英・2026-10-26）を追加。人にも AI にも向けた書き方の手順＝要件の型と式の型 14 本（実行例は doctest で固定）・書いてはいけない形と直し方・診断の読み方・検算・語彙。README（日英）と `llms.txt` から導線。

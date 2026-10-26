@@ -46,13 +46,9 @@
         "labels": {
           "type": "array",
           "items": {
-            "type": [
-              "string",
-              "number",
-              "boolean"
-            ]
+            "type": "string"
           },
-          "description": "optional parallel labels, one per point (kind: dates|instants with labels: declared)"
+          "description": "optional parallel labels, one per point (kind: dates|instants with labels: declared). Each label is a string naming a member of the declared enumeration; the declaration's labels: are identifiers, so numbers and booleans were never accepted by the evaluator (the earlier string|number|boolean here was wrong; narrowed 2026-10-23)"
         }
       },
       "oneOf": [

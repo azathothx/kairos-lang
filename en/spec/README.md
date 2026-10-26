@@ -8,7 +8,7 @@
 Semantics, the operator family, the grammar (EBNF, §5.6), and the lexis are frozen. **Naming is final
 for every word** — the last placeholder `shiftBoundary` was settled as **`rephase`** on 2026-07-26
 (see §5.4). Expressiveness is validated against 20 well-known schedule families
-(`design/40-examples/`) and by the reference implementation (`impl/`, 862 tests). All remaining
+(`design/40-examples/`) and by the reference implementation (`impl/`, 879 tests). All remaining
 homework items are catalogued in `design/90-open-questions.md`, and none of them changes the semantics.
 
 For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese).
@@ -27,6 +27,10 @@ For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese
 Appendix A. [Firing layer profile](60-firing-layer-profile.md) ([日本語](../../spec/60-firing-layer-profile.md)) — the contract for conformant
 implementations (not part of the language specification): the evaluation contract (CliReport, uid) / re-evaluation (rolling horizon, watermark) /
 firing and idempotency (at-least-once, the idempotency key) / wiring of operational signals / supply / reconciliation / observed examples / checklist / terms
+
+Appendix B. [Supply-side profile](61-supply-profile.md) ([日本語](../../spec/61-supply-profile.md)) — the contract for those who publish
+the tables that `external` resolves (not part of the language specification): the shape of the static bundle / covering as a completeness
+claim / asof as a version identifier / URLs and versions / how to extend / four acceptance tests / what the language ships and what it does not / checklist / terms
 
 ## Where things live
 

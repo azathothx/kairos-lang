@@ -142,6 +142,9 @@ Full explanation with sequence diagrams and runnable doctests:
 [design/40-examples/07](design/40-examples/07-injected-origin.md) (Japanese). The conformance profile for
 firing layers — what a Kairos-compatible runtime must satisfy (re-evaluation, at-least-once with idempotency
 keys, wiring of operational signals) — is [spec appendix A](spec/60-firing-layer-profile.md) (Japanese).
+The matching contract for whoever publishes the tables that `external` resolves (the static bundle, covering as a
+completeness claim, asof as a version id, fixed URLs, four acceptance tests that run with the reference CLI alone) — is
+[spec appendix B](en/spec/61-supply-profile.md) ([日本語](spec/61-supply-profile.md)).
 
 ## Quick start (reference implementation)
 
@@ -203,7 +206,7 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 **Version 1.0 (declared 2026-09-14; addenda through no. 29, 2026-10-26).** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (862 tests),
+is validated against 20 well-known schedule families and by a reference implementation (879 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
@@ -211,6 +214,7 @@ including cross-checks against the official ephemeris of the National Astronomic
 | [`spec/`](en/spec/) | **Language specification** (reviewable snapshot; start here — [日本語](spec/)) |
 | [`recipes/`](en/recipes/) | **Recipes** — the schedules cron/Quartz/RRULE can't express, one page per requirement with Playground links ([日本語](recipes/)) |
 | [`reference/`](en/reference/) | **Descriptor reference** — one page per operator; examples are doctested ([日本語](reference/)) |
+| [`skills/`](en/skills/kairos-authoring/SKILL.md) | **Authoring skill** — how to write a definition from a requirement, for people and AI assistants: requirement patterns and expression patterns, forms to avoid, reading diagnostics, verification; every example doctested ([日本語](skills/kairos-authoring/SKILL.md)) |
 | [`stdlib/`](en/stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek` ([日本語](stdlib/) — includes the Japanese-only `Kyureki`) |
 | [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype — Japanese) |
 | [`mcp/`](mcp/) | MCP server `kairos-lang-mcp` — evaluate (list/next), validate and look up the reference from an MCP client; `tz` is required (English) |

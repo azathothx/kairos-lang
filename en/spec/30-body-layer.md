@@ -1,5 +1,5 @@
 ---
-source_sha: 61a9ec9fe743
+source_sha: 0b22d2d7f9b0
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -283,7 +283,8 @@ argument kind and how the count is used.
 `stride`, `take` and `takeLast` are **input-relative** — what they count is decided upstream ("every 3
 business days" puts `filter(on: bizDay)` first). The counting origin is "the **first input
 point** at or after `from:`" (that point is step 0 = it survives; `from:` is not required to be a
-point of the input). The form "count along an axis, apply to another stream" is composed as
+point of the input; the same holds for `until:` of `takeLast` — "the last n input points at or
+before `until:`", and `until:` need not be a point of the input). The form "count along an axis, apply to another stream" is composed as
 `(stride sequence of the axis) & input` (day-aligned) or
 `filter(d => coincides(strideSequence, day, d))` (timed; §4.9).
 

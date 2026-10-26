@@ -1,5 +1,5 @@
 ---
-source_sha: 4abe12219ade
+source_sha: e95ee9a71b15
 ---
 
 # `|` `&` `\` — combinators (union, intersection, difference) and the cascade
@@ -55,6 +55,10 @@ everyDay \ satSun
 
 - `|` (union) is distinct from the stage connector `|>` — the symbols map one-to-one onto three
   roles (ADR-22).
+- **The stage connector `|>` binds before the combinators** (EBNF: `stream-expr = pipe-expr { combine-op pipe-expr }`,
+  spec §5.6) — `a \ b |> take(5, from: …)` reads as `a \ (b |> take(5, from: …))`, so `take` applies to `b` only. To
+  subtract first and then cut, close the difference in parentheses: `(a \ b) |> take(5, from: …)`. The same holds for a
+  union followed by a selector (`a | b |> within(month) |> first` applies to the right side only).
 - Logic in value expressions is written with words (`and`/`or`/`not`). The symbols `&`/`|` are
   reserved for the combinators (spec §3.5).
 - The cascade reads **left to right** — `weekends | statutory | substitutes \ specialBiz` is

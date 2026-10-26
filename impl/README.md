@@ -231,7 +231,7 @@ r.results[0].dates;   // ['2026-01-23', …]
 
 ## テスト
 
-（39 ファイル・862 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（39 ファイル・879 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・

@@ -18,7 +18,7 @@ Key facts:
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 862 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 879 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
 - Documentation language: Japanese documentation is canonical; the spec, the descriptor reference,
@@ -159,6 +159,9 @@ same paths without the `en/` segment (a hash check keeps the mirror in step).
   payday, Japanese-holiday cascade, fiscal quarters, "N business days after an injected instant"
 - [Firing-layer profile (Appendix A)](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/spec/60-firing-layer-profile.md):
   what a conforming firing layer must do: rolling horizon, watermark, at-least-once with idempotent keys, signal wiring
+- [Supply-side profile (Appendix B)](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/spec/61-supply-profile.md):
+  what a publisher of `external` tables must do: the static bundle, covering as a completeness claim, asof as a version id,
+  fixed and immutable version URLs, four acceptance tests that run with the reference CLI alone
 
 ## Reference
 
@@ -167,6 +170,11 @@ same paths without the `en/` segment (a hash check keeps the mirror in step).
 - [Standard premises](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/stdlib/README.md):
   Gregorian, Fiscal, ISOWeek (the Kyureki page — Japanese lunisolar calendar — is Japanese-only:
   https://raw.githubusercontent.com/azathothx/kairos-lang/main/stdlib/kyureki.md)
+
+- [Authoring skill](https://raw.githubusercontent.com/azathothx/kairos-lang/main/en/skills/kairos-authoring/SKILL.md):
+  how to write a definition from a requirement, for AI assistants and people — requirement patterns and
+  expression patterns, forms to avoid and their fixes, reading diagnostics, verification; every example
+  doctested (Japanese original: skills/kairos-authoring/SKILL.md)
 
 ## Examples
 
