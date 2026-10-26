@@ -5,3 +5,6 @@ dist/
 
 # 時限実行の実行痕跡ログ（実行記録は設計記録側に持つ・2026-08-20）
 tools/*.log
+
+# AI 補助ベンチの結果（tools/bench-assist.mjs・非公開・モデル出力を含む）
+tools/bench-results/

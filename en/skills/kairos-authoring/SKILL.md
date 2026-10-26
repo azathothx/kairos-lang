@@ -1,7 +1,7 @@
 ---
 name: kairos-authoring
 description: How to write a Kairos (schedule definition language) definition from a requirement in plain language. Requirement patterns and their expression patterns, forms to avoid and their fixes, how to read diagnostics, verification. Target: reference implementation 1.0.12.
-source_sha: 5ce76554a488
+source_sha: 0cc5114a9a07
 ---
 
 # Writing Kairos — from a requirement to a definition (target: reference implementation 1.0.12)
@@ -224,6 +224,19 @@ bizDay
 
 Kairos has no word that "returns the remainder". The range `[from, to)` excludes its right end, so whether the last day counts is decided by moving `--to` by one day.
 
+### 2-15. The last N occurrences, and the next N (`takeLast`, `take`)
+
+```kairos
+# eval: 2026-01-05..2027-01-01
+@JP
+payday = everyDay |> filter(d => dayNo(d) == 25) |> roll(Preceding, on: bizDay)
+payday |> takeLast(3, until: 2026-10-22)
+#=> 2026-07-24 2026-08-25 2026-09-25
+```
+
+"The most recent", "the last N" is `takeLast(N, until: reference date)`. "The next N", "the coming N" is `take(N, from: reference date)`: on the same stream, `take(3, from: 2026-10-22)` gives 2026-10-23, 2026-11-25 and 2026-12-25.
+Write the reference date (the "as of" in the requirement) as a real date, and let the evaluation range include both sides of it.
+
 ## 3. Forms to avoid, and the fix
 
 | Tempting form | What happens | Fix |
@@ -238,6 +251,7 @@ Kairos has no word that "returns the remainder". The range `[from, to)` excludes
 | naming a binding `shift` or `weekday` | redefining a core word is a static error; an exported word silently changes meaning | another name |
 | holidays written into the expression (`dayNo(d) == 3 and monthNo(d) == 11`) | rots with the year; no substitute holidays | a table with `covering:` |
 | "from April this year" written into the definition | starts in April next year too | cut with the evaluation range |
+| "the last N" as `take(N, from: …)` | gives the next N | `takeLast(N, until: reference date)` |
 
 ## 4. Reading diagnostics
 
