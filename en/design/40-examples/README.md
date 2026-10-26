@@ -46,6 +46,12 @@ the write-ups are executed directly as doctests by the reference implementation.
 | 04 Projection tear-out | Exploration record (settled form = an ADR) | Settled projections in `projections.test.ts` and the doctests of each reference page |
 | 05–11 | **Doctests (living tests)** — fenced blocks with `# eval:` are scanned and executed by `impl/test/doctest.test.ts` | The write-ups are themselves tests (tithi, business hours, injected origins, backup generations, DST and width rules, alternative calendars in arithmetic form, and 17 measured runs of “impossible” schedules) |
 
+## Notation conventions
+
+- Each sample is a five-piece set: (1) natural-language spec + expected values, (2) premise definition + body expression (sugar form), (3) core expansion (when it differs from the sugar), (4) verdict, (5) findings log (F numbers; collected in `90-findings.md`).
+- Unless stated otherwise the premise is `@JP` (Gregorian, Asia/Tokyo, wkst: Mon).
+- Provisional vocabulary (date literals, cycle label predicates, week windows, snapTo, …) is marked in draft §1.14 and by the (provisional) notes in place.
+
 ## Files
 
 | File | Subject |

@@ -60,6 +60,6 @@ the expression — 5/12 and 5/19 refill naturally.
 
 ## Related
 
-[`takeLast`](takeLast.md) (cut off at the tail — the dual) · [`stride`](stride.md) (thin) ·
+[`takeLast`](takeLast.md) (cut off at the tail — the dual; ADR-52) · [`stride`](stride.md) (thin) ·
 [`strideBy`](strideBy.md) (step by width) · [`nth`](nth.md)
 (window-relative "the Nth" — the dual) · [`filter`](filter.md) · ADR-31/38/49.

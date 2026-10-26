@@ -323,7 +323,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     const fences = (src: string) => [...src.matchAll(/```kairos\n([\s\S]*?)```/g)].map(m => m[1]);
     const stale: string[] = [];
     for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'),
-                     ...mdFiles('en/design/40-examples/'), ...mdFiles('en/recipes/')]) {
+                     ...mdFiles('en/design/40-examples/'), ...mdFiles('en/recipes/'),
+                     ...mdFiles('en/skills/kairos-authoring/')]) {   // 記述スキルも同一性検査の内（2026-10-26 外部レビュー第 14 回 ④-M3）
       const en = fences(read(p));
       const ja = fences(read(p.replace('en/', '')));
       if (en.length !== ja.length) { stale.push(`${p}: kairos フェンス数 ${en.length} ≠ 日本語側 ${ja.length}`); continue; }

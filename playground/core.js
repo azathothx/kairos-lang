@@ -87,7 +87,7 @@ lateDay = (sat | national) \\ sun
 (bizDay |> at(T06:30)) | (lateDay |> at(T08:00))`,
   },
   payday: {
-    from: '2026-07-01', to: '2026-11-01',
+    window: 120,   // 選んだ日から 120 日＝次の給料日 4 回（固定の範囲は過ぎると「過去の一覧」に見える＝2026-10-26 外部レビュー第 14 回）
     code: `premise JP {
   calendar-system: Gregorian
   tz: "Asia/Tokyo"
@@ -109,7 +109,7 @@ bizDay = everyDay \\ (satSun | holidays)
 everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)`,
   },
   monthend3: {
-    from: '2026-08-01', to: '2026-12-01',
+    window: 120,   // 選んだ日から 120 日＝次の月末 4 回
     code: `premise JP {
   calendar-system: Gregorian
   tz: "Asia/Tokyo"
@@ -226,7 +226,7 @@ lateDay = (sat | federal) \\ sun
 (bizDay |> at(T06:30)) | (lateDay |> at(T08:00))`,
   },
   payday: {
-    from: '2026-07-01', to: '2026-11-01', tz: 'America/New_York',
+    window: 120, tz: 'America/New_York',   // the next 4 paydays from the chosen day (a fixed range goes stale)
     code: `premise US {
   calendar-system: Gregorian
   tz: "America/New_York"
@@ -246,7 +246,7 @@ bizDay = everyDay \\ (satSun | federal)
 everyDay |> within(month) |> nth(25) |> roll(Preceding, on: bizDay)`,
   },
   monthend3: {
-    from: '2026-08-01', to: '2026-12-01', tz: 'America/New_York',
+    window: 120, tz: 'America/New_York',   // the next 4 month-ends from the chosen day
     code: `premise US {
   calendar-system: Gregorian
   tz: "America/New_York"

@@ -15,6 +15,8 @@
 西方教会（グレゴリオ暦）の Computus（Anonymous Gregorian algorithm）をそのまま値関数に写す。
 `div`・`mod` と射影（`year`・`month`・`ordinalIn`）だけ——カレンダーデータへの依存が無い:
 
+（下のブロックの `@JP` は doctest の標準前提＝祝日表 `holidays2026`・`bizDay` 入り。手で動かすときは「▶ Playground で開く」の前提込みの形を使う＝[recipes/README](README.md)）
+
 ```kairos
 # eval: 2024-01-01..2029-01-01 tz: UTC
 premise W {

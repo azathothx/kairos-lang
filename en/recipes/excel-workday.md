@@ -1,5 +1,5 @@
 ---
-source_sha: da3e0f5ae333
+source_sha: f2dffbbe29da
 ---
 
 # Schedules that are hard to write with Excel's WORKDAY and EOMONTH — do not let an expired holiday table stay silent
@@ -41,6 +41,8 @@ In Excel, read it as "one business day before the 1st of the next month". A2 is 
 ```
 
 In Kairos: "cut the business-day stream by month, take the last point". It is written in the order it is read:
+
+(`@JP` in the block below is the doctest's standard premise, with `holidays2026` and `bizDay` included. To run it yourself, use the self-contained form behind the "▶ Open in Playground" link — see [recipes/README](README.md).)
 
 ```kairos
 # eval: 2026-01-01..2027-01-01
@@ -209,7 +211,7 @@ expr	source	uid	date	time	epoch_ms	note	label
 origin and Tab as the delimiter. `date` comes in as a date and `epoch_ms` as a number.
 `time` is filled only for definitions that carry a time of day. `note` is the annotation text when the point
 falls in an interval "outside the table"; empty means the computation stayed inside the table. `label` (from 1.0.12)
-holds the point's label (a solar-term name, say) when the expression refers to exactly one labelled table (`labels:`);
+holds the point's label (a solar-term name, say) when the expression's text refers to exactly one labelled binding (a table with `labels:`, or a cycle such as `weekday`);
 it is empty in this example.
 
 - **PowerShell**: ``Import-Csv month-end.tsv -Delimiter "`t" -Encoding utf8 | Format-Table date, note``.

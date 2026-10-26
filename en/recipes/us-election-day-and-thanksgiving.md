@@ -1,5 +1,5 @@
 ---
-source_sha: c4c8469e0fec
+source_sha: f9d5ce150fb3
 ---
 
 # US Election Day, Black Friday and the Sunday after Thanksgiving: dates relative to a computed date
@@ -26,6 +26,8 @@ that stream into the next rule (closure).
 ## Writing it in Kairos, in the order the law states it
 
 **Election Day**: pick "the first Monday in November" within the year window, then the next day:
+
+(`@JP` in the block below is the doctest's standard premise, with `holidays2026` and `bizDay` included. To run it yourself, use the self-contained form behind the "▶ Open in Playground" link — see [recipes/README](README.md).)
 
 ```kairos
 # eval: 2024-01-01..2029-01-01 tz: America/New_York

@@ -1,5 +1,5 @@
 ---
-source_sha: 84d72eeab87f
+source_sha: 22577ae1835d
 ---
 
 # Non-delivery days and arrival dates — a logistics business-day calendar from one definition
@@ -37,6 +37,8 @@ The rules on this page are typical ones from public information; they differ fro
 
 Three ingredients. Sundays are a rule; national holidays are a table; the company's own closures (year-end
 and Obon) are a table too. Closures are decided year by year, so they go in a table, not in a rule.
+
+(`@JP` in the block below is the doctest's standard premise, with `holidays2026` and `bizDay` included. To run it yourself, use the self-contained form behind the "▶ Open in Playground" link — see [recipes/README](README.md).)
 
 ```kairos
 # 営業日（日祝・年末年始・お盆を除く）

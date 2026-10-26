@@ -1,5 +1,5 @@
 ---
-source_sha: f7c869d7645d
+source_sha: a81bfc2eb421
 ---
 
 # `roll` — nudge invalid points to valid ones
@@ -29,7 +29,7 @@ default).
 |---|---|
 | `Following` | to the next valid point |
 | `Preceding` | to the previous valid point |
-| `Modified` | takes an enclosing window as an argument and nudges while staying within that window (if it would cross the month, go to the opposite side. ADR-14) |
+| `Modified` | takes an enclosing window as an argument and nudges while staying within that window (if it would cross the month, go to the opposite side. ADR-14). Not implemented in reference implementation 1.0.12 (impl/README) |
 
 `on:` accepts, besides axis names, a **derived stream** passed as-is (ADR-26) — this becomes the
 key to substitute holidays.

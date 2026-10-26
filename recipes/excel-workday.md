@@ -31,6 +31,8 @@ Excel では「翌月 1 日の 1 営業日前」と読む。A2 は月内の任�
 
 Kairos では「営業日の列を月で区切り、最後の点」。読んだままの順に書く:
 
+（下のブロックの `@JP` は doctest の標準前提＝祝日表 `holidays2026`・`bizDay` 入り。手で動かすときは「▶ Playground で開く」の前提込みの形を使う＝[recipes/README](README.md)）
+
 ```kairos
 # eval: 2026-01-01..2027-01-01
 @JP
@@ -177,7 +179,7 @@ expr	source	uid	date	time	epoch_ms	note	label
 
 **Excel** では、ダブルクリックではなく「データ → テキストまたは CSV から」でファイルを選び、文字コードに UTF-8、区切り記号にタブを選ぶ。
 `date` は日付型、`epoch_ms` は数値で入る。`time` は時刻付きの定義のときだけ埋まる。`note` はその点が「表の外」の区間に
-入るときの註釈文で、空なら表の内側の計算である。`label`（1.0.12 から）は、式がラベル付きの表（`labels:`）を 1 つ参照するときに
+入るときの註釈文で、空なら表の内側の計算である。`label`（1.0.12 から）は、式の字面がラベル付きの束縛（`labels:` 付きの表・`weekday` などの cycle）を 1 つ参照するときに
 その点のラベル（節気名など）が入る列で、この例では空。
 
 - **PowerShell**: ``Import-Csv month-end.tsv -Delimiter "`t" -Encoding utf8 | Format-Table date, note``。

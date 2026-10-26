@@ -1,5 +1,5 @@
 ---
-source_sha: 0b22d2d7f9b0
+source_sha: 01628095ca89
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -108,8 +108,8 @@ lunarMonth = day |> segmentBy(lunarStart, edges: drop, empties: error, labels: m
 they bind to the innermost window (the nearest `within`/`segmentBy`). Only when nesting makes the
 target ambiguous is the window named explicitly with `of: w`. The named window carries premises
 such as WKST and fixes the origin of "the Nth" (localizing the two-step dependency selector →
-window → WKST). A selector without a window is a type error (I4); leaving `of:` off while
-ambiguous is a static error.
+window → WKST). A selector without a window is a type error (I4); naming a window with `of:` that is not
+in the nesting chain is a static error (the default binding is always the innermost window, so no ambiguity arises).
 
 ```text
 everyDay |> within(quarter) |> within(month) |> nth(2, of: month)  # the 2nd of each month window
@@ -126,7 +126,7 @@ argument (`on:`/`unit:`). Each stage is self-sufficient in its premises.
 
 - **`roll(conv, on: P)`** — nudges invalid points to valid ones by conv
   (`Following`/`Preceding`/`Modified`…). Roll conventions are axis-independent; the same system
-  rides on business days and on DST alike. `Modified` takes an enclosing window as an argument and
+  rides on business days and on DST alike. `Modified` (not implemented in reference implementation 1.0.12 — see impl/README) takes an enclosing window as an argument and
   stays within that window. `on:` accepts derived streams as well as axis names (§3.3, ADR-26).
 - **`shift(n, unit: U)`** — moves by n (signed) in units of U. **Direction is carried by the sign;
   no direction words are taken** (`back: 3` would split direction across a word and a sign once n
@@ -450,8 +450,8 @@ the §4.5 alignment checks. When a label is not unique, the result is the **unio
 `lunarMonth(6)` includes the leap sixth month, which repeats the preceding month's number); empty
 windows and zero matches yield empty. But for bindings whose **label value domain is statically
 enumerable** (`labels:` literals and the like), **an out-of-domain value argument is a static
-error** (sealing off `month(2020)`-class typos going silently empty; computed labels are "no match
-= empty"). The scope of application is window bindings only — preimages of cycles and tables are
+error** (sealing off `lunarMonth(13)`-class typos going silently empty; computed labels are "no match
+= empty" — the standard `month`/`year` carry `label:` expressions, i.e. computed labels, so their domain is not enumerated and `month(13)` is empty rather than a static error). The scope of application is window bindings only — preimages of cycles and tables are
 not introduced, because they can be written as one `filter` line over the carrier's point sequence
 (`everyDay |> filter(d => weekday(d) == Mon)`). Applying a value to a window binding with no label
 source is a static error (attach `label:` or write a filter). Annotation transport is the "window

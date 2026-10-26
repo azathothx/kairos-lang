@@ -1,5 +1,5 @@
 ---
-source_sha: d67338bb31c3
+source_sha: 3050eb547e39
 ---
 
 # Nearest weekday to the 15th — Quartz 15W by composition
@@ -24,6 +24,8 @@ holidays**. Kairos has no dedicated `Nearest` roll convention — instead the re
 
 Split the stream of 15ths three ways — weekday as is, Saturday backward, Sunday forward — and
 take the union:
+
+(`@JP` in the block below is the doctest's standard premise, with `holidays2026` and `bizDay` included. To run it yourself, use the self-contained form behind the "▶ Open in Playground" link — see [recipes/README](README.md).)
 
 ```kairos
 # eval: 2026-01-01..2026-12-31

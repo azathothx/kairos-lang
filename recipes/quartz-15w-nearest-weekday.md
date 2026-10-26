@@ -16,6 +16,8 @@ RRULE には存在せず、Quartz 方言でも**祝日は扱えない**。Kairos
 
 15 日の列を「平日ならそのまま・土曜なら前へ・日曜なら後ろへ」の 3 系列に分けて合成する:
 
+（下のブロックの `@JP` は doctest の標準前提＝祝日表 `holidays2026`・`bizDay` 入り。手で動かすときは「▶ Playground で開く」の前提込みの形を使う＝[recipes/README](README.md)）
+
 ```kairos
 # eval: 2026-01-01..2026-12-31
 @JP

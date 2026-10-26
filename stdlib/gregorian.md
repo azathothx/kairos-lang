@@ -99,7 +99,7 @@ premise Gregorian {
 | `at` | 糖衣（変換） | 日集合への壁時計時刻の付与——<code>bizDay &#124;> within(month) &#124;> last &#124;> at(T17:00)</code>。展開＝壁時計 tick＋`coincides`（ADR-51。単独時刻リテラル専用〈他の引数・窓付き入力は誘導つき静的エラー＝ADR-51 追記〉・DST 切替日も壁時計保存） |
 | `yearNo`/`monthNo`/`dayNo` | 値関数（暦座標） | 点の暦座標を読む射影糖衣（spec §4.9 が予告する `epochOrdinal`＋`ordinalIn`＋補助値関数の合成）。`dayNo(d) == 11` で固定日など。 |
 
-標準ラベルの下では `year(d)` と `yearNo(d)` が同値の二綴りになる（`month(d)`/`monthNo(d)` も同様）。
+標準ラベルの下では `year(d)` と `yearNo(d)` が同値の二綴りになる（`month(d)`/`monthNo(d)` も同様）。値引数（`month(5)`・`year(2026)`）は計算ラベルへの逆像なので、`month(13)` のような域外の値は静的エラーにならず空になる（`labels:` リテラルの束縛と違う）。
 **暦座標糖衣（`yearNo` 系）が正準**——`label:` は主に窓インスタンス参照（値引数側）の資格付与
 （spec §4.9・ADR-42）。特定期間の絞り込みの正準形:
 

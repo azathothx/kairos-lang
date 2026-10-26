@@ -1,5 +1,5 @@
 ---
-source_sha: b7f03844fede
+source_sha: 1d45963a549d
 ---
 
 # Patch Tuesday: the second Tuesday at 10:00 Pacific, shown in any time zone
@@ -54,6 +54,8 @@ producing the *scheduled* points, in any time zone, from a single definition.
 
 One definition, in Pacific Time. The time of day is attached with `at` (the wall-clock 10:00 survives the
 daylight-saving switches):
+
+(`@JP` in the block below is the doctest's standard premise, with `holidays2026` and `bizDay` included. To run it yourself, use the self-contained form behind the "▶ Open in Playground" link — see [recipes/README](README.md).)
 
 ```kairos
 # eval: 2026-01-01..2027-01-01 tz: America/Los_Angeles

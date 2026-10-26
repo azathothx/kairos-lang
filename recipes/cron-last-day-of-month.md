@@ -25,6 +25,8 @@ bizDay |> within(month) |> last           # 月末最終営業日
 
 営業日（祝日対応）の月末。`@JP` の標準前提（土日＋日本の祝日データから導出された `bizDay`）で:
 
+（下のブロックの `@JP` は doctest の標準前提＝祝日表 `holidays2026`・`bizDay` 入り。手で動かすときは「▶ Playground で開く」の前提込みの形を使う＝[recipes/README](README.md)）
+
 ```kairos
 # eval: 2026-01-01..2026-07-01
 @JP

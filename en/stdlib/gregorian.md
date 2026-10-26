@@ -1,5 +1,5 @@
 ---
-source_sha: 19d14a36b851
+source_sha: 110585ae49bd
 ---
 
 # Standard premise: Gregorian
@@ -125,7 +125,7 @@ calendar)". It is not `86400s` (a fixed number of seconds).
 Under the standard labels, `year(d)` and `yearNo(d)` become two equivalent spellings of the same
 value (likewise `month(d)`/`monthNo(d)`). **The calendar-coordinate sugar (the `yearNo` family) is
 canonical** — `label:` chiefly grants the qualification for window-instance reference (the
-value-argument side) (spec §4.9, ADR-42). The canonical form for narrowing to a specific period:
+value-argument side) (spec §4.9, ADR-42). The canonical form for narrowing to a specific period: A value argument (`month(5)`, `year(2026)`) is a preimage through a computed label, so an out-of-domain value such as `month(13)` is empty rather than a static error (unlike `labels:`-literal bindings).
 
 ```kairos
 # eval: 2026-04-28..2026-05-03

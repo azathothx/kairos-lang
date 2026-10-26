@@ -20,6 +20,8 @@ Windows のシステム管理者向けのページ。PowerShell とタスク ス
 
 次を `C:\kairos\patch.kairos` に保存する（`# eval:` と `#=>` の行はこのサイトの検証用のコメント。消してよい）:
 
+（下のブロックの `@JP` は doctest の標準前提＝祝日表 `holidays2026`・`bizDay` 入り。手で動かすときは「▶ Playground で開く」の前提込みの形を使う＝[recipes/README](README.md)）
+
 ```kairos
 # Windows Update の日（第 2 火曜 10:00 太平洋時間）
 # eval: 2026-10-01..2026-12-31 tz: Asia/Tokyo

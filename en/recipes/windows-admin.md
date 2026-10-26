@@ -1,5 +1,5 @@
 ---
-source_sha: f6c600d47d76
+source_sha: 6311478831e5
 ---
 
 # Kairos for Windows administrators — PowerShell and Task Scheduler, nothing else
@@ -26,6 +26,8 @@ On the Tokyo calendar that is early Wednesday morning, and in April and July it 
 ## The first run — write a definition, ask with `list`
 
 Save the following as `C:\kairos\patch.kairos` (the `# eval:` and `#=>` lines are verification comments for this site; you may delete them):
+
+(`@JP` in the block below is the doctest's standard premise, with `holidays2026` and `bizDay` included. To run it yourself, use the self-contained form behind the "▶ Open in Playground" link — see [recipes/README](README.md).)
 
 ```kairos
 # Patch Tuesday (second Tuesday, 10:00 Pacific Time)

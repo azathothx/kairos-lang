@@ -141,7 +141,7 @@ Full explanation with sequence diagrams and runnable doctests:
 [spec §7.7–7.8](en/spec/90-examples.md); the full worked study is
 [design/40-examples/07](design/40-examples/07-injected-origin.md) (Japanese). The conformance profile for
 firing layers — what a Kairos-compatible runtime must satisfy (re-evaluation, at-least-once with idempotency
-keys, wiring of operational signals) — is [spec appendix A](spec/60-firing-layer-profile.md) (Japanese).
+keys, wiring of operational signals) — is [spec appendix A](en/spec/60-firing-layer-profile.md) ([日本語](spec/60-firing-layer-profile.md)).
 The matching contract for whoever publishes the tables that `external` resolves (the static bundle, covering as a
 completeness claim, asof as a version id, fixed URLs, four acceptance tests that run with the reference CLI alone) — is
 [spec appendix B](en/spec/61-supply-profile.md) ([日本語](spec/61-supply-profile.md)).
@@ -158,6 +158,13 @@ npm i -g kairos-lang                             # or without installing: npx ka
 kairos list impl/examples/payday.kairos --from 2026-01-01 --to 2027-01-01
 kairos next -n 3 --json impl/examples/payday.kairos   # next 3 firings from today, machine-readable
 ```
+
+Reading the output (the design never stays silent, so this is what you see first):
+
+- `# ⚠ 範囲外 …` (out of range) marks an interval computed outside the holiday table; points there have no backing from the table.
+- `残走路 N 日` (runway) is how many days the table still covers; negative means the table has run out — extend it (and its `covering:`).
+- `警告: window-clip` says a point moved past the edge of the evaluation range and is not in the output — widen the range.
+- Dates print in the CLI's time zone (`--tz`; default = the machine's). If it differs from the premise's `tz:`, day-level points show a time of day — pass `--tz America/New_York` for the example at the top.
 
 (`impl/examples/` lives in this repository; the npm package ships the CLI and the stdlib. The block below runs
 the TypeScript source directly, for development.)
@@ -216,7 +223,7 @@ including cross-checks against the official ephemeris of the National Astronomic
 | [`reference/`](en/reference/) | **Descriptor reference** — one page per operator; examples are doctested ([日本語](reference/)) |
 | [`skills/`](en/skills/kairos-authoring/SKILL.md) | **Authoring skill** — how to write a definition from a requirement, for people and AI assistants: requirement patterns and expression patterns, forms to avoid, reading diagnostics, verification; every example doctested ([日本語](skills/kairos-authoring/SKILL.md)) |
 | [`stdlib/`](en/stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek` ([日本語](stdlib/) — includes the Japanese-only `Kyureki`) |
-| [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps; prototype — Japanese) |
+| [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps) — one implementation of the language, not the language itself (Japanese) |
 | [`mcp/`](mcp/) | MCP server `kairos-lang-mcp` — evaluate (list/next), validate and look up the reference from an MCP client; `tz` is required (English) |
 | [`design/`](design/) | Design records: 53 ADRs, domain model, expressiveness studies incl. the ["impossible schedules" catalog](en/design/40-examples/11-impossible-schedules.md) (Japanese; catalog mirrored in English) |
 | [`MAINTENANCE.md`](MAINTENANCE.md) | Maintenance guide — the yearly holiday-table update, the freshness check, what a red CI means, how releases are published (Japanese, with an English summary). Policy: [design/75-stewardship.md](design/75-stewardship.md) |

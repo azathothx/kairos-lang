@@ -84,3 +84,8 @@ Kairos is frozen at 1.0, so maintenance is small:
 4. **Releases**: push a tag `v1.0.x`; the publish workflows build and publish to npm with provenance after approval, then attach the Windows standalone to the Release.
 
 5. **Maintenance mode**: state it at the top of the README, answer issues with the same text, and keep the domain renewed.
+
+## 補足（2026-10-26・外部レビュー第 14 回 ⑤-M1）
+
+- Playground の業務の例のうち給料日（payday）と月末 3 営業日前（monthend3）は `window:` 型（選んだ日から 120 日）にした＝年次の更新は不要（表は 2027 年まで）。
+  固定の範囲（`from`／`to`）の例は、表の行を足すときに範囲も翌年へ送る（過ぎた範囲は「過去の一覧」に見える）。

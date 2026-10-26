@@ -42,6 +42,8 @@ Microsoft の月例セキュリティ更新は**毎月第 2 火曜の 10:00 太�
 
 定義は太平洋時間で 1 つ。時刻は `at` で貼る（壁時計の 10:00 は夏時間を跨いでも保たれる）:
 
+（下のブロックの `@JP` は doctest の標準前提＝祝日表 `holidays2026`・`bizDay` 入り。手で動かすときは「▶ Playground で開く」の前提込みの形を使う＝[recipes/README](README.md)）
+
 ```kairos
 # eval: 2026-01-01..2027-01-01 tz: America/Los_Angeles
 premise PT {

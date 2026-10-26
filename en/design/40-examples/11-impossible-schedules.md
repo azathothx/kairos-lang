@@ -338,8 +338,10 @@ at15 | at17
 
 ### (l) Every 90 minutes inside business hours, resetting at 9:00 each morning (catalog 11)
 
-There is no `hour` window in the Gregorian standard, but **a calendar atom is one line away**
-(grid; the second use sanctioned by ADR-41):
+At the time of this measurement there was no `hour` window in the Gregorian standard (this section's
+measurement became the demand evidence and **ADR-50 standardized it** = §11.5; the original form is kept
+below — still valid as a demonstration that **a calendar atom is one line away** (grid; the second use
+sanctioned by ADR-41)):
 
 ```kairos
 # eval: 2026-01-05..2026-01-07

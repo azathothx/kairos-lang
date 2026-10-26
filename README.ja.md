@@ -9,9 +9,13 @@
 発報すべき意味ある時点（*kairos*）の集合を紡ぐ。
 
 ```text
-premise JP { calendar-system: Gregorian; calendar: TSE; tz: "Asia/Tokyo"; wkst: Mon }
+premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
 
 @JP
+holidays2026 = [2026-01-01, 2026-01-12, 2026-02-11, 2026-02-23, 2026-03-20, 2026-04-29, 2026-05-03, 2026-05-04,
+                2026-05-05, 2026-05-06, 2026-07-20, 2026-08-11, 2026-09-21, 2026-09-22, 2026-09-23, 2026-10-12,
+                2026-11-03, 2026-11-23] covering: 2026..2026
+bizDay = everyDay \ ((everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)) | holidays2026)
 monthEnd |> roll(Preceding, on: bizDay) |> shift(-3, unit: bizDay)   # 毎月末の 3 営業日前
 ```
 
@@ -45,7 +49,7 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 | [`reference/`](reference/) | **記述語リファレンス**（演算子・窓生成語ごとの解説。例は実装で実行検証） |
 | [`skills/`](skills/kairos-authoring/SKILL.md) | **記述スキル**——要件から定義を書く手順（人にも AI にも）。要件の型と式の型・書いてはいけない形・診断の読み方・検算。例は実装で実行検証 |
 | [`stdlib/`](stdlib/) | 標準 premise の解説（`Gregorian`・`Fiscal`・`ISOWeek`・`Kyureki`——透明な標準ライブラリ。例は実行検証） |
-| [`impl/`](impl/) | リファレンス実装（TypeScript・実行時依存ゼロ。プロトタイプ） |
+| [`impl/`](impl/) | リファレンス実装（TypeScript・実行時依存ゼロ）。言語の実装の 1 つであって言語そのものではない |
 | [`mcp/`](mcp/)（[日本語](mcp/README.ja.md)） | MCP サーバ `kairos-lang-mcp`——MCP クライアントから評価（list／next）・検証・リファレンス参照。tz は必須（英語） |
 | [`design/`](design/) | 設計記録（ADR-01〜53・ドメインモデル・構文ドラフト・表現力検証〈[「書けないスケジュール」の博物誌](design/40-examples/11-impossible-schedules.md) 含む〉・綻びログ） |
 | [`MAINTENANCE.md`](MAINTENANCE.md) | 保守の手引き——年 1 回の祝日表の更新・鮮度の検査・CI が赤のときの見分け・公開の仕組み（方針は [design/75-stewardship.md](design/75-stewardship.md)） |
@@ -67,6 +71,13 @@ npm i -g kairos-lang                             # 入れずに試すなら: npx
 kairos list impl/examples/payday.kairos --from 2026-01-01 --to 2027-01-01
 kairos next -n 3 --json impl/examples/payday.kairos   # 今日から次の 3 発火（機械可読）
 ```
+
+出力の読み方（黙らない設計＝初見で目に入るもの）:
+
+- `# ⚠ 範囲外 …` は祝日表の外側で計算した区間。その区間の点は表の裏付けがない。
+- `残走路 N 日` は表の残り日数。負なら表が尽きている＝表を延ばす（`covering:` の右端も）。
+- `警告: window-clip` は評価範囲の端で外へ動いた点が出力に含まれないことの知らせ＝範囲を広げて評価し直す。
+- 日付は CLI の時間帯（`--tz`・既定は機械の tz）で印字する。前文の `tz:` と違うと日の点が時刻付きで出る＝例の前文に合わせて `--tz Asia/Tokyo` を付ける。
 
 （`impl/examples/` はこのリポジトリにある。npm パッケージに入るのは CLI と stdlib。下のブロックは開発用に TypeScript を
 そのまま実行する形）

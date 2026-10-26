@@ -48,6 +48,8 @@
 だけなので tz は結果を変えない——Playground の表示 tz と揃えてある）。週は ISO 週（月曜始まり）
 なので `wkst: Mon`:
 
+（下のブロックの `@JP` は doctest の標準前提＝祝日表 `holidays2026`・`bizDay` 入り。手で動かすときは「▶ Playground で開く」の前提込みの形を使う＝[recipes/README](README.md)）
+
 ```kairos
 # eval: 2025-12-01..2027-03-01 tz: America/New_York
 premise R445 = ISOWeek with {

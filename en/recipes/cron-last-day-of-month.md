@@ -1,5 +1,5 @@
 ---
-source_sha: e716afd73e1f
+source_sha: b6e683bbc491
 ---
 
 # Cron: run on the last day of the month — and the last business day
@@ -33,6 +33,8 @@ days").
 
 The holiday-aware last business day of the month, under the standard `@JP` premise (whose `bizDay`
 is derived from weekends plus Japan's holiday data):
+
+(`@JP` in the block below is the doctest's standard premise, with `holidays2026` and `bizDay` included. To run it yourself, use the self-contained form behind the "▶ Open in Playground" link — see [recipes/README](README.md).)
 
 ```kairos
 # eval: 2026-01-01..2026-07-01

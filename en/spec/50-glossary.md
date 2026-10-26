@@ -1,5 +1,5 @@
 ---
-source_sha: 940e634b4417
+source_sha: fa987a58acb4
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -105,7 +105,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | projection `ordinalIn(u, w, d)`（射影） | Within the `w` window containing point `d`, the ordinal of the `u` window containing `d` (1-based; granularity-independent). The reverse of `nth` | §4.9 · ADR-27/30 |
 | projection `epochOrdinal(u, d)`（射影） | The running ordinal of `u` windows from the epoch (0-based; the epoch is the language default 1970-01-01, overridable with `epoch:`) | §4.9 · ADR-27/30/31 |
 | label projection (binding name)（ラベル射影（束縛名）） | The binding name of a labeled window/cycle/table doubles as the projection name (`weekday(d)`, `sekki(d)`). Points store no labels; labels are read via projections (the generic word `labelOf` was retired; ADR-30) | §4.9 · §3.6 |
-| window instance reference `W(v)`（窓インスタンス参照） | **Value** application to a label-sourced **window** binding = the preimage (`year(2020)` = the days of that year; returned as a time stream). Union of all matches; empty is legitimate; outside a statically enumerable label range is a static error. The dual of binding-name projection; point vs. value branches on the argument expression's type (decided after expansion = §2.7) | §4.9 · §2.7 · ADR-42 |
+| window instance reference `W(v)`（窓インスタンス参照） | **Value** application to a label-sourced **window** binding = the preimage (`year(2020)` = the days of that year; returned as a time stream). An out-of-domain value is a static error for `labels:`-literal bindings and empty for the standard `month`/`year` (computed labels). Union of all matches; empty is legitimate; outside a statically enumerable label range is a static error. The dual of binding-name projection; point vs. value branches on the argument expression's type (decided after expansion = §2.7) | §4.9 · §2.7 · ADR-42 |
 | element point sequence（要素点列） | Of the **input point sequence** that window binding W's definition bundled into windows, the points belonging to W's windows (grid/span/split chains = equivalent to the atomic grid ticks; segmentBy = the input points). The carrier of window instance references. An internal concept (not a word users write) | §4.9 · ADR-42 |
 | combinator（結合子） | Stream × stream → stream. Union <code>&#124;</code>, intersection `&`, difference `\`. Intersection and difference require matching alignment on both sides | §4.5 |
 | cascade（カスケード） | Prioritized overriding. Has no dedicated symbol; expressed by left-associative ordered application of union and difference (last wins) | §4.5 |

@@ -1,5 +1,5 @@
 ---
-source_sha: d0f93143ba14
+source_sha: 23422033ee6a
 ---
 
 # What is a 4-4-5 calendar? The 4-5-4 and 5-4-4 variants, the 53rd week, and the 2026 period table
@@ -59,6 +59,8 @@ periods with `segmentBy`, deriving from the standard `ISOWeek` premise. The exam
 `US445` is US Eastern time (the calendar is date-only, so the time zone does not change the
 result — it is aligned with the Playground's display zone). Weeks are ISO weeks (Monday start),
 hence `wkst: Mon`:
+
+(`@JP` in the block below is the doctest's standard premise, with `holidays2026` and `bizDay` included. To run it yourself, use the self-contained form behind the "▶ Open in Playground" link — see [recipes/README](README.md).)
 
 ```kairos
 # eval: 2025-12-01..2027-03-01 tz: America/New_York

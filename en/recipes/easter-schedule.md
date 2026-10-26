@@ -1,5 +1,5 @@
 ---
-source_sha: d4ad26eecb61
+source_sha: 2a2a566a94cc
 ---
 
 # Computing Easter as a schedule expression — zero-data Computus
@@ -23,6 +23,8 @@ spring equinox" — and recurrence-rule languages have uniformly given up on it.
 Transcribe the Western-church (Gregorian) Computus — the Anonymous Gregorian algorithm — directly
 into value functions. Only `div`, `mod`, and projections (`year`, `month`, `ordinalIn`); no
 dependency on calendar data:
+
+(`@JP` in the block below is the doctest's standard premise, with `holidays2026` and `bizDay` included. To run it yourself, use the self-contained form behind the "▶ Open in Playground" link — see [recipes/README](README.md).)
 
 ```kairos
 # eval: 2024-01-01..2029-01-01 tz: UTC
