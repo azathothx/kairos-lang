@@ -1,5 +1,5 @@
 ---
-source_sha: be0c3350030f
+source_sha: 7541450e4b73
 ---
 
 # `epochOrdinal` — the running ordinal from the epoch
@@ -21,7 +21,8 @@ holds with m=0 = the epoch month).
 
 The **epoch** is the language default 1970-01-01T00:00 (in the in-scope tz). A calendar system on a
 different basis can override it via the primitive definition's member `epoch:` (it cannot be placed
-in the user-side preamble; ADR-31).
+in the consumer-side preamble; ADR-31). The reference implementation 1.0.12 supports the default epoch
+only (any other value is a static error; see impl/README).
 
 ## Examples
 

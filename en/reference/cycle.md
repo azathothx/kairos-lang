@@ -67,7 +67,7 @@ everyDay |> filter(d => weekday(d) == Mon)
   label rotates at once (the phase is decided by "the window containing the anchor = the first
   label". The old wording "the same anchor gives the same calendar" was wrong — corrected
   2026-07-25). That the list order has nothing to do with the week's **start** (WKST) still holds.
-- **Choosing the anchor (practical guidance; runtime-side reflux, 2026-08)**: as a rule, **write a
+- **Choosing the anchor (practical guidance; implementation-side feedback batch, 2026-08)**: as a rule, **write a
   verified real day as the anchor, as-is**. Whether verification is needed splits by the anchor's
   nature — **observation-verified anchors** (day stems-and-branches, the 28 lunar mansions: which
   real day carries which label can only be settled by checking primary sources and printed

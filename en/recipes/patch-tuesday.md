@@ -208,4 +208,4 @@ same):
 - Vocabulary: [`at`](../reference/at.md) (attaching a wall-clock time) · [`nth`](../reference/nth.md) · [`within`](../reference/within.md) ·
   [`shift`](../reference/shift.md)
 - Migrating from cron in general: [Last day of the month](cron-last-day-of-month.md)
-- The catalogue of schedules long said to be inexpressible: [Study 11](../design/40-examples/11-impossible-schedules.md)
+- The catalogue of schedules long said to be inexpressible: [study 11](../design/40-examples/11-impossible-schedules.md)

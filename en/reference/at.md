@@ -1,5 +1,5 @@
 ---
-source_sha: 081fae1e15f5
+source_sha: cea77a394e81
 ---
 
 # `at` — attaching a wall-clock time to a day set
@@ -9,7 +9,7 @@ source_sha: 081fae1e15f5
 > Japanese original changes.
 
 **Category**: sugar (stdlib; a Gregorian public word = transform) / **Signature**:
-`at(a) : Stream -> Stream` (`a` is a standalone time literal `Thh:mm`) / name settled (ADR-51)
+`at(a) : Stream -> Stream` (`a` is a standalone time literal `Thh:mm(:ss(.fff)?)?` = §5.5) / name settled (ADR-51)
 
 ## Meaning
 
@@ -24,7 +24,7 @@ at(a) = s => (everyInstant |> strideBy(1d, from: a)) |> filter(t => coincides(s,
 (`unit: hour`) has elapsed-time semantics (F76) and drifts off the wall clock on DST transition
 days — `at` steps with a tick (a civil-day-width progression = wall-clock preserving), so the wall
 clock holds even across transitions. The standalone time literal is anchored on the epoch anchor
-day 1970-01-01 in the resident tz — nothing is lost however far back the evaluation range goes
+day 1970-01-01 in the in-scope tz — nothing is lost however far back the evaluation range goes
 (ADR-51).
 
 ## Examples
@@ -63,12 +63,15 @@ previous day" adjusts the day in the day layer before attaching the time:
   tick origin **forward-only**, silently emptying days before the anchor; the check now blocks
   that shape (defending the reason ADR-51 rejected variant B). Writing only the time makes the
   gap structurally impossible.
+- **The guidance appears only for a broken `T\d\d:` shape** — `at(T07:3)` is a guided lexical error,
+  but `T7:30` is read as an identifier and ends in `at: 引数が不足` (missing argument). Write the hour
+  with two digits (measured on 1.0.12).
 - **Windowed input is not accepted** — a guided static error (ADR-51 addendum). The expansion
   re-reads its input as a predicate and does not carry windows through, so "the first 3 days of
   each month at 7:00" used to silently become a running count. The correct form is to **cut
   windows after `at`**: `everyDay |> at(T07:00) |> within(month) |> first` (extensionally
   equivalent).
-- **Points outside coverage that reach `at` are dropped at the `at` stage** (reflux mail 15 (e)).
+- **Points outside coverage that reach `at` are dropped at the `at` stage** (feedback batch 15 (e)).
   The expansion's inner `filter` catches the out-of-coverage signal raised on those days and
   "drops with an annotation" (per the ADR-37 decision 6 convention — sugar inherits the meaning
   of its expansion). The elapsed-arithmetic form preserves the points and only annotates, so
@@ -78,7 +81,7 @@ previous day" adjusts the day in the day layer before attaching the time:
   change in points cannot be read from them). Evaluations that stay inside coverage agree. The
   operational defense is keeping coverage current (runway warnings = ADR-37 decision 8), not the
   shape of the expression.
-  **The same rule applies to `at` placed after a combinator** (reflux mail 20 §3, 2026-09-03): `|`,
+  **The same rule applies to `at` placed after a combinator** (feedback batch 20 §3, 2026-09-03): `|`,
   `&`, and `\` transport the annotations of both sides as a union (ADR-37 decision 4), so points that
   fall outside the **intersection of the terms' effective coverage** — i.e. inside an annotated
   interval — are dropped at the `at` stage. A single term drops nothing (`satSun |> at(…)` has
@@ -87,7 +90,7 @@ previous day" adjusts the day in the day layer before attaching the time:
   out-of-coverage annotation remains** (the dropped points cannot be read from it). An external that
   is not referenced is never resolved and does not take part in coverage.
 - **Feeding `at` output into a counting stage or a `segmentBy` marker classifies even finite
-  input as "infinite"** (reflux mail 15 (b)). The tick-derived endless flag passes through the
+  input as "infinite"** (feedback batch 15 (b)). The tick-derived endless flag passes through the
   filter (a convention-conformant conservative approximation) — with `takeLast` the
   implementation-horizon guard fires a false positive warning, and with `segmentBy(labels:)` the
   data-label eligibility check becomes a static error. The correct form for both: **build the

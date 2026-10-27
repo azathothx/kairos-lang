@@ -62,8 +62,8 @@ statutory |> filter(d => weekday(d) == Sun) |> roll(Following, on: nonHoliday)
 
 **Anonymous axes** (inline stream expressions) are accepted as well — a named-arg takes a
 stream-expr (spec §5.6), and a derived stream has the same type as an axis (F7, ADR-26). "The last
-Friday of the month" can be written without naming anything (a "good discovery" from the
-implementation feedback's third batch, spelled out here as a guarantee):
+Friday of the month" can be written without naming anything (a "good discovery" from
+implementation-side feedback batch 3, spelled out here as a guarantee):
 
 ```kairos
 # eval: 2026-01-01..2026-03-01

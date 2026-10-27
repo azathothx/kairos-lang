@@ -183,7 +183,7 @@ bizDay |> within(month) |> last
 
 The three 2027 points are computed with "zero holidays", just as in Excel, but **the same output states the
 interval that is "outside the table"**. `next` (the next N points) prints the same annotation.
-The "remaining runway" in the coverage summary is the number of days the table has left, and it is shown on
+The "runway" in the coverage summary is the number of days the table has left, and it is shown on
 every evaluation. That is the signal that it is time to extend the table.
 
 Extend the holiday table once a year (the Cabinet Office announces Japan's national holidays every

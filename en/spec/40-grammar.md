@@ -174,7 +174,7 @@ Rules for the time part:
 
 **Standalone time literals** (ADR-51): `Thh:mm(:ss(.f+)?)?` — a wall-clock time with no date part. The value is a time of day; it materializes into an instant **only in the `strideBy(1d, from:)` position**.
 
-- The anchor of that materialization is the epoch anchor day 1970-01-01 in the resident tz = the origin of the wall-clock tick.
+- The anchor of that materialization is the epoch anchor day 1970-01-01 in the in-scope tz = the origin of the wall-clock tick.
 - The stdlib sugar `at` is the main consumer — and **its argument is restricted to this lexeme** 〈a dated anchor means forward-only omission, windowed input means dropped windows — both guided static errors. ADR-51 addendum〉.
 - Other point positions and other widths are guided static errors — never silently pinned to the epoch day.
 - The time digits obey the same ranges as date literals.

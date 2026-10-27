@@ -118,4 +118,4 @@ The server's version tracks `kairos-lang` (same number, same contract); it depen
 
 ## License
 
-Apache-2.0. The bundled reference pages and `llms.txt` are copies from the same repository.
+Apache-2.0. The bundled reference pages and `llms.txt` are copies from the same repository as of this package's release; the latest are at https://kairos-lang.org/llms.txt and https://kairos-lang.org/en/reference/ .

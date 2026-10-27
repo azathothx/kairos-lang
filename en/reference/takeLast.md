@@ -1,5 +1,5 @@
 ---
-source_sha: cce988c1ad75
+source_sha: 20e5cb6b3c57
 ---
 
 # `takeLast` — cut off after the last n points (recent N)
@@ -15,7 +15,7 @@ source_sha: cce988c1ad75
 
 Passes **only the last n input points** at or before `until:` (**inclusive**). The mirror of
 [`take`](take.md) ("cut off at the head") — the word that says "the most recent N firings" in an
-expression (ADR-52 — revising the ADR-49 deferral once real demand 〈recipe firing-example
+expression (ADR-52 — revising the deferral in ADR-49 decision 6 once real demand 〈recipe firing-example
 displays〉 materialized).
 
 The terminus `until:` is mandatory (the dual of [`take`](take.md)'s `from:`; the family's anchor
@@ -36,9 +36,9 @@ tensha |> takeLast(3, until: 2026-08-21)
 #=> 2026-03-05 2026-05-25 2026-07-24
 ```
 
-While until: ≤ the covering tail, the count runs over the **settled past only**, so the answer
+While until: ≤ the coverage tail, the count runs over the **settled past only**, so the answer
 comes out deterministic with no annotation (the mirror-image advantage over forward take, whose
-"covering tail always sits near now"). To attach a time, **count in the day layer and attach the
+"coverage tail always sits near now"). To attach a time, **count in the day layer and attach the
 time afterwards** (the standard composition with [`at`](at.md)):
 
 ```kairos
@@ -56,11 +56,11 @@ tensha |> takeLast(2, until: 2026-08-21) |> at(T07:00)
   stream and `until: 2026-08-21`, the 8/21 firing is not included). The right form is the
   composition order above (count in the day layer), or inject `until:` with a time (also correct
   in the sense of "do not count firings still to come today as recent examples").
-- **Evaluate from the head of the covering.** The evaluation range is a cutting window, so a
+- **Evaluate from the coverage head.** The evaluation range is a cutting window, so a
   narrow range silently truncates the answer — do not trade the "is 366 days enough?" hole for an
   evaluation-range hole.
-- If `until:` passes the covering tail, **all output becomes tentative** (out-of-coverage
-  annotations — an unknown "more recent" firing could exist. Correct behavior). The covering head
+- If `until:` passes the coverage tail, **all output becomes tentative** (out-of-coverage
+  annotations — an unknown "more recent" firing could exist. Correct behavior). The coverage head
   with fewer than n points (a feed just started — "not n yet") is likewise observable through
   annotations.
 - **Windowed input is a static error.** "The last 1 per window" is [`within`](within.md) followed
@@ -71,7 +71,7 @@ tensha |> takeLast(2, until: 2026-08-21) |> at(T07:00)
   Passing `from:` gets a dedicated diagnostic (the anchor is until: — count from the head with
   take).
 - With generator input (everyDay class), an `until:` near the computation range or the
-  materialization floor produces horizon-clip **warnings** (down to "only k of n" — an
+  materialization floor produces horizon-clip **warnings** (the materialization-floor side is explicit down to "only k of n" — an
   implementation horizon, not a language one. ADR-37 decision 8 · F107).
 
 ## Related

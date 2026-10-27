@@ -1,5 +1,5 @@
 # 旧暦と六曜: 朔データで月を切り、(月番号 + 日番号) mod 6 で六曜を出す（stdlib/kyureki.md）
-# 実行: node src/cli.ts examples/rokuyo.kairos --from 2026-01-01 --to 2027-01-01
+# 実行: kairos list impl/examples/rokuyo.kairos --from 2026-01-01 --to 2027-01-01（npm 版。開発は node src/cli.ts examples/rokuyo.kairos …）
 # 式 1: 朔日（旧暦月初）12 件——旧正月 2026-02-17 を含む
 # 式 2: 旧暦十五日 13 件——暦要項の望（満月）と 0〜2 日ずれる（十五夜＝満月ではない）
 # 式 3: 2026 年の大安 61 件——同じ旧暦月では 6 日ごと・月替わりで位相が飛ぶ

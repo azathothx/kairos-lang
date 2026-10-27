@@ -21,7 +21,7 @@ cron・Quartz・iCalendar RRULE で「書けない」と長く言われてきた
   `@JP` を使う例には標準前提（Gregorian・Asia/Tokyo・wkst: Mon・2026 年の確定祝日つき
   カレンダー実体）が自動で前置される。
 - 各ページの Playground リンクは**前提込みの自己完結形**——ブラウザでそのまま実行・編集できる
-  （[Playground](../playground/) はリファレンス実装をそのまま動かす。サーバー送信なし）。
+  （[Playground](https://kairos-lang.org/playground/) はリファレンス実装をそのまま動かす。サーバー送信なし）。
 - 収集した「書けない」実例の全カタログ（32 項目・出典つき）と三分類は
   [調査研究 11](../design/40-examples/11-impossible-schedules.md)。本レシピ集はその実測節の
   実用形への再構成。

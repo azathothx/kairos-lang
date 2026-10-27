@@ -72,6 +72,10 @@ kairos list impl/examples/payday.kairos --from 2026-01-01 --to 2027-01-01
 kairos next -n 3 --json impl/examples/payday.kairos   # 今日から次の 3 発火（機械可読）
 ```
 
+**Windows で Node.js を入れられないとき**: [Releases](https://github.com/azathothx/kairos-lang/releases) の
+`kairos-<版>-win-x64.zip`（単体の `kairos.exe`・SHA256 付き）を展開してそのまま使う。手順は
+[Windows 管理者のための Kairos](recipes/windows-admin.md)。
+
 出力の読み方（黙らない設計＝初見で目に入るもの）:
 
 - `# ⚠ 範囲外 …` は祝日表の外側で計算した区間。その区間の点は表の裏付けがない。
@@ -110,7 +114,7 @@ node src/cli.ts next -n 3 examples/payday.kairos   # 今日から次の 3 発火
 ## エラーはこう見える（直し方は括弧の中）
 
 診断は「語: 何が悪いか（直し方。根拠の所在）」の三部構成です。末尾の参照（I3・ADR-38・§3.3）は仕様書の番号で、そのまま引けます。
-参照実装 1.0.5 の実物を 3 本:
+参照実装の実物を 3 本（1.0.5 から同文・1.0.12 で確認）:
 
 - `roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言`
   `… |> roll(on: bizDay)` と規約をどこにも書かなかった形。直し方は `roll(Preceding, on: bizDay)`、または前文に一度 `@JP roll: Preceding`。

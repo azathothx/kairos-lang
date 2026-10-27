@@ -1,5 +1,5 @@
 ---
-source_sha: 110585ae49bd
+source_sha: d1006a5d8e78
 ---
 
 # Standard premise: Gregorian
@@ -68,7 +68,8 @@ The **epoch** at which the window ordinals `m` and `n` originate is the language
 1970-01-01T00:00 (in-scope tz), and ordinals are 0-based (`m = 0` is January 1970. ADR-31).
 `epochYear = 1970` is a value drawn from this default. A calendar system with a different basis
 can re-anchor the reference with the primitive-definition member `epoch:` (in which case write the
-auxiliary value functions to match that epoch).
+auxiliary value functions to match that epoch; the reference implementation 1.0.12 supports the default
+epoch only — see impl/README).
 
 ### Note: `day`'s width is a civil day (not 86400 seconds)
 
@@ -109,15 +110,15 @@ calendar)". It is not `86400s` (a fixed number of seconds).
 | Word | Kind | Description |
 |---|---|---|
 | `day` | Window (atom) | The calendar's atom: the continuous base Chronos uniformly partitioned (`grid`) at width one day. |
-| `hour` | Window (tile) | An **elapsed** one-hour tile (`grid 1h`, epoch-aligned). **Unlike day, this is not civil time** — the "Nth hour of the day" reading (`ordinalIn(hour, day, d)`) matches wall-clock hour + 1 only in time zones whose epoch offset difference is preserved. Pitfalls in §2.1. ADR-50. |
+| `hour` | Window (tile) | An **elapsed** one-hour tile (`grid 1h`, epoch-aligned). **Unlike day, this is not civil time** — the "Nth hour of the day" reading (`ordinalIn(hour, day, d)`) matches wall-clock hour + 1 only in time zones whose epoch difference is preserved. Pitfalls in §2.1. ADR-50. |
 | `weekday` | Parallel labels | Attaches weekday labels to each `day` cyclically (`cycle`). A label, not a window. Details in §4. |
 | `isLeap` | Value expression | The leap-year test (the Gregorian rule). The argument is a calendar year (a value). |
 | `daysInMonth` | Value expression | Returns the day count from a month ordinal. Views leap as a **value** (§3). |
-| `daysInMonthOf` | Value expression | Sugar returning, from a **point**, its month's day count (`daysInMonth(epochOrdinal(month, d))`). Lets "the latter half of the month only" and "from N days before month-end" be written with no approximation (the third feedback batch, F101) |
+| `daysInMonthOf` | Value expression | Sugar returning, from a **point**, its month's day count (`daysInMonth(epochOrdinal(month, d))`). Lets "the latter half of the month only" and "from N days before month-end" be written with no approximation (feedback batch 3, F101) |
 | `month` | Window | The basic grouping. Bundles a variable number (28–31) of `day`s (`span`). Independent of `year`. Standard label = the calendar month number (ADR-42) — `month(5)` = the days of every May (window-instance reference). |
 | `year` | Window | Bundles `month` twelve at a time (`span`). `phase: 0` = January start. Standard label = the calendar year (ADR-42) — `year(2026)` = the days of 2026. |
 | `quarter` | Window | The dependent window splitting `year` into three-month pieces (`split by: month`). Auto-tracks changes to `year`. |
-| `week` | Window | The 7-day window at WKST phase, parallel to (not nested in) month and year. Segments the day sequence at `weekStart` (the wkst-labeled days). `wkst` lazily resolves the user-side preamble declaration (§4.5). |
+| `week` | Window | The 7-day window at WKST phase, parallel to (not nested in) month and year. Segments the day sequence at `weekStart` (the wkst-labeled days). `wkst` lazily resolves the consumer-side preamble declaration (§4.5). |
 | `monthStart`/`monthEnd`/`yearStart` | Public boundary words | The first and last points of each window, derived by reusing the selectors (`first`/`last`). The generator `monthEnd` (the calendar-day month end) is in reality this. |
 | `at` | Sugar (transform) | Attaches a wall-clock time to a day set — <code>bizDay &#124;> within(month) &#124;> last &#124;> at(T17:00)</code>. Expands to the wall-clock tick + `coincides` (ADR-51; standalone time literals only 〈other arguments and windowed input are guided static errors = ADR-51 addendum〉, wall clock preserved across DST transitions). |
 | `yearNo`/`monthNo`/`dayNo` | Value functions (calendar coordinates) | Projection sugar reading a point's calendar coordinates (the composition of `epochOrdinal` + `ordinalIn` + auxiliary value functions that spec §4.9 announces). Fixed days via `dayNo(d) == 11`, and so on. |
@@ -135,7 +136,7 @@ month(5) & year(2026)
 ```
 
 With `daysInMonthOf` (point → month length), "the latter half of the month only" and "from N days
-before month-end" can be written without `dayNo(d) > 15`-class approximations (the third feedback batch
+before month-end" can be written without `dayNo(d) > 15`-class approximations (feedback batch 3
 F101 = the symmetric completion of the §4.9 sugar family):
 
 ```kairos
@@ -172,7 +173,7 @@ protects; the most common trap).
 
 **Caution 2: zones whose epoch difference broke are rejected by the alignment check.**
 
-- `hour`'s phase is the resident tz's civil epoch (1970-01-01T00:00).
+- `hour`'s phase is the in-scope tz's civil epoch (1970-01-01T00:00).
 - In zones whose offset later moved by a non-integral number of hours, `ordinalIn(hour, day, d)`
   is an **explicit error**. No silently fractional ordinals (ADR-50).
 - Examples: Asia/Kathmandu (the 1986 change); Asia/Singapore (the 1981 change, breaking despite a
@@ -277,7 +278,7 @@ week window but a forward roll (`roll(Following, on: the sequence of d-labeled d
 
 `week` is a public word of `Gregorian`, yet `Gregorian` itself knows no week start (§4.3). The
 definition's right-hand side references the preamble member `wkst:` and is **lazily resolved in
-the user side's in-scope premise** (the same rule as sugar definitions):
+the consumer's in-scope premise** (the same rule as sugar definitions):
 
 ```text
 weekStart = day |> filter(d => weekday(d) == wkst)
@@ -321,7 +322,7 @@ What this one line changes, and what it leaves alone:
 - `month` is untouched, so calendar days and month ends are fixed.
 - `quarter`'s inherited definition (`year split by month`) auto-tracks the new `year` and becomes
   the fiscal quarters (Apr-Jun/…).
-- Because §3 placed `month` as the parent (leap is a value), no holding pin such as
+- Because §3 placed `month` as the parent (leap is a value), no keep-in-place pin such as
   `month = Gregorian.month` and no cycle avoidance is needed. The single `year` line suffices.
 - `label:` is **not inherited on override** (it is part of the definition; ADR-42/F96). If
   window-instance reference for fiscal years is wanted (`year(2026)` = the days of fiscal 2026),

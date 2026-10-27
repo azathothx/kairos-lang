@@ -1,5 +1,5 @@
 # 給料日: 毎月 25 日・休日なら前営業日（spec §7.4）
-# 実行: node src/cli.ts examples/payday.kairos --from 2026-01-01 --to 2027-01-01
+# 実行: kairos list impl/examples/payday.kairos --from 2026-01-01 --to 2027-01-01（npm 版。開発は node src/cli.ts examples/payday.kairos …）
 
 premise JP {
   calendar-system: Gregorian

@@ -143,7 +143,7 @@ is for computations involving index expressions and conditions
 ([`../../stdlib/kyureki.md`](../../stdlib/kyureki.md) (Japanese) §7 (5)).
 
 **Externally supplied data labels — the form whose expression stays unchanged as coverage grows**
-(reflux mail 20 §2, 2026-09-03): receive the markers through [`external`](external.md) and attach its
+(feedback batch 20 §2, 2026-09-03): receive the markers through [`external`](external.md) and attach its
 **label column** (supplied together with the dates under the same-length contract of ADR-30) with
 `label: (p => markerTable(p))`. `p` is the window's first point — the marker point itself — so the
 projection returns that marker's label as is. Even for **non-periodic** data labels such as lunisolar
@@ -172,7 +172,7 @@ month repeats a name inside the domain). **A point sequence derived by `filter` 
 the new moons are filtered out of another table — supply the new moons as **their own `external`**
 (if you already compute them upstream, just ship the dates and the month numbers together).
 
-**Using labels as numbers** (reflux regular mail 2026-09-08 §3): the value domain of `labels:` is
+**Using labels as numbers** (the regular feedback batch of 2026-09-08 §3): the value domain of `labels:` is
 **enumeration names** (`labels:` on `external` accepts identifiers only — ADR-30's value-domain
 declaration is static knowledge), so a definition that does arithmetic on a label, such as a lunisolar
 month number, keeps a name-to-number function inside the premise: `monthLabelNo = l => l == m1 ? 1 :
@@ -187,7 +187,7 @@ standard Gregorian premise, used both by the label projection of `month` (stdlib
 calendar-coordinate value function (§2). Redefining it inside a premise collapses every month-number read into the
 default branch of the conditional (`== 12` matches every day of the window; anything else matches nothing; no
 warning). In the `Gregorian with { … }` form `month(d)` is affected too; a direct `monthNo(d)` call collapses even
-in a flat premise (measured in the reflux urgent mail of 2026-09-23 — the supplier renamed their function and this
+in a flat premise (measured in the urgent feedback batch of 2026-09-23 — the supplier renamed their function and this
 page renamed its example).
 
 ## Pitfalls
@@ -216,7 +216,7 @@ page renamed its example).
 - **The `label:` projection form has no length check** — a static `labels:` binding stops on "label count ≠ window
   count", but `label:` has no length constraint, so one missing supply point (a missing major solar term) silently
   turns into a leap month and shifts rokuyō by a day. Put the month-number continuity check in the supply path
-  (reflux regular mail 2026-09-23 §2-2, measured by the production adopter).
+  (the regular feedback batch of 2026-09-23 §2-2, measured by the production adopter).
 - A window binding with `labels:` supports **window-instance reference** (value-argument
   application, ADR-42) — `sekkiW("立春")` is **all days of the interval** of the 立春 (Risshun)
   term (the 2/4–2/18 class), a different thing from the table projection

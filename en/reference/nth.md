@@ -1,5 +1,5 @@
 ---
-source_sha: b674cfa2d2b8
+source_sha: a7a5cbd1c85f
 ---
 
 # `nth` — select the Nth in each window
@@ -46,7 +46,7 @@ everyDay |> filter(on: bizDay) |> within(month) |> nth(2)
 (The business days of 2026-01 are 1/2, 1/5, … — 1/1 is a holiday, so the 2nd business day is 1/5.)
 
 The canonical form of "the Nth business day of the month" is **within + nth** (the answer to F102
-of the third feedback batch — no dedicated selector is needed). A month with fewer than N business
+of feedback batch 3 — no dedicated selector is needed). A month with fewer than N business
 days is a **legitimate empty** (empty is legitimate: ADR-15) — the filter form's edge-case guarantee now standing on a
 selector. "The 2nd Monday" (Happy-Monday class) has the same shape
 (`mondays |> within(month) |> nth(2)`):
@@ -54,8 +54,8 @@ selector. "The 2nd Monday" (Happy-Monday class) has the same shape
 ```kairos
 # eval: 2026-01-01..2026-03-01
 @JP
-bizDay |> within(month) |> nth(2)
-#=> 2026-01-05 2026-02-03
+everyDay |> filter(d => weekday(d) == Mon) |> within(month) |> nth(2)
+#=> 2026-01-12 2026-02-09
 ```
 
 ## Pitfalls

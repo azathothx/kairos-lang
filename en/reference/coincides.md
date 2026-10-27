@@ -144,7 +144,7 @@ attach to non-empty results too").
   (timed, mixed) is legal, with no check.
 - **For exception days between day-aligned streams the combinator remains right**
   (`schedule \ blackoutDays`). Rewriting to coincides grows a legal bypass of the alignment check —
-  a **worsening**. The norm: same **point** — combinator (align a mismatch with snapTo); same
+  a **regression**. The norm: same **point** — combinator (align a mismatch with snapTo); same
   **membership** (day) — coincides.
 - A cycle name (`weekday`, etc.) cannot stand at `w` — a cycle is a label, not a window (ADR-21).
 - A **window word** cannot stand at S (the implicit-demotion trap — if a point sequence is

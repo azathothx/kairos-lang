@@ -112,4 +112,4 @@ npm には Kairos の名を含む別のパッケージ（`kairos-mcp` や `kairo
 
 ## ライセンス
 
-Apache-2.0。同梱のリファレンスと `llms.txt` は同じリポジトリの写しです。
+Apache-2.0。同梱のリファレンスと `llms.txt` は同じリポジトリの、このパッケージの公開時点の写しです（最新は https://kairos-lang.org/llms.txt と https://kairos-lang.org/reference/ ）。

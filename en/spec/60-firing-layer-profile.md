@@ -155,7 +155,7 @@ The language returns danger as annotations, the coverage summary, and warnings. 
 
 - MUST: Read `results[].annotations`, and treat a fired instant that falls in an annotation interval as "an event on unknown data". The default this document sets is "execute with a warning"; whether to hold it is an operational setting (the verdict lies outside the language — ADR-15, §4.10).
 - SHOULD: Split the signal in two — "the now at evaluation falls in an annotation interval" (self-report) and "a planned instant falls in an annotation interval" (intersection warning). A missed-fire inside the coverage does not sound the intersection warning.
-- Note: Absence of annotations is no proof of correctness (§4.10). Zero instants with the whole window annotated out-of-coverage is a signal of "out of range", not of "cannot evaluate".
+- Note: Absence of annotations is no proof of correctness (§4.10). Zero instants with the whole window annotated out-of-coverage is a signal of "out of coverage", not of "cannot evaluate".
 
 **Supply failure → degraded operation**
 

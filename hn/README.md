@@ -8,6 +8,7 @@ sitemap: false
 
 Typeable stand-ins for the long Playground links (the Playground encodes the whole program in the URL).
 Each redirects with `redirect_to`; the targets are the same links as in the post's first comment.
+The definitions are kept as posted in 2026 (a 2026-only holiday table and the window of that day), so they show past dates on purpose.
 
 - [/hn/payday](/hn/payday/) — payday: the 25th, rolled back to the previous business day (2026 US federal holidays)
 - [/hn/month-end](/hn/month-end/) — 3 business days before month-end

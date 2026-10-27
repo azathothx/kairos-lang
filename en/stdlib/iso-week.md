@@ -142,7 +142,7 @@ expression that **attaches** convention-laden numbers to week windows — and mo
 example in which the label expression references "the year window that a **different point** (the
 week's Thursday) belongs to". ADR-30 (5) settled that semantics (the attachment expression is a
 body-layer expression; referencing a different point's window is allowed; adjacent windows are out
-of range).
+of reach).
 
 But transform the characterization of W01 one step further, and the attachment expression itself
 becomes unnecessary:
@@ -203,15 +203,15 @@ example of `label:`'s different-point window reference" (F57), and the living mo
 
 `isoWeekStart`'s filter is `weekday(x) == Mon` — a fixing to the weekday **label**. It is a
 one-token difference from `Gregorian`'s `weekStart` (`weekday(d) == wkst`), which **lazily
-resolves** the user side's preamble `wkst:` (`gregorian.md` §4.5) — and the governance is
+resolves** the consumer's preamble `wkst:` (`gregorian.md` §4.5) — and the governance is
 reversed:
 
 | Window | Week start | Ground |
 |---|---|---|
-| `week` (inherited from `Gregorian`) | the user side's `wkst:` declaration (culture- and use-dependent) | week starts have no single right answer (`gregorian.md` §4.3) |
+| `week` (inherited from `Gregorian`) | the consumer's `wkst:` declaration (culture- and use-dependent) | week starts have no single right answer (`gregorian.md` §4.3) |
 | `isoWeek` (this premise) | **fixed to Monday** (does not read `wkst`) | the ISO 8601 convention itself fixes Monday |
 
-Consequently, whatever `wkst:` the user side declares, `isoWeek`, `isoWeekNo`, `isoWeekday`, and
+Consequently, whatever `wkst:` the consumer declares, `isoWeek`, `isoWeekNo`, `isoWeekday`, and
 `isoYearNo` are invariant; only the inherited `week` (`within(week)`) moves. The combination
 common in practice — "the calendar display starts on Sunday, the week numbers are ISO" — can be
 had together **in one premise**:
@@ -296,7 +296,7 @@ At prototyping time, full agreement with Python's `datetime.isocalendar()` was a
   premise holds is the week-date windows and coordinates alone.
 - **Week numbers of other styles** — conventions like the US style "the week containing 1/1 is
   week 1" are a different thing (culture- and use-dependent, like week starts; `gregorian.md`
-  §4.3). Handle them, when needed, with a separate premise or with user-side value expressions.
+  §4.3). Handle them, when needed, with a separate premise or with consumer-side value expressions.
 - **Weekday numbers of other styles** — `isoWeekday` is fixed to Mon = 1 … Sun = 7. If the
   "Sunday = 0" lineage (C, cron, JavaScript) is wanted, convert in a value expression.
 - **Historical facts** — like its base `Gregorian`, it carries no calendar reforms and no

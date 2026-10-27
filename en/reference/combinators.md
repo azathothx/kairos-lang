@@ -84,7 +84,7 @@ everyDay \ satSun
   intersection of the terms' effective coverage (e.g. next year's days after joining a holiday table
   whose coverage has ended) is not accepted as a witness by `at`'s expansion, and the points vanish
   with no error or warning (the annotation remains). Keep time-of-day attachment to evaluations that
-  close inside coverage, or update the coverage first (at.md Pitfalls; reflux mail 20 §3).
+  close inside coverage, or update the coverage first (at.md Pitfalls; feedback batch 20 §3).
 
 ## Related
 

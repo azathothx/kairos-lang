@@ -33,10 +33,10 @@ node src/cli.ts list --tsv examples/payday.kairos > payday.tsv   # Excel・Power
 
 ### CLI サブコマンド
 
-- **`list [--from] [--to] [--tz] [--json|--ics|--tsv] [--explain] <file>`** — 範囲 `[from, to)` の全発火・区間註釈・被覆サマリ。
+- **`list [--from] [--to] [--tz] [--supply] [--json|--ics|--ics-series|--tsv] [--explain] [--lang en] <file>`** — 範囲 `[from, to)` の全発火・区間註釈・被覆サマリ。
   - 既定は機械の tz（`Intl` の解決値・`--tz` で上書き）の今日から 1 年。
   - ラベルと `[from, to)` の端点はこの tz で読む。定義の premise tz と違うと、日粒度の点は時刻付き（例: NY の 0 時＝JST 13:00）で印字される（1.0.1）。
-- **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--json|--ics|--tsv] [--explain] <file>`** — `from`（既定＝今日）以降の次の N 発火（既定 1）。
+- **`next [-n 件数] [--from] [--horizon 年数] [--tz] [--supply] [--json|--ics|--ics-series|--tsv] [--explain] [--lang en] <file>`** — `from`（既定＝今日）以降の次の N 発火（既定 1）。
   - 探索窓を 7 日から倍々に広げる（1 年以降は年単位・上限 `--horizon` 年・既定 10）。
   - 見つかったら [from, 最終発火日の翌日) で確定再評価する。区間註釈・残走路が答えの範囲と整合する。
   - 確定再評価の `window-clip` は報告しない（右端は答えから決まり、そこで外へ動いた点は答えの N 件に含まれない。`list` は従来どおり・1.0.12）。

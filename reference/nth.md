@@ -40,8 +40,8 @@ everyDay |> filter(on: bizDay) |> within(month) |> nth(2)
 ```kairos
 # eval: 2026-01-01..2026-03-01
 @JP
-bizDay |> within(month) |> nth(2)
-#=> 2026-01-05 2026-02-03
+everyDay |> filter(d => weekday(d) == Mon) |> within(month) |> nth(2)
+#=> 2026-01-12 2026-02-09
 ```
 
 ## 落とし穴

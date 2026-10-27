@@ -1,5 +1,5 @@
 ---
-source_sha: dbc980e8c1cd
+source_sha: 9b873f63eeb4
 ---
 
 # Kairos Language Specification — Appendix B. Supply-Side Profile (the contract for those who publish tables)
@@ -90,7 +90,7 @@ A labelled table (solar terms). The declaring side writes `sekki = external(kind
 - SHOULD: A table that closes by the month (new moons with month numbers) is not cut at year boundaries: its covering runs **from the last new moon of the preceding year to the last day of the last closed month**. Do not include the month (at the year's end) whose next new moon and whose month-deciding major solar term are not yet gazetted. Never publish an estimated month number (the MUST "gazetted ranges only" outranks the year boundary).
 
 - Note: "Nothing yet" is expressed as `dates: []` plus `covering`. It is a legitimate value: evaluation succeeds with zero points (ADR-45). A resolution failure is a different type.
-- Note: The runway is the number of days from the evaluation's `to` to the end of covering. The consumer wires it to threshold monitoring (A.4 of Appendix A). When the supply's extension is late, this is where it turns negative.
+- Note: The runway is the number of days from the evaluation's `to` to the end of covering (counted from the day after the last covered day, 00:00 = the exclusive end; A.4 of Appendix A). The consumer wires it to threshold monitoring (A.4 of Appendix A). When the supply's extension is late, this is where it turns negative.
 
 ## B.3 asof = the version identifier
 
@@ -236,7 +236,7 @@ The list a supply side attaches when it says "conforms to the Kairos supply cont
 | static bundle | The JSON that carries dates/instants, covering, asof, and labels per binding-name. Resolved once per evaluation | B.1 · A.5 |
 | covering | The completeness claim. A point absent inside the range is "absent"; outside the range is "unknown" | B.2 · §3.8 |
 | asof | The version identifier. Compared by identity only | B.3 · §3.8 |
-| runway | The number of days from the evaluation's `to` to the end of covering. Negative means the coverage has run out | B.2 · §4.10 |
+| runway | The number of days from the evaluation's `to` to the end of covering (counted from the exclusive end = the day after the last covered day, 00:00). Negative means the coverage has run out | B.2 · §4.10 |
 | out-of-coverage annotation | The annotation that runs alongside the result when the evaluation reaches outside covering | B.2 · §4.10 |
 | contract violation | The state in which a resolved value fails the checks on shape, ordering, containment, existence, or labels. Exit code 1; `error.kind` is `supply` | B.6 · ADR-46 |
 | supply error | A failure of resolution itself (no resolver, nothing fetched). The same `error.kind` as a contract violation, `supply` | A.4 · ADR-46 |

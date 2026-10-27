@@ -24,7 +24,7 @@ be written.
 
 Arguments may be streams or values. A sugar definition therefore works as a placeholder for
 **feeding streams and values into an already-written expression** — write a template like the
-"payday on day `n`" schedule once, and let the caller fill the holes:
+"payday on day `n`" schedule once, and let the consumer fill the holes:
 
 ```kairos
 # eval: 2026-07-01..2026-11-01
@@ -36,7 +36,7 @@ everyDay |> paydayOf(25)
 
 July's 25th is a Saturday, so it retreats to the previous business day 7/24 — the **shape of the
 definition** ("day `n` of every month, previous business day on holidays") gets a name, and `25`
-is the caller's hole-filling.
+is the consumer's hole-filling.
 
 ## Two ways to use one — pipe stage and application
 

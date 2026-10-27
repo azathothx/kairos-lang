@@ -1,5 +1,5 @@
 ---
-source_sha: 2a2a566a94cc
+source_sha: 6e1bab7b448a
 ---
 
 # Computing Easter as a schedule expression — zero-data Computus
@@ -50,7 +50,7 @@ Monday are just `shift(±n, unit: day)` applied to this stream — being able to
 stream into the next rule** (closure) is what lets the whole family of related movable feasts grow
 one definition at a time.
 
-## Scope, stated explicitly
+## Scope
 
 This is the **Western-church, Gregorian-calendar** computation. The Orthodox Easter (based on the
 Julian calendar) is different arithmetic, and in either tradition **the official liturgical

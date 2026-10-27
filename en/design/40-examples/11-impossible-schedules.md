@@ -39,7 +39,7 @@ records. The three lines of web research:
 
 Internal records:
 
-- **Expressibility measurements from the reflux reports**: 25 standard B2B forms — 21/25 writable
+- **Expressibility measurements from the feedback batches**: 25 standard B2B forms — 21/25 writable
   and the remaining 4 settled as F100–F103. 15 calendar-and-almanac formulas — only two could not
   be written (the nine-star daily board and planetary hours).
 - **Prior verifications and out-of-scope items**: 40-examples 01–10 and the out-of-scope F
@@ -87,8 +87,8 @@ receptacle named.
 | 31 | One fixed time "correct for every participant" under mixed DST | ["The answer is: there is no answer"](https://zachholman.com/talk/utc-is-enough-for-everyone-right) — products **silently** let the organizer's TZ win | the requirement itself is ambiguous; Kairos's receptacle = **explicit premise** (the language makes you say whose wall clock; blog #15, spec §3.6) |
 | 32 | Definitions that cross system boundaries **as rules** | Outlook's internal rules degrade to expanded points at the RRULE/Graph boundary; [Exchange speaks a different format entirely](https://www.nylas.com/blog/calendar-events-rrules/) | yes (definitions are text; the CLI/doctests are the interchange form; structural contrast in 10 §10.1) |
 
-Cross-checking the reflux record: the 25 standard B2B forms (3rd reflux) are mostly variations of
-rows 2, 6, 7, 8, 9 — all reached writable. Of the 15 calendar-and-almanac formulas (5th reflux),
+Cross-checking the feedback record: the 25 standard B2B forms (feedback batch 3) are mostly variations of
+rows 2, 6, 7, 8, 9 — all reached writable. Of the 15 calendar-and-almanac formulas (feedback batch 5),
 the two that could not be written (nine-star daily boards, planetary hours) fall on the data side
 of row 25 (astronomy-dependent).
 
@@ -390,7 +390,7 @@ period" follows as a consequence of "period starts stop at W48". (The seemingly 
 The first receptacle is the **separation of definition and evaluation range** itself (definitions
 are tenseless; evaluation always runs over a bounded [from, to) — cron's "comment it out by hand
 next year" is the consequence of not being able to put a period into a definition). When the
-period must live in the definition, ordinal comparison over the resident calendar does it:
+period must live in the definition, ordinal comparison over the in-scope calendar does it:
 
 ```kairos
 # eval: 2026-06-25..2026-07-03

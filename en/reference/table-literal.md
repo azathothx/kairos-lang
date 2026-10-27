@@ -88,8 +88,8 @@ sekki
 - **The postfixes come in either order** — `covering:` and `labels:` mean the same whichever comes
   first (once each; a duplicate is a static error. RC5 addendum 9. The old implementation silently
   discarded a `covering:` written after `labels:` — unchecked acceptance that let the coverage fall
-  back to the default 〈the sequence ends〉 = F104; detected and sealed via the alerting-layer
-  feedback, 5th delivery).
+  back to the default 〈the sequence ends〉 = F104; detected and sealed in firing-layer
+  feedback batch 5).
 - A calendar system that carves windows with data (a lunisolar calendar cut at new moons) is the
   same premise type — what calendar-system purity (I8) forbids is a generator's dependence on a
   **calendar** (business-day policy), not a calendar system's dependence on **data**. The purity
@@ -98,7 +98,7 @@ sekki
   ([`segmentBy`](segmentBy.md)) (ADR-39) — data labels on points (this page), data labels on
   windows (`segmentBy`'s `labels:`; same-length is checked as window count = marker count), and
   computed labels on windows (the `label:` lambda = ADR-34) are a symmetric three-source family,
-  read uniformly as `bindingName(d)`.
+  read uniformly as `name(d)`.
 - `labels:` is a **one-to-one attachment to finite data**. For an infinite rhythm, use
   [`cycle`](cycle.md). Only the source differs; the reading side is binding-name projection either
   way.

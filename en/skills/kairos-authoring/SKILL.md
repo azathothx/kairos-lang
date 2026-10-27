@@ -48,7 +48,7 @@ payday |> roll(Preceding, on: bizDay)
 ## 2. Requirement patterns and expression patterns
 
 The examples below run under the standard premise (`@JP` = Tokyo, weeks start on Monday, the 2026 holiday table `holidays2026`, `bizDay` = days that are not Saturday, Sunday or a holiday).
-When `roll` at the head of the evaluation range looks before the start of the table, an "out of range" annotation appears, so the example ranges start a little inside the table.
+When `roll` at the head of the evaluation range looks before the start of the table, an "out of coverage" annotation appears, so the example ranges start a little inside the table.
 
 ### 2-1. A weekday every week
 
@@ -287,7 +287,7 @@ $ kairos list --from 2026-01-01 --to 2026-07-01 payday.kairos
 ```
 
 - The **coverage summary** (`被覆サマリ`) is the expiry of the tables. If the runway (`残走路`) is short, extend the table.
-- A **`⚠ 範囲外`** ("out of range") line is an interval computed outside a table. Do not trust the points in it.
+- A **`⚠ 範囲外`** ("out of coverage") line is an interval computed outside a table. Do not trust the points in it.
 - Compare the dates with the requirement. Look especially at days that fall on holidays, at month-ends and at the turn of the year.
 - Only the next occurrence: `kairos next -n 1`. For a program: `--json` (points, annotations, coverage); for a spreadsheet: `--tsv`; for a calendar: `--ics`.
 - The evaluation time zone is `--tz`. If the premise has `tz:`, evaluation uses that.

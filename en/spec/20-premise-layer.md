@@ -172,7 +172,7 @@ that `month` into `year` (`month` is the basic grouping). Only `year`'s dependen
 | `grid(w)` | Uniform partition | Tiles the continuous axis into equal widths `w`. Makes the calendar's atoms. `w` follows the **civil-time width convention** (`1d` = 1 civil day, not a fixed `86400s`; a civil day is 23–25 hours on DST transition days. Leap seconds are out of scope = chronos is a uniform idealized axis without leap seconds (each UTC day = 86,400 seconds). ADR-11/12/33). Phase defaults: civil-time widths align to the start instant of each civil day in the in-scope `tz:` (midnight on ordinary days. ADR-31 revised); elapsed-time widths align to the epoch; overridable with `anchor:` (ADR-31) |
 | `span(f)` | Variable aggregation (bottom-up) | Bundles a sequence of finer units into contiguous windows. `f = n => count` binds the ordinal `n` (epoch-origin) of the window being generated and returns the number of units to bundle. The count may be variable (`month`'s day counts) or constant (`year`'s 12) |
 | `split(g) by: u` | Variable division (top-down) | Divides a parent window into contiguous subwindows. `g = y => [widths…]` binds the parent's **running window-sequence ordinal** `y` (the F60 coordinate) and returns the list of subwindow widths. `by: u` makes the width unit explicit. Parent and `u` accept, beyond partition windows, **effective partitions from rule markers** (segmentBy-built window sequences without coverage annotations) — data-borne (covering-carrying) parents, `empties: drop` parents, and cycles are rejected (ADR-48). Two per-instance checks: **boundary alignment** (both parent ends on `u` window boundaries — misaligned pairs 〈calendar year × week〉 are rejected here) and the **I5 sum** (widths sum = `u` count inside the parent; mismatch is an **error**). Used for dependent windows |
-| `cycle(labels) anchor:` | Parallel labels | Attaches repeating labels to the target partition windows. Produces labels, not windows. The period length is arbitrary (7, 10, 12, 60, …) and so is the target window (not just `day`'s weekdays — `month` and `year` work too; the sexagenary cycle is `year cycle […]`). `anchor:` is an instant meaning "the target window it belongs to takes the first label". The binding name reads, in value expressions, as a point → label value function (`filter(d => weekday(d) == Mon)`; resolution is two steps: point → containing window → label. ADR-27) |
+| `cycle(labels) anchor:` | Parallel labels | Attaches repeating labels to the target partition windows. Produces labels, not windows. The period length is arbitrary (7, 10, 12, 60, …) and so is the target window (not just `day`'s weekdays — `month` and `year` work too; the twelve Earthly Branches (the Chinese zodiac) are `year cycle […]`). `anchor:` is an instant meaning "the target window it belongs to takes the first label". The binding name reads, in value expressions, as a point → label value function (`filter(d => weekday(d) == Mon)`; resolution is two steps: point → containing window → label. ADR-27) |
 
 <p align="center"><img src="../../assets/figures/cycle-grid.svg" width="880"
   alt="A five-week grid from 2026-01-05. Days when team A (anchor 1/5) is On and days when team B (anchor 1/9) is On alternate in blocks of four, and every day has one team On. Day 1 of each A cycle drifts one weekday later: 1/5 (Mon), 1/13 (Tue), 1/21 (Wed), 1/29 (Thu), 2/6 (Fri)."></p>
@@ -227,13 +227,13 @@ expressions that return the calendar year, month position, and day-count list fr
 The **epoch** at which the window ordinals `n` and `m` originate is by language default
 1970-01-01T00:00 (in-scope tz). A calendar system with a different basis (a Martian calendar, etc.)
 may override it with the primitive-definition member **`epoch:`** (a value intrinsic to the
-calendar system; it cannot be placed in the user-side preamble. Ordinals are 0-based — the
+calendar system; it cannot be placed in the consumer-side preamble. Ordinals are 0-based — the
 coordinate in which `monthOf(m) = m mod 12` holds. ADR-31). Since the epoch is a preimage under the
 in-scope tz's mapping, **a different tz means a different point on chronos** — `epochOrdinal` and
 span ordinals are premise-relative coordinates (ADR-33 decision 7).
 
 `week` references `wkst:` (a preamble member) on its right-hand side and is **lazily resolved in
-the user side's in-scope premise** (the same rule as sugar definitions, §4.8; `within(week)` with
+the consumer's in-scope premise** (the same rule as sugar definitions, §4.8; `within(week)` with
 no `wkst:` declared is a static error). Generation uses `segmentBy` (interval-sequence type), but
 because the weekday cycle lets exhaustiveness and non-overlap be proven by the I5 check, it can be
 used with `within(week)` — partition-hood is established by the check, not by the generating word
@@ -262,13 +262,13 @@ definition of TZ (mapping, civil day, gaps/overlaps, leap seconds, versions) is 
 A derived definition makes a new premise by overriding or extending an existing premise's public words (the `premise → premise` closure). The core is `with` override: on top of the base, only the named public words are replaced; the rest is inherited.
 
 <p align="center"><img src="../../assets/figures/premise-derivation.svg" width="880"
-  alt="Deriving premise Fiscal from the base premise Gregorian with with. The left box holds Gregorian's public words (day, month, year, quarter, …) and the 10 premise members. The with block in the middle overrides only year to an April start; in the right box year is replaced, quarter and yearStart, which depend on year, follow by re-resolution, and the remaining public words and premise members are inherited from the base."></p>
+  alt="Deriving premise Fiscal from the base premise Gregorian with with. The left box holds Gregorian's public words (day, month, year, quarter, …) and the 10 preamble members. The with block in the middle overrides only year to an April start; in the right box year is replaced, quarter and yearStart, which depend on year, follow by re-resolution, and the remaining public words and preamble members are inherited from the base."></p>
 
-**Premise members** are inherited along the base chain as well, and the block's declarations override them (ADR-35 revision 3, 1.0.2).
+**Preamble members** are inherited along the base chain as well, and the block's declarations override them (ADR-35 revision 3, 1.0.2).
 
 - All 10 words: `calendar-system:`, `calendar:`, `axis:`, `roll:`, `granularity:`, `tz:`, `wkst:`, `asof:`, `source:`, `epoch:` (the list was made precise in 1.0 addendum 21).
 - The entry premise's body sees the same set that the inside of a public word sees (the member resolution rule of §3.9).
-- That a derivation overriding `nonWorking` should also override `source:` (§3.9, declaration leaning towards required) is unchanged.
+- That a derivation overriding `nonWorking` should also override `source:` (§3.9, declaration-required leaning) is unchanged.
 
 ```text
 premise Fiscal = Gregorian with {
@@ -343,7 +343,7 @@ premise JPGazette {
 
 A premise containing a table literal is `source:` declaration-required leaning. The edition is carried by `asof:`.
 
-- **A premise with `covering:` or a date table must declare `tz:`** (the ends of the coverage resolve as civil days of the premise's tz; undeclared, the coverage would move with the user side's tz. ADR-37).
+- **A premise with `covering:` or a date table must declare `tz:`** (the ends of the coverage resolve as civil days of the premise's tz; undeclared, the coverage would move with the consumer's tz. ADR-37).
 
 **Coverage `covering:`**: a two-faced **claim** — "**complete inside the range, unknown outside it**" — that **does not touch the values** (the values are exactly the written sequence). It is written in one of three forms: open-ended, interval list, or postfix on a binding.
 
@@ -461,9 +461,9 @@ Calendar-system premises and calendar premises are the same premise type, distin
 
 **The standard derivation of `bizDay` is prescribed uniformly by the language**: with the in-scope `calendar:` entity as C, a derivation sugar equivalent to `bizDay = everyDay \ C.nonWorking` (lazily resolved; the same rule as §4.8).
 
-- The bare name `everyDay` resolves in the **user side's in-scope premise**, while `C.nonWorking` is **pinned** to C (mechanism A).
+- The bare name `everyDay` resolves in the **consumer's in-scope premise**, while `C.nonWorking` is **pinned** to C (mechanism A).
 - **Where `calendar:` is in scope, `bizDay` is a language-reserved derived name** (a manual binding is a static error; out of that scope it remains a free binding name as before).
-- A derivation in which the entity's `tz:` and the user side's `tz:` disagree is stopped by the alignment check (§4.5, ADR-36) as a safe-side error.
+- A derivation in which the entity's `tz:` and the consumer's `tz:` disagree is stopped by the alignment check (§4.5, ADR-36) as a safe-side error.
 - The standard derivation **propagates** `nonWorking`'s evaluation annotations (the out-of-coverage provenance of `covering:`) (I6; the propagation rules are §4.10, ADR-37 — the difference `\` takes the union of both sides' annotations, so the degeneration beyond where holiday data runs out **does occur but is observable**).
 
 **Premise names in the axis position** (F53's convention): a name at `on:`/`unit:`/`axis:` resolves normally if it resolves as a binding; is reinterpreted if it resolves only as a premise name; and is ambiguous = a static error if it resolves as both (ADR-17).
@@ -488,7 +488,7 @@ Calendar-system premises and calendar premises are the same premise type, distin
 
 **Member resolution rule** (the codification of "pin to the resolved value", ADR-35): the preamble members of definitions evaluated under a qualified pin (`C.word`) or an entity reinterpretation follow **definition-side precedence**.
 
-- Members that C (and its base chain) declares are fixed to C's values, and only undeclared members resolve in the user side's scope.
+- Members that C (and its base chain) declares are fixed to C's values, and only undeclared members resolve in the consumer's scope.
 - The inner-fixing of `tz:` and the lazy resolution of `wkst:` fold into this one line.
 
 **Overriding uses the existing `with`** (§3.7): `premise MyCompany = TSE with { source: "intra.example.com/holidays"; nonWorking = TSE.nonWorking | companyHolidays }`.
@@ -510,7 +510,7 @@ Orthogonal to the external supply declaration: the right-hand side of `holidays`
 
 Cross-tz use (using the Tokyo entity from an NY premise, etc.) is outside the reach of the axis-position sugar.
 
-- The explicit form `everyDay \ (TSE.nonWorking |> snapTo(day))` means "read the overlap on chronos through the user side's day boundaries".
+- The explicit form `everyDay \ (TSE.nonWorking |> snapTo(day))` means "read the overlap on chronos through the consumer's day boundaries".
 - An explicit reconciliation of "the same date label" is written with `rebase(to:)` (§4.4, ADR-40).
 
 

@@ -243,7 +243,7 @@ deliveryDay
 table and the closure table end at 2026. The two lines under the points say so: `範囲外` means "out of
 coverage".
 
-In the CLI they appear as `# ⚠ 範囲外 …` lines, and the remaining runway in the coverage summary
+In the CLI they appear as `# ⚠ 範囲外 …` lines, and the runway in the coverage summary
 goes negative (`--lang en` puts the framing in English; the annotation text itself stays Japanese).
 
 The points come out, but they come out without knowing the table. Extend the tables before sending this band.
@@ -316,8 +316,8 @@ difference is "only the rows of the added year", the check is done.
 | Pitfall | What happens | What to do |
 |---|---|---|
 | Company differences | Some carriers deliver on Sundays and holidays. Saturday non-delivery, the Obon dates and the length of the year-end closure also differ by company | `satSun` in place of `sunday`; the `closed` rows exactly as the official notice says |
-| Outside the table | Points still come out past the end of the table (without knowing the holidays). `⚠ 範囲外` and a negative remaining runway tell you | Extend the table, including the end of `covering:` |
-| Forgetting the yearly update | Every range that reaches into next year shows `⚠` and a negative remaining runway | Add next year's rows every February ([maintenance guide](../../MAINTENANCE.md)) |
+| Outside the table | Points still come out past the end of the table (without knowing the holidays). `⚠ 範囲外` and a negative runway tell you | Extend the table, including the end of `covering:` |
+| Forgetting the yearly update | Every range that reaches into next year shows `⚠` and a negative runway | Add next year's rows every February ([maintenance guide](../../MAINTENANCE.md)) |
 | `shift` fed a non-delivery day | `unit: deliveryDay` stops with an error when the input is not a business day | `roll(Following, on: deliveryDay)` first |
 | The edge of the evaluation range | A point that `shift` moves outside the range does not come out (`window-clip` warning) | Widen the range by N business days |
 | `roll(Following)` and the year-end | Listing a whole year raises `⚠` from 12/29 on (the next business day could fall outside the table) | The points themselves are correct. Extending the table removes it |

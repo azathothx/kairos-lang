@@ -43,8 +43,8 @@ everyDay |> filter(on: bizDay) |> stride(3, from: 2026-01-05)
 #=> 2026-01-05 2026-01-08 2026-01-14 2026-01-19 2026-01-22
 ```
 
-"**Biweekly from a specific day**" is exactly the phase of `from:` (the answer to F103 of the
-third feedback batch) — no year-anchor-parity workaround is needed, and no 52/53-week phase flip
+"**Biweekly from a specific day**" is exactly the phase of `from:` (the answer to F103 of
+feedback batch 3) — no year-anchor-parity workaround is needed, and no 52/53-week phase flip
 across year boundaries occurs (the phase is held by `from:` = ADR-31/38):
 
 ```kairos

@@ -30,9 +30,9 @@ As governance separate from the identity check — the usual rule for premises c
 `source:` is declaration-required leaning and the edition is carried by `asof:` (declaration
 recommended where reproducibility matters. ADR-26).
 
-Once the user side stands an entity at `calendar:`, **the standard derivation prescribed uniformly
+Once the consumer stands an entity at `calendar:`, **the standard derivation prescribed uniformly
 by the language** becomes available: `bizDay = everyDay \ C.nonWorking` (`everyDay` resolves on the
-user side; `C.nonWorking` is pinned to the entity). Where `calendar:` is in scope, `bizDay` is a
+consumer side; `C.nonWorking` is pinned to the entity). Where `calendar:` is in scope, `bizDay` is a
 reserved derived name (a manual binding is a static error).
 
 ## Examples
@@ -99,7 +99,7 @@ premise MyCompany = TSE with {
 ```
 
 The entity's members are readable from body expressions by **qualified reference** (ADR-17
-"qualify when ambiguous"; the answer to F100 of the third feedback batch — the
+"qualify when ambiguous"; the answer to F100 of feedback batch 3 — the
 day-before-a-holiday-reminder class is writable with no new reserved names. Bare names resolve
 premise-relative, so an entity's contents are not exposed automatically = as designed):
 
@@ -124,10 +124,10 @@ Cal.holidays |> shift(-1, unit: day)
   `sessionOpens`/`sessionCloses`**, read through the standard derivations
   [`bizOpen`/`bizClose`/`isOpen`](isOpen.md) (ADR-41 — those are **entity-relative**; the role
   difference from consumer-relative bizDay is in isOpen.md).
-- If the entity's `tz:` and the user side's `tz:` disagree, the standard derivation is stopped by
+- If the entity's `tz:` and the consumer's `tz:` disagree, the standard derivation is stopped by
   the alignment check (spec §4.5) (the correct behavior of F54). The explicit form
-  `everyDay \ (TSE.nonWorking |> snapTo(day))` means "read the overlap on chronos through the user
-  side's day boundaries" — not reconciliation of "the same date label"; for that, use
+  `everyDay \ (TSE.nonWorking |> snapTo(day))` means "read the overlap on chronos through the
+  consumer's day boundaries" — not reconciliation of "the same date label"; for that, use
   [`rebase`](rebase.md) (ADR-40).
 - Cascades (substitute holidays, Mainland China's tiaoxiu) are composed on the **right-hand side** of `nonWorking`
   (ADR-01 — filtering appears only at the final stage of the standard derivation).

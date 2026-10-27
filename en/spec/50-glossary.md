@@ -1,5 +1,5 @@
 ---
-source_sha: fa987a58acb4
+source_sha: ec9eda7bbc58
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -12,7 +12,7 @@ An index for lookup while reading the specification. Each entry is 〈term｜one
 definition｜references〉. The naming status is §5.4 — **every word is final; no placeholders
 remain** (the batch confirmation F51 of 2026-07-09 settled everything else as official names and
 renamed the supply pair to `sessionOpens`/`sessionCloses`; the final `rephase` ruling of
-2026-07-26, formerly `shiftBoundary`, completed the set). In the references, "§" points to
+2026-07-26, formerly `shiftBoundary` (CHANGELOG addendum 11), completed the set). In the references, "§" points to
 chapters of this specification and `stdlib/…` to the standard premise commentary.
 
 ## 6.1 Layers, types, and overall structure
@@ -61,7 +61,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | width (conventions)（幅（規約）） | The length of an offset. The convention set of elapsed time vs. civil time + roll. `grid`'s `1d` is a civil day (not `86400s` = elapsed time) | `stdlib/gregorian.md` §1 · ADR-11/12 |
 | WKST | Where the week starts (the week window's cut; the origin of "week N"). A culture-dependent premise member | §3.3 · `stdlib/gregorian.md` §4 |
 | asof | The temporal version that fixes the calendar version. Defaults to the evaluation instant when omitted | table §3.3 |
-| source（出所） | The authority of the data (official / organization-local). A premise alongside asof | table §3.3 |
+| provenance (`source:`)（出所） | The authority of the data (official / organization-local). A premise alongside asof | table §3.3 |
 | name resolution (premise-relative)（名前解決（premise 相対）） | Names resolve under the in-scope premises. When ambiguous, qualify as `Gregorian.month` | §3.4 |
 | scope defaults (folding)（スコープ既定（畳み込み）） | Declare `axis:`/`roll:` once in the preamble and omitted stages inherit them. Innermost wins (default → evaluation context → block → stage) | §3.3 |
 | Mechanism A（機構 A） | Name resolution in derivations = bare names re-resolve in the derived scope (dependent words follow automatically); `Base.word` pins to the base value | §3.7 |
@@ -82,7 +82,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | `split(g) by: u` | Divides a parent window at variable widths in unit `u` (top-down). Used for dependent windows | §3.6 |
 | `cycle(labels) anchor:` | Attaches repeating labels to a partition window. Labels, not windows. Period length and target are arbitrary (`year cycle` is fine). `anchor:`: the target window it falls in carries the head label. The binding name reads as a point → label value function | §3.6 · `stdlib/gregorian.md` §4 · ADR-27 |
 | `week` window（`week` 窓） | The 7-day tiled window at WKST phase. A Gregorian public word that lazily resolves `wkst:`. Partition-hood is certified by the I5 check | §3.6 · `stdlib/gregorian.md` §4.5 |
-| table literal（テーブルリテラル） | Promotion of an instant list to a time-stream constant (`[2026-03-20, …]`). Ascending order required; source governance; validity range via `covering:`. `labels:` gives a parallel label sequence (the definition of a point → label projection). The empty form `[] covering: …` requires an explicit covering (the primary form of "zero points but a coverage to claim"; ADR-45) | §3.8 · ADR-26/30/45 |
+| table literal（テーブルリテラル） | Promotion of an instant list to a time-stream constant (`[2026-03-20, …]`). Ascending order required; provenance governance; validity range via `covering:`. `labels:` gives a parallel label sequence (the definition of a point → label projection). The empty form `[] covering: …` requires an explicit covering (the primary form of "zero points but a coverage to claim"; ADR-45) | §3.8 · ADR-26/30/45 |
 | `external` | The external-supply declaration = a table literal resolved at run time. Restricted to the right-hand side (head position) of a premise binding. `kind:` = the alignment claim (`dates`/`instants`; holds as declared even when empty); `labels:` = the enumeration of the label range; covering/asof are always carried by the resolved value (the supply contract). Resolution is an adjunct of the evaluation context (one resolution per evaluation, demand-driven); failure is a supply error (machine-readable subcategories) | §3.8 · ADR-46 |
 | public word（公開語） | A top-level binding in a premise block. Referenced with `.` (`Gregorian.month`) | §3.6 |
 | public boundary word（公開境界語） | A public word that derives boundaries by reusing selectors (<code>monthEnd = month &#124;> last</code>). What generators really are | §3.6 |
@@ -113,7 +113,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | filter `filter`（フィルタ） | Thins by predicate. Takes both premise predicates (`on:`) and value-expression predicates (lambdas) | §4.6 |
 | stride `stride(n, from:)`（ストライド） | Thins the **input points** to "every nth" (input-relative; no axis argument — what gets counted is decided by the preceding stage = ADR-38). n is an integer ≥ 1. Consumes no windows; ignores boundaries; continuous. Origin `from:` required (the first input point at or after `from:` is step 0) | §4.7 · ADR-31/38 |
 | stride `take(n, from:)`（ストライド） | Passes **only the first n input points** (cut-off; the COUNT counterpart). Counting after exclusion falls out of composition order. After the nth point, a legitimate empty (no annotation). Windowed input is a guided static error | §4.7 · ADR-49 |
-| stride `takeLast(n, until:)`（ストライド） | Passes **only the last n input points** (recent N; the mirror of take). Counts backward from `until:` (inclusive; point inclusion). Deterministic with no annotation while until ≤ the covering tail; windowed input is a guided static error | §4.7 · ADR-52 |
+| stride `takeLast(n, until:)`（ストライド） | Passes **only the last n input points** (recent N; the mirror of take). Counts backward from `until:` (inclusive; point inclusion). Deterministic with no annotation while until ≤ the coverage tail; windowed input is a guided static error | §4.7 · ADR-52 |
 | stride `strideBy(w, from:)`（ストライド） | Steps by width (a physical magnitude across multiple axes; e.g. 1 sol). Origin `from:` required (forward-only — passing a standalone time literal yields the wall-clock tick from the epoch anchor day = ADR-51) | §4.7 · ADR-31 |
 | window-membership predicate `coincides(S, w, d)`（窓所属述語） | Whether the `w` window containing point `d` holds a point of S (boolean = bounded existential quantification). Interval membership, so alignment is not required (only the tz name is checked); settled by the witness rule (true = a point in a non-annotated interval; false = the window lies within the effective coverage). The receiving vessel for F68 | §4.9 · ADR-38 |
 | sugar definition (base form B)（糖衣定義（基底 B）） | <code>name(args) = s => s &#124;> core-chain</code>. Binds the preceding stage with `s =>` | §4.8 |
@@ -131,7 +131,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | `+ - * /` `mod` `div` | Arithmetic (`mod` and `div` are words) | §3.5 |
 | `[…]` / `l[i]` / `in` | List literal, indexing (0-based), membership predicate | §3.5 |
 | `a..b` | Date range (sugar expanding to consecutive days) | §3.8 |
-| `"…"` | String literal (values for TZ and source; no newlines, no escapes) | §5.5 · ADR-32 |
+| `"…"` | String literal (values for TZ and provenance; no newlines, no escapes) | §5.5 · ADR-32 |
 | `and` `or` `not` | Logic (words; the symbols are reserved for the combinators) | §3.5 |
 | `? :` | Ternary conditional | §3.5 |
 | `@name`（`@名前`） | Lightweight reference to a premise bundle | §3.2 |
@@ -140,11 +140,11 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | `by:` | The unit of `split`'s widths | §3.6 |
 | `axis:` | The axis default in the preamble (folding; settled by ADR-29) | §3.3 |
 | `phase:` | The phase origin of `span`/`split` | §3.7 |
-| `anchor:` | `cycle`'s label phase (which actual day carries the head label) | §3.6 |
+| `anchor:` | The label phase of `cycle` / `labels: cycle` (which actual day carries the head label); also overrides the phase of `grid` (ADR-31) | §3.6 |
 | `from:` | The origin for the stride family (stride/take/strideBy). Always required (supply from windows was retired by ADR-31) | §4.7 |
 | `until:` | The terminus for `takeLast` (the dual of `from:`; always required). Step 0 = the last input point at or before `until:`. Mixing the anchors up gets a dedicated diagnostic | §4.7 · ADR-52 |
 | `at` (stdlib sugar) | Attaches a wall-clock time to a day set — expands to the wall-clock tick (`strideBy(1d, from: Thh:mm)`) + `coincides`. Preserves the wall clock across DST transitions (the shortest form of the F76 remedy) | stdlib §2 · ADR-51 |
-| standalone time literal | `Thh:mm(:ss)?` — the lexeme for a wall-clock time with no date part (T-prefixed form only). Anchored on the epoch anchor day 1970-01-01 in the resident tz | §5.5 · ADR-51 |
+| standalone time literal | `Thh:mm(:ss(.fff)?)?` (fractional seconds up to 3 digits) — the lexeme for a wall-clock time with no date part (T-prefixed form only). Anchored on the epoch anchor day 1970-01-01 in the in-scope tz | §5.5 · ADR-51 |
 | `edges:` / `empties:` | `segmentBy`'s gap policy | §4.2 |
 | `roll:` | The roll-convention default in the preamble (folding; being explicit is recommended) | §3.3 |
 | `covering:` | The validity range = the two-sided claim "complete inside, unknown outside". Does not touch the values (inclusion of every element is statically checked). Open-ended `2021..`/`..` (completeness claim, with governance), interval lists, and binding-postfix (coverage claim) are allowed. **Omission = the sequence's ends (narrowest) and `..` = complete everywhere (widest) are polar opposites** (an empty table has no ends, so omission is impossible = explicit covering required. ADR-45) | §3.8 · §4.10 · ADR-26/37/45 |
@@ -168,6 +168,6 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | I3 | Explicit resolution (roll conventions and anchor resolution as mandatory arguments; silent bugs made syntactically impossible) | §2.6 |
 | I4 | Window-relative (selectors are relative to a containing window; no window is a type error) | §2.6 |
 | I5 | Exhaustiveness verification (partition-type is checkable for exhaustiveness and non-overlap; interval-sequence-type makes gaps explicit) | §2.6 |
-| I6 | Context flow (TZ, WKST, asof, and out-of-coverage provenance 〈interval annotations〉 flow as evaluation context / annotations) | §2.6 · §4.10 |
+| I6 | Context flow (TZ, WKST, asof, and out-of-coverage origin 〈interval annotations〉 flow as evaluation context / annotations) | §2.6 · §4.10 |
 | I7 | Pure and lazy (defined online over infinite streams) | §2.6 |
 | I8 | Generator purity (generators depend only on the calendar system, never on calendars) | §2.6 |

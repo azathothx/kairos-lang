@@ -17,7 +17,7 @@ On the Tokyo calendar that is early Wednesday morning, and in April and July it 
 ## Three ways in
 
 - **Playground** (nothing to install): [https://kairos-lang.org/en/playground/](../playground/). "Pin to URL" shares the definition and range as a URL; "Add to calendar (.ics)" gives a calendar file. Nothing leaves the browser.
-- **CLI**: Node.js 20 or later, then `npm i -g kairos-lang`; the command is `kairos`. Without installing: `npx -y kairos-lang list …`. Check: `kairos --version`.
+- **CLI**: Node.js 20 or later, then `npm i -g kairos-lang`; the command is `kairos`. Without installing: `npx -y kairos-lang list …` (the first run downloads the package). Check: `kairos --version`.
 
 - **Standalone exe** (no Node.js): unzip `kairos-1.0.12-win-x64.zip` from [Release v1.0.12](https://github.com/azathothx/kairos-lang/releases/tag/v1.0.12)
   and place `kairos.exe` (SHA256 in the `.sha256` file next to it). Built from the same source as npm `kairos-lang@1.0.12`. It is unsigned, so SmartScreen
@@ -76,7 +76,7 @@ Definitions that carry a holiday table may add annotation lines starting with `#
 #   holidays2026 covering 2026-01-01..2026-12-31 残走路 -59 日
 ```
 
-- `# ⚠ 範囲外` ("out of range"): the points there came out beyond the holiday table — present, but blind to holidays.
+- `# ⚠ 範囲外` ("out of coverage"): the points there came out beyond the holiday table — present, but blind to holidays.
 - `# 被覆サマリ` is the coverage summary (`--lang en` prints `# coverage summary`). The **runway** (残走路) is how many days the table lasts beyond the end of the range you asked for (`--to`); negative means it ran out inside that range.
 - Fix: extend the table, `covering:` included. Tables: [Last day of the month](cron-last-day-of-month.md).
 
@@ -100,7 +100,7 @@ $r.coverage             # holiday-table coverage and runway (empty when there is
 - Windows PowerShell 5.1 writes UTF-16 with `>`; other tools cannot read the `.json` or `.ics`.
 - Works in every version: `cmd /c "kairos list … --json C:\kairos\patch.kairos > out.json"`.
 - PowerShell 7 writes UTF-8 with `>`. To stay in PowerShell on 5.1: `kairos … | Out-File -Encoding utf8 out.json`.
-- Garbled text on screen: run `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` first.
+- Garbled text on screen: run `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8` first. `kairos` writes UTF-8.
 
 ## Asking "is today a firing day?" every morning — Task Scheduler
 

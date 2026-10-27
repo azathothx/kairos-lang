@@ -55,7 +55,7 @@ the Japanese lunisolar calendar, and the 24 solar terms are all written with the
 
 Every diagnostic has three parts: `operator: what is wrong（how to fix it. where the rule lives）`. The text
 is Japanese (the canonical language); the trailing reference (I3, ADR-38, §3.3) is the spec's own numbering
-and can be looked up in the English mirror. Three real ones from the reference CLI 1.0.5:
+and can be looked up in the English mirror. Three real ones from the reference CLI (unchanged since 1.0.5; checked on 1.0.12):
 
 - `roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言` — "roll: a convention
   is required (I3) — write Following/Preceding as the positional argument, or declare roll: in the premise".
@@ -158,6 +158,10 @@ npm i -g kairos-lang                             # or without installing: npx ka
 kairos list impl/examples/payday.kairos --from 2026-01-01 --to 2027-01-01
 kairos next -n 3 --json impl/examples/payday.kairos   # next 3 firings from today, machine-readable
 ```
+
+**Windows without Node.js**: download `kairos-<version>-win-x64.zip` (a single `kairos.exe`, SHA256 listed)
+from the [Releases](https://github.com/azathothx/kairos-lang/releases) page and run it as is. Steps:
+[Kairos for Windows administrators](en/recipes/windows-admin.md).
 
 Reading the output (the design never stays silent, so this is what you see first):
 

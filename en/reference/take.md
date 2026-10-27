@@ -52,7 +52,7 @@ the expression — 5/12 and 5/19 refill naturally.
 - After the nth point the output is a **legitimate empty** (no annotation — ADR-37 decision 2).
   Conversely, if the covering runs out **before** the nth point, everything after carries an
   out-of-coverage annotation (making the tentative ranking observable. A cancellation feed's
-  covering tail sits near "now" in practice — the annotation not going away is normal; extending
+  coverage tail sits near "now" in practice — the annotation not going away is normal; extending
   the coverage is the correct response).
 - "Last N" is [`takeLast`](takeLast.md) (**introduced by ADR-52** — the deferral at ADR-49 time was
   revised once real demand materialized; an explicit `until:` anchor structurally dissolves the

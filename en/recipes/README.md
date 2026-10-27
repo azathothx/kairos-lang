@@ -1,5 +1,5 @@
 ---
-source_sha: 43edd1da7a7c
+source_sha: c624b659e76d
 ---
 
 # Recipes — practical forms of the schedules long said to be unwritable
@@ -31,7 +31,7 @@ first, the background after.
   doctest premise (Gregorian, Asia/Tokyo, wkst: Mon, with a calendar entity carrying Japan's
   confirmed 2026 holidays).
 - Each page's Playground link is a **self-contained form** (premise included) — run and edit it
-  directly in the browser (the [Playground](../playground/) executes the reference implementation
+  directly in the browser (the [Playground](https://kairos-lang.org/en/playground/) executes the reference implementation
   as is; nothing is sent to any server).
 - The full catalogue of collected "unwritable" cases (32 items with sources) and their three-way
   classification: [study 11](../design/40-examples/11-impossible-schedules.md). These recipes are

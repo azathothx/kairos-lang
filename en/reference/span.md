@@ -71,7 +71,7 @@ projection time, lazily evaluated). The canonical form of the fiscal-year label,
   of the windows that exist”, ADR-31 revision = F60). The same window is called `n` by the
   generator and `n + 1` by the reader — in premises that compute labels from ordinals (custom
   calendars with a phase), offset the two bases by 1 (worked example = the Hijri calendar in
-  design/40-examples/10). Reading via a `label:` expression (computed from the head instant),
+  design/40-examples/10). Reading via a `label:` expression (computed from the first point),
   as `fiscal` does, is unaffected.
 - What it bundles is **a sequence of unit windows** (`day`, `month`) — it does not take the
   continuous axis itself (that is `grid`).

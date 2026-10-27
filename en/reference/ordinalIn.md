@@ -51,7 +51,7 @@ everyDay |> filter(d => (ordinalIn(day, month, d) - 1) mod 7 == 0)
 - **When `u` is an elapsed-width grid (the standard `hour`, etc.), an alignment check runs**
   (ADR-50): if the start of the `w` window containing `d` does not sit on `u`'s lattice, this is
   an explicit error — the fence against **silently returning a fractional ordinal** in time zones
-  whose offset drifted from the epoch by a non-integral number of hours (Kathmandu, Singapore,
+  whose offset drifted from the epoch by a non-integral multiple of the unit width (e.g. hours: Kathmandu, Singapore,
   Lord Howe). For wall-clock bands, `isOpen` is canonical; for wall-clock **instants**,
   [`at`](at.md) (the sugar over `strideBy(1d, from: Thh:mm)` · ADR-51) is canonical
   (stdlib/gregorian.md §2.1).
