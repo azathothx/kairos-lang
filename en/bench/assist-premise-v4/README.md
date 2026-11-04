@@ -1,5 +1,5 @@
 ---
-source_sha: fea959b8bd30
+source_sha: 7ef2160d4201
 ---
 
 # AI-assist bench v4 — unstated premises
@@ -12,6 +12,8 @@ A bench for an AI assistant that turns a plain-language requirement into a Kairo
 fills in**, rather than filling them in silently? This directory holds the 21 problems, the answers (one body per accepted
 interpretation), the grading rules and a runner. The problems are deterministic and the answers are verified by the reference
 implementation (`check.mjs`, no LLM).
+
+The list of benches lives at [bench/](../README.md).
 
 ## Provenance
 
