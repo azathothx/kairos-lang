@@ -57,7 +57,7 @@ Resources: `kairos://llms.txt` (the language overview for AI readers) and
 ### `tz` is required
 
 The CLI defaults to the machine's time zone; an AI caller has no machine, so every evaluating tool
-takes `tz` (an IANA name such as `Asia/Tokyo`). It decides how labels and the `[from, to)` endpoints
+takes `tz` (an IANA name such as `Asia/Tokyo`; the same values as a premise `tz:`, so the canonical fixed offset `+09:00` and `UTC` are accepted too). It decides how labels and the `[from, to)` endpoints
 are read. If the definition's premise declares `tz:`, evaluation uses that zone — `tz` still labels
 the output.
 
@@ -94,16 +94,19 @@ Errors are returned as data, not as protocol errors, so the model can read and f
 `kairos_list` / `kairos_next`: `{command, version, error: {kind: "usage" | "supply" | "static", message}}`
 with `isError: true`. `kairos_validate`: `{ok: false, version, diagnostics: [{kind, message}]}` (a finding, not
 an error — no `isError`). `kairos_reference`: `{error: {kind: "usage", message}, words}` with `isError: true`
-for an unknown descriptor. `usage` is the shape of the call (bad zone, window over 10 years, source over 64 KB),
-`supply` a violation of the supply contract, `static` anything the language reports about the definition
+for an unknown descriptor. `usage` is the shape of the call (bad zone, non-existent date, window over 10 years, source over 64 KB,
+more than 100 body expressions), `supply` a violation of the supply contract, `static` anything the language reports about the definition
 (lexing, syntax, static rules, evaluation). Diagnostics are in **Japanese** — the reference implementation's
 canonical output language; the report itself is language-neutral JSON (the same as the CLI's `--json`).
 The spec in English (https://kairos-lang.org/en/spec/) defines what each diagnostic means.
 
+A malformed argument (missing, wrongly typed, `from` not `YYYY-MM-DD`) is rejected by the input schema before the tool runs and
+comes back as the MCP protocol error `-32602`. Unknown arguments are ignored.
+
 ### Limits
 
 Evaluation window at most 10 years; `n` at most 1000; `horizonYears` at most 10; `source` at most
-64 KB. These guard against accidents, not against adversaries.
+64 KB; at most 100 body expressions per `source`. These guard against accidents, not against adversaries.
 
 ## Name
 

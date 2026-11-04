@@ -1,5 +1,5 @@
 ---
-source_sha: ec9eda7bbc58
+source_sha: 29124fdb13d5
 ---
 
 # Kairos Language Specification — 6. Glossary
@@ -104,6 +104,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | point transform `rebase(to:)`（点変換） | Preserves the date label and maps to the head of the same date's civil day in the `to` tz = reconciliation by **label correspondence** (cross-tz "same date" composition = F69). Input restricted to the default-aligned day grid; nonexistent dates are explicit errors | §4.4 · ADR-40 |
 | projection `ordinalIn(u, w, d)`（射影） | Within the `w` window containing point `d`, the ordinal of the `u` window containing `d` (1-based; granularity-independent). The reverse of `nth` | §4.9 · ADR-27/30 |
 | projection `epochOrdinal(u, d)`（射影） | The running ordinal of `u` windows from the epoch (0-based; the epoch is the language default 1970-01-01, overridable with `epoch:`) | §4.9 · ADR-27/30/31 |
+| projection `labelOrdinal(B, x)`（射影） | The position of `x` within the declared value domain of binding `B` (the three forms: the `labels:` of `external`, the window binding `cycle`, and `labels: cycle`) (1-based, declaration order). Parallel label lists and `label:` lambdas are not accepted; a duplicate in the domain is a static error at the call. Point form `labelOrdinal(B, d) ≡ labelOrdinal(B, B(d))`. The additive extension of 1.1 | §4.9 · ADR-54 |
 | label projection (binding name)（ラベル射影（束縛名）） | The binding name of a labeled window/cycle/table doubles as the projection name (`weekday(d)`, `sekki(d)`). Points store no labels; labels are read via projections (the generic word `labelOf` was retired; ADR-30) | §4.9 · §3.6 |
 | window instance reference `W(v)`（窓インスタンス参照） | **Value** application to a label-sourced **window** binding = the preimage (`year(2020)` = the days of that year; returned as a time stream). An out-of-domain value is a static error for `labels:`-literal bindings and empty for the standard `month`/`year` (computed labels). Union of all matches; empty is legitimate; outside a statically enumerable label range is a static error. The dual of binding-name projection; point vs. value branches on the argument expression's type (decided after expansion = §2.7) | §4.9 · §2.7 · ADR-42 |
 | element point sequence（要素点列） | Of the **input point sequence** that window binding W's definition bundled into windows, the points belonging to W's windows (grid/span/split chains = equivalent to the atomic grid ticks; segmentBy = the input points). The carrier of window instance references. An internal concept (not a word users write) | §4.9 · ADR-42 |
@@ -144,6 +145,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | `from:` | The origin for the stride family (stride/take/strideBy). Always required (supply from windows was retired by ADR-31) | §4.7 |
 | `until:` | The terminus for `takeLast` (the dual of `from:`; always required). Step 0 = the last input point at or before `until:`. Mixing the anchors up gets a dedicated diagnostic | §4.7 · ADR-52 |
 | `at` (stdlib sugar) | Attaches a wall-clock time to a day set — expands to the wall-clock tick (`strideBy(1d, from: Thh:mm)`) + `coincides`. Preserves the wall clock across DST transitions (the shortest form of the F76 remedy) | stdlib §2 · ADR-51 |
+| `since` / `before` (stdlib sugar) | Cuts a point set at date-times — `since(p)` = at or after p (inclusive), `before(p)` = strictly before p = the half-open [since, before). Expands to `filter(t => t >= p)` / `filter(t => t < p)` (ordering comparison between points; the 1.1 additive extension). "Now" is never embedded in the expression; the caller injects the date-time | stdlib §2 · §4.9 · ADR-55 |
 | standalone time literal | `Thh:mm(:ss(.fff)?)?` (fractional seconds up to 3 digits) — the lexeme for a wall-clock time with no date part (T-prefixed form only). Anchored on the epoch anchor day 1970-01-01 in the in-scope tz | §5.5 · ADR-51 |
 | `edges:` / `empties:` | `segmentBy`'s gap policy | §4.2 |
 | `roll:` | The roll-convention default in the preamble (folding; being explicit is recommended) | §3.3 |

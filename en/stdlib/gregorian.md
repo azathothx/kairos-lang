@@ -1,5 +1,5 @@
 ---
-source_sha: d1006a5d8e78
+source_sha: b75b82496d6f
 ---
 
 # Standard premise: Gregorian
@@ -48,6 +48,11 @@ premise Gregorian {
   # Attaching a time of day (ADR-51 sugar, transform): day set → the wall-clock time a on each day
   at(a) = s => (everyInstant |> strideBy(1d, from: a)) |> filter(t => coincides(s, day, t))
 
+  # Cutting at date-times (ADR-55 sugar, 1.1): half-open [since, before) — since(p) = at or after p (inclusive), before(p) = strictly before p.
+  # Expands to filter (inherits alignment, windows and the transport row; a stride expansion was rejected). p is a dated date-time literal (resolved to an instant in the in-scope tz)
+  since(p)  = s => s |> filter(t => t >= p)
+  before(p) = s => s |> filter(t => t <  p)
+
   yearNo  = d => yearOf(epochOrdinal(month, d))             # calendar-coordinate sugar (spec §4.9): the calendar year (2026 etc.)
   monthNo = d => monthOf(epochOrdinal(month, d)) + 1        # the calendar month (1..12)
   dayNo   = d => ordinalIn(day, month, d)                   # the calendar day (1..31)
@@ -68,7 +73,7 @@ The **epoch** at which the window ordinals `m` and `n` originate is the language
 1970-01-01T00:00 (in-scope tz), and ordinals are 0-based (`m = 0` is January 1970. ADR-31).
 `epochYear = 1970` is a value drawn from this default. A calendar system with a different basis
 can re-anchor the reference with the primitive-definition member `epoch:` (in which case write the
-auxiliary value functions to match that epoch; the reference implementation 1.0.12 supports the default
+auxiliary value functions to match that epoch; the reference implementation supports the default
 epoch only — see impl/README).
 
 ### Note: `day`'s width is a civil day (not 86400 seconds)
@@ -121,6 +126,8 @@ calendar)". It is not `86400s` (a fixed number of seconds).
 | `week` | Window | The 7-day window at WKST phase, parallel to (not nested in) month and year. Segments the day sequence at `weekStart` (the wkst-labeled days). `wkst` lazily resolves the consumer-side preamble declaration (§4.5). |
 | `monthStart`/`monthEnd`/`yearStart` | Public boundary words | The first and last points of each window, derived by reusing the selectors (`first`/`last`). The generator `monthEnd` (the calendar-day month end) is in reality this. |
 | `at` | Sugar (transform) | Attaches a wall-clock time to a day set — <code>bizDay &#124;> within(month) &#124;> last &#124;> at(T17:00)</code>. Expands to the wall-clock tick + `coincides` (ADR-51; standalone time literals only 〈other arguments and windowed input are guided static errors = ADR-51 addendum〉, wall clock preserved across DST transitions). |
+| `since` | Sugar (transform) | Cuts a point set to "at or after p (inclusive)" — <code>hourly &#124;> since(2026-10-26T14:00)</code>. Expands to `filter(t => t >= p)` (ordering between points; 1.1; ADR-55). p resolves to an instant in the in-scope tz; "now" is injected by the caller |
+| `before` | Sugar (transform) | Cuts a point set to "strictly before p (exclusive)" — <code>hourly &#124;> before(2026-11-04T17:00)</code>. Paired with `since` it cuts the half-open [since, before) (the same boundary convention as the evaluation range, windows and `isOpen`). Expands to `filter(t => t < p)`. A timed literal on a day-granular stream meets the day's point at 00:00 (shift the date by a day to handle the same day) |
 | `yearNo`/`monthNo`/`dayNo` | Value functions (calendar coordinates) | Projection sugar reading a point's calendar coordinates (the composition of `epochOrdinal` + `ordinalIn` + auxiliary value functions that spec §4.9 announces). Fixed days via `dayNo(d) == 11`, and so on. |
 
 Under the standard labels, `year(d)` and `yearNo(d)` become two equivalent spellings of the same

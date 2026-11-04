@@ -1,5 +1,5 @@
 # 標準 premise: Gregorian（stdlib/gregorian.md §1 の完全定義を Kairos ソースにしたもの）
-# 注: 紀元（span 序数の起点）は spec 未規定のため、プロトタイプは 1970-01-01 に固定する（FINDINGS）。
+# 注: 紀元（span 序数の起点）は spec 未規定のため、参照実装は 1970-01-01 に固定する（実装定義＝impl/README「実装定義のパラメータ」・FINDINGS）。
 #     stdlib/gregorian.md の補助値関数の「紀元年」もこれに合わせ epochYear = 1970。
 
 premise Gregorian {
@@ -28,6 +28,11 @@ premise Gregorian {
 
   # 日時刻の付与（ADR-51 糖衣・変換）: 日集合 → その日の壁時計 a 時（a は単独時刻リテラル Thh:mm）
   at(a) = s => (everyInstant |> strideBy(1d, from: a)) |> filter(t => coincides(s, day, t))
+
+  # 日時での切り出し（ADR-55 糖衣・1.1）: 半開 [since, before)——since(p)＝p 以後（含む）・before(p)＝p より前（含まず）。
+  # 展開は filter（整列・窓・輸送行を継承。stride 展開は不採）。p は日付つきの日時リテラル（在圏 tz で時点に解決）
+  since(p)  = s => s |> filter(t => t >= p)
+  before(p) = s => s |> filter(t => t <  p)
 
   # 暦座標糖衣（spec §4.9: epochOrdinal＋ordinalIn＋既存値関数の糖衣）
   yearNo  = d => yearOf(epochOrdinal(month, d))             # 暦年（2026 など）

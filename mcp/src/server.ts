@@ -9,7 +9,7 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { cmdList, cmdNext, supplyResolver, errorReport, todayIn } from 'kairos-lang/cli';
 import type { CliReport, CliErrorReport } from 'kairos-lang/cli';
-import { KairosError, SupplyError } from 'kairos-lang';
+import { KairosError, SupplyError, parse } from 'kairos-lang';
 import type { ExternalResolver } from 'kairos-lang';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -20,27 +20,55 @@ export const SERVER_VERSION: string = PKG.version;
 export const DOCS_DIR = join(HERE, '..', 'docs');
 
 // 上限（87 §3「DoS でなく事故防止」）
-export const LIMITS = { sourceBytes: 64 * 1024, windowYears: 10, n: 1000, horizonYears: 10 } as const;
+// expressions＝1 つの source の本体式の数（2026-10-31 殻のセキュリティレビュー所見 1・2: 1 行に式を N 個並べると CliReport の
+// 各 result の source が行全体になり応答が N² で増えた＝64 KiB の要求に 390 MB の応答。式の数で止める。http と同値）
+export const LIMITS = { sourceBytes: 64 * 1024, windowYears: 10, n: 1000, horizonYears: 10, expressions: 100 } as const;
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 type Lang = 'ja' | 'en';
 
-const yearsBetween = (from: string, to: string) => {
-  const [fy, fm, fd] = from.split('-').map(Number), [ty, tm, td] = to.split('-').map(Number);
-  return (Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / (365.25 * 86_400_000);
-};
+// ISO 文字列で読む＝Date.UTC の 2 桁年の読み替え（0099 → 1999）を避ける
+const ymdMs = (s: string) => Date.parse(`${s}T00:00:00Z`);
+const yearsBetween = (from: string, to: string) => (ymdMs(to) - ymdMs(from)) / (365.25 * 86_400_000);
 
-/** tz の検査——IANA 名として Intl が受けるか（評価器の getTz と同じ根拠。無効なら usage） */
-function checkTz(tz: string): void {
-  try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); } catch {
-    throw new KairosError(`tz が無効: ${tz}（IANA 名で指定する。例 Asia/Tokyo・America/New_York・UTC）`);
+/** 日付が実在するか（形は zod の YMD で済んでいる）。2026-13-45 は評価器で 2027-02-14 に正規化され「評価範囲が逆順」と
+ *  見当違いの診断になっていた（2026-10-31 所見 6）。評価器にも同じ検査（F158）があるが、殻では usage として止める */
+function checkDate(key: string, s: string): void {
+  const ms = ymdMs(s);
+  if (!Number.isFinite(ms) || new Date(ms).toISOString().slice(0, 10) !== s) {
+    throw new KairosError(`${key} は実在する日付（YYYY-MM-DD・月は 01〜12・日はその月の日数まで）: ${s}`);
   }
+}
+
+/** tz の検査——評価器の getTz と同じ値域（IANA 名は Intl が受けるか・固定オフセットは厳格一意形 "±HH:MM" だけ＝ADR-43）。無効なら usage。
+ *  Intl だけでは "+0900" のような別綴りも通り、評価器で static に落ちていた（2026-10-31 所見 11） */
+function checkTz(tz: string): void {
+  const offsetLike = /^[+-]/.test(tz) || tz === 'Z' || /^UTC.+/.test(tz);
+  if (offsetLike) {
+    const m = /^([+-])(\d{2}):(\d{2})$/.exec(tz);
+    if (m && +m[2] <= 14 && +m[3] <= 59) return;
+  } else {
+    try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return; } catch { /* 下の usage */ }
+  }
+  throw new KairosError(`tz が無効: ${tz}（IANA 名か固定オフセットの正準形 "±HH:MM" で指定する。例 Asia/Tokyo・America/New_York・UTC・+09:00）`);
 }
 
 function checkSource(source: string): void {
   if (Buffer.byteLength(source, 'utf8') > LIMITS.sourceBytes) {
     throw new KairosError(`source が大きすぎる（上限 ${LIMITS.sourceBytes} バイト）`);
   }
+  // 本体式の数（前文ブロックの内側も数える＝CliReport の results と同じ数え方）。構文の誤りはここでは黙って通し、評価で static にする
+  let n = 0;
+  try {
+    const count = (sts: { t: string; block?: unknown }[]) => {
+      for (const st of sts) {
+        if (st.t === 'streamExpr') n++;
+        else if (st.t === 'preamble' && Array.isArray(st.block)) count(st.block as { t: string; block?: unknown }[]);
+      }
+    };
+    count(parse(source).statements);
+  } catch { return; }
+  if (n > LIMITS.expressions) throw new KairosError(`本体式が多すぎる（${n} 個・上限 ${LIMITS.expressions}）`);
 }
 
 const ok = (rep: Record<string, unknown>): CallToolResult =>
@@ -66,13 +94,14 @@ function runGuarded(command: 'list' | 'next', phases: { usage: () => void; suppl
 
 const supplyOf = (supply: unknown) => supply === undefined ? undefined : supplyResolver(supply, 'tool input "supply"');
 
-export const TZ_RULE = 'tz is required: the IANA zone that labels and the [from, to) endpoints are read in (there is no "machine time zone" for an AI caller). '
+export const TZ_RULE = 'tz is required: the IANA zone (or a fixed offset in the canonical form "±HH:MM", or "UTC" — the same values as a premise tz:) that labels and the [from, to) endpoints are read in (there is no "machine time zone" for an AI caller). '
   + 'If the definition declares tz: in its premise, evaluation uses that zone; tz here still decides the labels. '
   + 'Recommended practice: define your premise once (calendar-system, tz, wkst, holiday tables) and keep it — '
   + 'it turns tacit knowledge into explicit knowledge, and every call reuses the same text.';
 
 const NOTE_DIAG = 'Diagnostics (errors, annotation texts) are in Japanese — the reference implementation\'s canonical output language; '
-  + 'lang: "en" only switches the framing. Errors come back as {command, version, error: {kind: usage|supply|static, message}} with isError.';
+  + 'lang: "en" only switches the framing. Errors come back as {command, version, error: {kind: usage|supply|static, message}} with isError. '
+  + 'A malformed argument (missing or wrongly typed) is rejected by the input schema before the tool runs, as MCP error -32602; unknown arguments are ignored.';
 
 export function createServer(): McpServer {
   const server = new McpServer({ name: 'kairos-lang', version: SERVER_VERSION }, {
@@ -96,7 +125,7 @@ export function createServer(): McpServer {
     },
   }, ({ source, from, to, tz, supply, explain }) => runGuarded('list', {
     usage: () => {
-      checkSource(source); checkTz(tz);
+      checkSource(source); checkTz(tz); checkDate('from', from); checkDate('to', to);
       if (yearsBetween(from, to) > LIMITS.windowYears) throw new KairosError(`評価範囲が広すぎる（上限 ${LIMITS.windowYears} 年）: [${from}, ${to})`);
     },
     supply: () => supplyOf(supply),
@@ -115,7 +144,7 @@ export function createServer(): McpServer {
   }, ({ source, from, n, horizonYears, tz, supply, explain }) => runGuarded('next', {
     // 報告は CLI の CliReport そのまま（公開 schema は additionalProperties: false＝exhausted のような追加の鍵は通らない。
     // 地平線内の不足は found < requested で読める＝2026-10-07 公開前レビュー）
-    usage: () => { checkSource(source); checkTz(tz); },
+    usage: () => { checkSource(source); checkTz(tz); if (from !== undefined) checkDate('from', from); },
     supply: () => supplyOf(supply),
     eval: resolve => cmdNext(source, { from: from ?? todayIn(tz), n: n ?? 1, horizonYears: horizonYears ?? LIMITS.horizonYears, tz,
       ...(resolve ? { resolve } : {}), ...(explain ? { explain } : {}) }),

@@ -1,5 +1,5 @@
 ---
-source_sha: a3def40b7914
+source_sha: 45fa68e41313
 ---
 
 # Kairos Language Specification — 5. Grammar and Symbols
@@ -51,7 +51,7 @@ source_sha: a3def40b7914
 
 **Projections and combinators**:
 
-- Projections (inside value expressions): `ordinalIn(u, w, d) : point -> number` (two-window, granularity-independent) / `epochOrdinal(u, d) : point -> number`. Labels are read through bound names (`weekday(d)` and the like; the generic word `labelOf` is abolished — points store no labels. §4.9, ADR-27/30).
+- Projections (inside value expressions): `ordinalIn(u, w, d) : point -> number` (two-window, granularity-independent) / `epochOrdinal(u, d) : point -> number` / `labelOrdinal(B, x) : label value -> number` (point form `labelOrdinal(B, d) ≡ labelOrdinal(B, B(d))`; the domain is the three declared-list forms; 1-based. The additive extension of 1.1 = ADR-54). Labels are read through bound names (`weekday(d)` and the like; the generic word `labelOf` is abolished — points store no labels. §4.9, ADR-27/30).
 - Combinators: `A | B` union / `A & B` intersection / `A \ B` difference. Prioritized overriding is expressed by left-associative, order-sensitive application of union and difference (no dedicated symbol).
 
 **Strides** (a family separate from the selectors): the anchor is mandatory (ADR-31); no reset is defaulted.
@@ -159,6 +159,22 @@ Addendum (2026-08-21, ADR-51/52): words settled later.
 - **`takeLast`** (the stride family's fourth word; anchor `until:`) was settled after a naming comparison (`take(n, until:)` = meaning inverted by one named arg on the same word; `last(n,…)` = selector collision; `recent` = a ring of built-in "now" — all rejected).
 - The stdlib sugar **`at`** (ADR-51) is on the public-word side (`dailyAt` = generator misreading; `atTime` = doubly expressed with the T prefix — rejected).
 
+Addendum (2026-10-19, ADR-54): the word of the 1.1 additive extension.
+
+- **`labelOrdinal`** (the projection family's fourth word; `labelOrdinal(B, x)`) was settled after a naming comparison. It rides on the family's spelling (`ordinalIn` = the Nth within a frame, `epochOrdinal` = the coordinate from the epoch, `labelOrdinal` = the Nth within a value domain), with zero uses as a binding name across the whole vocabulary set and the code corpus.
+
+- Rejected candidates: `ord` (an abbreviation with character-code connotations; the widest surface of legal 1.0 binding names), `ordinalOf` (`Of` points the other way than in `yearOf`/`monthOf`), `labelNo` (the register of the stdlib's …No words; the same surface as the `monthNo` collision), `indexOf(list, v)` (0-based; an enumeration cannot be written as a bare list).
+
+- **Words added in 1.1 or later are reserved** (core and stdlib alike) — a consumer-side top-level binding of the same name is a guided static error (§4.8). They cannot be used as **label names** either (the label list of `cycle`, `labels:`) — name resolution finds a premise's public words before the label vocabulary, so a definition that used `before` or the like as a label in 1.0 gets a guided static error (rename) instead of a silent change of meaning. The behavior of the 1.0 words is unchanged.
+
+Addendum (2026-10-19, ADR-55): the words of the 1.1 standard sugar.
+
+- The stdlib sugar **`since` / `before`** (Gregorian public words, next to `at`; `since(p)` = at or after p, `before(p)` = strictly before p) was settled after a naming comparison. The English connotation matches the half-open boundary [since, before); the spellings collide with no named-arg key, core word or public word, and there are zero uses as binding names across the whole corpus.
+
+- Rejected candidates: `until` (the same word as the **point-inclusive** `takeLast(n, until:)`, with the boundary inverted), `from` / `to` (double duty with the named-arg keys; "to" reads as inclusive), `after` (strictly after = excludes the origin), `between` (SQL's both-ends-inclusive; one side cannot be written).
+
+- The reserved-word convention is shared with the addendum above (ADR-54) — a consumer-side top-level binding named `since` or `before` is also a guided static error. Nor can either be used as a label name. The `p` of `since(p)` / `before(p)` is checked at the call (it stops unless `p` is an instant — even when the stream is empty and the expanded predicate never runs).
+
 ## 5.5 Lexis (ADR-28)
 
 **Date literals**: `YYYY-MM-DD` (day) and `YYYY-MM-DDThh:mm(:ss(.f+)?)?` (with time of day). **They carry no TZ specifier** — the anchor is struck by the in-scope premise's `tz:` (I6).
@@ -210,7 +226,11 @@ Rules for the time part:
 ## 5.6 Grammar (EBNF)
 
 The structure and the vocabulary are both final (§5.4 — no placeholders remain). Sugar (the `a..b`
-range, the point-free shorthand) disappears into core on expansion.
+range, the point-free shorthand) disappears into core on expansion. The word added in 1.1,
+`labelOrdinal` (ADR-54), is derived from the existing call form `name(args)` = **no EBNF change**
+(and no new param-key). `since` / `before` (ADR-55) are stdlib sugar in the same call form, and the
+widening of the ordering comparison's domain (point with point) is a change in operator semantics =
+lexis and grammar both unchanged.
 
 ```ebnf
 (* ---- Program ---- *)

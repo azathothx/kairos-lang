@@ -1,5 +1,5 @@
 ---
-source_sha: 7541450e4b73
+source_sha: 3128991227fa
 ---
 
 # `epochOrdinal` — the running ordinal from the epoch
@@ -21,7 +21,7 @@ holds with m=0 = the epoch month).
 
 The **epoch** is the language default 1970-01-01T00:00 (in the in-scope tz). A calendar system on a
 different basis can override it via the primitive definition's member `epoch:` (it cannot be placed
-in the consumer-side preamble; ADR-31). The reference implementation 1.0.12 supports the default epoch
+in the consumer-side preamble; ADR-31). The reference implementation supports the default epoch
 only (any other value is a static error; see impl/README).
 
 ## Examples
@@ -61,8 +61,13 @@ everyDay |> filter(d => epochOrdinal(month, d) mod 12 == 0) |> within(month) |> 
   `labels:` (ADR-39; with the same-length check; the stdlib Kyureki has been migrated). Note that
   the **window-sequence ordinal** of `labels:` is always 0-based and, for historical data crossing
   the epoch, is **a different coordinate** from epochOrdinal (the two do not ride together).
+- **Comparing ordinals compares "floors"** — `epochOrdinal(hour, t) >= epochOrdinal(hour, 2026-10-26T14:30)` cuts at
+  the floor of the 14 o'clock hour, so 14:00 gets in. To cut a point set at date-times use [`since`](since.md) /
+  [`before`](before.md) (ordering of instants; no unit; 1.1). For a literal on the grid the two are extensionally
+  equal; use the ordinal form only when the unit must be spelled out.
 
 ## Related
 
 [`ordinalIn`](ordinalIn.md) · [`span`](span.md) (the supplier of the same ordinal coordinate) ·
+[`since`](since.md) / [`before`](before.md) (cutting a point set) ·
 the epoch `epoch:` (ADR-31) · ADR-27/30.

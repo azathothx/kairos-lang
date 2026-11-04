@@ -34,6 +34,7 @@ Kairos の記述語（演算子・窓生成語・リテラル）を 1 語 1 フ�
 | 射影 | [`ordinalIn`](ordinalIn.md) | 枠窓内で単位窓が第何番目か（1 起点） |
 | 射影 | [`epochOrdinal`](epochOrdinal.md) | 紀元からの通し序数（0 起点） |
 | 射影 | [`coincides`](coincides.md) | 窓所属の述語（d の窓に S の点が在るか） |
+| 射影 | [`labelOrdinal`](labelOrdinal.md) | 宣言値域の中でラベルが第何番目か（1 起点・1.1） |
 | 窓生成語 | [`grid`](grid.md) | 連続軸の一様分割（暦の原子） |
 | 窓生成語 | [`span`](span.md) | 単位列の可変集約（ボトムアップ） |
 | 窓生成語 | [`split`](split.md) | 親窓の可変分割（従属窓） |
@@ -42,6 +43,7 @@ Kairos の記述語（演算子・窓生成語・リテラル）を 1 語 1 フ�
 | 派生 | [`rephase`](rephase.md) | 窓の切れ目を単位でずらす糖衣（再位相・旧仮称 shiftBoundary） |
 | 糖衣定義 | [糖衣定義](sugar-definition.md) | 変換の名前付けとテンプレート——ストリーム・値を引数に取る（§4.8） |
 | 糖衣（stdlib） | [`at`](at.md) | 日集合への壁時計時刻の付与（`at(T17:00)`・ADR-51） |
+| 糖衣（stdlib） | [`since`](since.md)／[`before`](before.md) | 点集合を日時で切り出す（半開 [since, before)・`since(p)`＝p 以後・`before(p)`＝p より前・1.1・ADR-55） |
 | リテラル | [テーブルリテラル](table-literal.md) | 時点列のストリーム定数（covering:/labels:） |
 | 供給 | [`external`](external.md) | 外部供給宣言（実行時に解決されるテーブルリテラル。ADR-46） |
 | カレンダー実体 | [`nonWorking`](nonWorking.md) | 実体の予約公開語と `bizDay` 標準導出（ADR-35） |

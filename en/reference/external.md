@@ -1,5 +1,5 @@
 ---
-source_sha: 2c566ac96bae
+source_sha: cdb75d937be7
 ---
 
 # external — the external supply declaration (a table literal resolved at run time)
@@ -33,7 +33,8 @@ the runway (spec §4.10) ride on it unchanged.
   static knowledge, so bare-name label comparison (`filter(s => sekki(s) == 立春)`) can be written.
   The resolved value's labels must lie within the domain and match the instant sequence in length.
   With no declaration, no labels (if labels arrive anyway, that is a contract violation — they are
-  not silently dropped).
+  not silently dropped). The declaration order is also an **ordinal** —
+  [`labelOrdinal`](labelOrdinal.md)`(saku, x)` returns the position within the domain (1-based; 1.1, ADR-54).
 - **`source:`** — provenance (**mandatory**: either the premise member `source:` or a per-binding
   named-arg override).
 - **covering and asof are always carried by the resolved value** (absence of either = contract

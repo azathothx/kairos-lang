@@ -61,6 +61,10 @@ everyDay |> filter(d => (ordinalIn(day, month, d) - 1) mod 7 == 0)
 - `from:` より前の点は出力されない（位相は from: が定める）。
 - 絶対量（暦に乗らない幅）で刻むなら [`strideBy`](strideBy.md)。
 
+**`stride(1, from: p)` を「p 以後」の切り出しに使わない**——点は同じでも輸送行がストライド行になり、覆域外の
+註釈が評価域の末尾まで膨張する（終点側の双対も無い）。切り出しは [`since`](since.md)／[`before`](before.md)
+（展開は filter・1.1・ADR-55）。
+
 ## 関連
 
-[`take`](take.md)（数えて**打ち切る**——先頭 n 点）・[`takeLast`](takeLast.md)（末尾 n 点）・[`strideBy`](strideBy.md)（点で数える／幅で刻む、の対）・[`nth`](nth.md)（窓相対の「第 N」）・[`ordinalIn`](ordinalIn.md)（窓リセット版の還元先）・ADR-11/31/38/49。
+[`take`](take.md)（数えて**打ち切る**——先頭 n 点）・[`takeLast`](takeLast.md)（末尾 n 点）・[`strideBy`](strideBy.md)（点で数える／幅で刻む、の対）・[`nth`](nth.md)（窓相対の「第 N」）・[`ordinalIn`](ordinalIn.md)（窓リセット版の還元先）・[`since`](since.md)／[`before`](before.md)（切り出しはこちら）・ADR-11/31/38/49。

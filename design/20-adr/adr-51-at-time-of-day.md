@@ -86,3 +86,15 @@ at(a) = s => (everyInstant |> strideBy(1d, from: a)) |> filter(t => coincides(s,
    特別扱いはしない）。endless の素通しも filter の**正しい保守近似**（ADR-52 判断 7 の take 修正は
    「出力が静的に ≤ n」という take 固有の性質によるもので、filter に同種の性質はない——述語の
    意味解析なしに出力の有限性は立たない）。ともに reference/at.md の落とし穴へ実測込みで文書化。
+
+改訂 1（2026-10-26・還流 2026-10-26 緊急便＝収蔵 39 の欠陥報告を受けて。実装は 1.1.0・言語不変）
+
+1. **追記の括弧書き「calendar-system 側で解決された `at` に掛かる」を「stdlib の定義そのもの（decl の同一性）に掛かる」に改める**——
+   1.0.12 までの参照実装は、前文が `Gregorian` を `with` の基底の連鎖に持つ形（`premise P = Gregorian with {…}`・その派生）と `@Gregorian` で
+   名指し検査 2 本が掛からなかった（便の表の 8 形のうち 4 形が素通り・当方の再走で一致）。`at` が基底の `Gregorian` で見つかると束縛の
+   所有者は利用側 premise と報告され、`calendar-system:` の側と一致しないためで、仕様の文（§5.5「引数はこの字句に限る」・reference/at.md）が
+   範囲を限っていないのに機構が狭かった＝仕様と実装の隙間。判定は 1.1 の `since`／`before` の名指し検査と同じ「stdlib の定義そのもの」
+   （`Gregorian` の `findDefOwner` が返す decl との同一性）に揃える——8 形すべてで掛かり、利用側 premise の同名再定義（派生 `with` の
+   上書きを含む＝別の decl）には従来どおり掛からない。
+2. 検証＝便の 8 形 × 2 本（日付つきの錨・窓付き入力）と対照（正道は 5 点）・派生 `with` の上書きは掛からない（`impl/test/at-time-of-day.test.ts`）。
+   1.0 の追補は切らず 1.1.0 に同乗（CHANGELOG 1.1 節「参照実装の修正」）。

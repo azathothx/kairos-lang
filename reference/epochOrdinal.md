@@ -9,7 +9,7 @@
 「生成中の窓の序数 `n`」と**同じ座標**である（`monthOf(m) = m mod 12` が m=0＝紀元月で成立する）。
 
 **紀元**は言語既定で 1970-01-01T00:00（在圏 tz）。別基準の暦法は原始的定義のメンバー `epoch:` で
-上書きできる（利用側の前文には置けない。ADR-31。参照実装 1.0.12 は既定紀元のみ＝別値は静的エラー・impl/README）。
+上書きできる（利用側の前文には置けない。ADR-31。参照実装は既定紀元のみ＝別値は静的エラー・impl/README）。
 
 ## 例
 
@@ -42,7 +42,11 @@ everyDay |> filter(d => epochOrdinal(month, d) mod 12 == 0) |> within(month) |> 
   **非正準**——並行リストを窓列に結ぶ正準形は [`segmentBy`](segmentBy.md) の `labels:`（ADR-39。
   同長検査つき。stdlib の Kyureki は移行済み）。なお `labels:` の**窓列序数**は常に 0 起点で、
   紀元を跨ぐ歴史データでは epochOrdinal と**別座標**になる（相乗りしない）。
+- **序数の比較は「床」の比較**——`epochOrdinal(hour, t) >= epochOrdinal(hour, 2026-10-26T14:30)` は 14 時台の床で
+  切るので 14:00 が入る。時点を日時で切り出すなら [`since`](since.md)／[`before`](before.md)（瞬間の順序・単位なし・
+  1.1）。目盛り上のリテラルでは外延同値で、単位を明示したいときだけ序数形を使う。
 
 ## 関連
 
-[`ordinalIn`](ordinalIn.md)・[`span`](span.md)（同じ序数座標の供給元）・紀元 `epoch:`（ADR-31）・ADR-27/30。
+[`ordinalIn`](ordinalIn.md)・[`span`](span.md)（同じ序数座標の供給元）・[`since`](since.md)／[`before`](before.md)
+（時点の切り出し）・紀元 `epoch:`（ADR-31）・ADR-27/30/55。

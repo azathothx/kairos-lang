@@ -25,6 +25,8 @@ bizDay = everyDay \ ((everyDay |> filter(d => weekday(d) == Sat or weekday(d) ==
 monthEnd |> roll(Preceding, on: bizDay) |> shift(-3, unit: bizDay)   # 3 business days before month-end
 ```
 
+**Try it**: [Playground](https://kairos-lang.org/en/playground/) · [Calendar](https://kairos-lang.org/en/calendar/) · [What's new in 1.1](spec/CHANGELOG.md#v1-1)
+
 cron and iCalendar RRULE can express "N *calendar* days before month-end", but no existing schedule
 language lets you write "the Nth *business* day" inside an expression. The root limitation is not a
 missing feature — **their expressions do not compose**: you cannot take the dates one rule derives and
@@ -55,7 +57,7 @@ the Japanese lunisolar calendar, and the 24 solar terms are all written with the
 
 Every diagnostic has three parts: `operator: what is wrong（how to fix it. where the rule lives）`. The text
 is Japanese (the canonical language); the trailing reference (I3, ADR-38, §3.3) is the spec's own numbering
-and can be looked up in the English mirror. Three real ones from the reference CLI (unchanged since 1.0.5; checked on 1.0.12):
+and can be looked up in the English mirror. Three real ones from the reference CLI (unchanged since 1.0.5; checked on 1.1.0):
 
 - `roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言` — "roll: a convention
   is required (I3) — write Following/Preceding as the positional argument, or declare roll: in the premise".
@@ -146,6 +148,15 @@ The matching contract for whoever publishes the tables that `external` resolves 
 completeness claim, asof as a version id, fixed URLs, four acceptance tests that run with the reference CLI alone) — is
 [spec appendix B](en/spec/61-supply-profile.md) ([日本語](spec/61-supply-profile.md)).
 
+## The language and its implementations
+
+Kairos is a specification ([`spec/`](en/spec/)). `kairos-lang` on npm is its **reference implementation** — one
+implementation of the language, not the language. Conformance is defined in [appendix A](en/spec/60-firing-layer-profile.md)
+(A.1: the same verdicts, the same instants, the same diagnostic wording, and the doctests of [`reference/`](en/reference/) as the oracle); an independent
+evaluator that follows the specification runs in production on the supply side (A.7). The parameters the language leaves to
+each implementation — the evaluation-range floor, the materialisation horizon, the time resolution, the tz database, the point
+cap — are listed in [`impl/README.md`](impl/README.md) and are not language constraints (spec §1.4).
+
 ## Quick start (reference implementation)
 
 **Try it in your browser first**: the [Playground](https://kairos-lang.org/en/playground/) runs the
@@ -165,10 +176,10 @@ from the [Releases](https://github.com/azathothx/kairos-lang/releases) page and 
 
 Reading the output (the design never stays silent, so this is what you see first):
 
-- `# ⚠ 範囲外 …` (out of range) marks an interval computed outside the holiday table; points there have no backing from the table.
+- `# ⚠ 範囲外 …` (out of coverage) marks an interval computed outside the holiday table; points there have no backing from the table.
 - `残走路 N 日` (runway) is how many days the table still covers; negative means the table has run out — extend it (and its `covering:`).
 - `警告: window-clip` says a point moved past the edge of the evaluation range and is not in the output — widen the range.
-- Dates print in the CLI's time zone (`--tz`; default = the machine's). If it differs from the premise's `tz:`, day-level points show a time of day — pass `--tz America/New_York` for the example at the top.
+- Dates print in the CLI's time zone (`--tz`; default = the machine's). If it differs from the premise's `tz:`, day-level points show a time of day — match the premise's `tz:` (`--tz Asia/Tokyo` for `payday.kairos`, whose premise is Asia/Tokyo).
 
 (`impl/examples/` lives in this repository; the npm package ships the CLI and the stdlib. The block below runs
 the TypeScript source directly, for development.)
@@ -199,7 +210,11 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 - **Calendar model**: the proleptic Gregorian calendar as an idealisation (the leap-year rule is applied to
   every year; the 1582 reform is not modelled). Other calendars are built on top of it in the premise layer
   (spec §3.6).
-- **No leap seconds**: the base axis (chronos) is uniform; `23:59:60` is a lexical error (spec §5, ADR-33).
+- **No leap seconds**: the base axis (chronos) is uniform; `23:59:60` is a lexical error (spec §5, ADR-33). This is a
+  language decision made for determinism, not an implementation limit.
+- **No sub-millisecond resolution, no real-time control** (high-frequency trading, scientific instrumentation): the axis
+  is continuous and the resolution is implementation-defined (1 ms in the reference implementation; a finer literal is a
+  lexical error, never a silent rounding). Placing the instants precisely in real time is the host runtime's job (spec §7.8).
 - **Years have four digits** (0000–9999); `10000-01-01` is a lexical error.
 - **DST**: civil widths (`1d`) keep wall-clock time, so a civil day may be 23–25 hours; a time literal that
   falls into a DST gap or overlap is an error, not a guess (spec §3.6, §5; ADR-33, ADR-51). A civil width is
@@ -215,21 +230,22 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 ## Status and documentation
 
-**Version 1.0 (declared 2026-09-14; addenda through no. 29, 2026-10-26).** Semantics, the operator family, grammar (EBNF), and lexis are
-frozen; naming is final for every word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (880 tests),
+**Version 1.1 (2026-11-04, 1.1.0): 1.0 is frozen; 2 additive extensions (`labelOrdinal`, `since`/`before`); 1.0 addenda through no. 29 (1.0.12) reflected.** Semantics, the operator family, grammar (EBNF), and lexis are
+frozen; naming is final for every 1.0 word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26), and 1.1 adds `labelOrdinal`, `since` and `before` ([record](spec/CHANGELOG.md#v1-1), Japanese). Expressiveness
+is validated against 20 well-known schedule families and by a reference implementation (981 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
 |---|---|
 | [`spec/`](en/spec/) | **Language specification** (reviewable snapshot; start here — [日本語](spec/)) |
 | [`recipes/`](en/recipes/) | **Recipes** — the schedules cron/Quartz/RRULE can't express, one page per requirement with Playground links ([日本語](recipes/)) |
+| [`calendar/`](https://kairos-lang.org/en/calendar/) | **Calendar** — fill in an everyday schedule, see it month by month, print it or import it as .ics (the expression is assembled behind the page; round-trips with the Playground; nothing leaves the browser) ([日本語](calendar/)) |
 | [`reference/`](en/reference/) | **Descriptor reference** — one page per operator; examples are doctested ([日本語](reference/)) |
 | [`skills/`](en/skills/kairos-authoring/SKILL.md) | **Authoring skill** — how to write a definition from a requirement, for people and AI assistants: requirement patterns and expression patterns, forms to avoid, reading diagnostics, verification; every example doctested ([日本語](skills/kairos-authoring/SKILL.md)) |
 | [`stdlib/`](en/stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek` ([日本語](stdlib/) — includes the Japanese-only `Kyureki`) |
-| [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps) — one implementation of the language, not the language itself (Japanese) |
+| [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps — Japanese). One implementation of the language, not the language |
 | [`mcp/`](mcp/) | MCP server `kairos-lang-mcp` — evaluate (list/next), validate and look up the reference from an MCP client; `tz` is required (English) |
-| [`design/`](design/) | Design records: 53 ADRs, domain model, expressiveness studies incl. the ["impossible schedules" catalog](en/design/40-examples/11-impossible-schedules.md) (Japanese; catalog mirrored in English) |
+| [`design/`](design/) | Design records: 55 ADRs, domain model, expressiveness studies incl. the ["impossible schedules" catalog](en/design/40-examples/11-impossible-schedules.md) (Japanese; catalog mirrored in English) |
 | [`MAINTENANCE.md`](MAINTENANCE.md) | Maintenance guide — the yearly holiday-table update, the freshness check, what a red CI means, how releases are published (Japanese, with an English summary). Policy: [design/75-stewardship.md](design/75-stewardship.md) |
 
 Study materials for the Kairos language exam — graded textbooks (reading, writing, operational

@@ -4,11 +4,15 @@
 > that follow it (each page records its source revision as `source_sha`, and a consistency check
 > flags stale translations) ([日本語版はこちら](../../spec/README.md)).
 
-**Status: 1.0 (declared 2026-09-14; addenda through no. 29, 2026-10-26).**
+**Status: 1.1 (2026-11-04, 1.1.0): 1.0 is frozen; 2 additive extensions (`labelOrdinal`, `since`/`before`); 1.0 addenda through no. 29 (1.0.12) reflected.**
+
 Semantics, the operator family, the grammar (EBNF, §5.6), and the lexis are frozen. **Naming is final
-for every word** — the last placeholder `shiftBoundary` was settled as **`rephase`** on 2026-07-26
-(see §5.4). Expressiveness is validated against 20 well-known schedule families
-(`design/40-examples/`) and by the reference implementation (`impl/`, 880 tests). All remaining
+for every 1.0 word** — the last placeholder `shiftBoundary` was settled as **`rephase`** on 2026-07-26
+(see §5.4) — and **1.1 adds `labelOrdinal`, `since` and `before`** as additive extensions
+(see the [changelog](../../spec/CHANGELOG.md#v1-1), Japanese).
+
+Expressiveness is validated against 20 well-known schedule families
+(`design/40-examples/`) and by the reference implementation (`impl/`, 981 tests). All remaining
 homework items are catalogued in `design/90-open-questions.md`, and none of them changes the semantics.
 
 For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese).
@@ -40,5 +44,5 @@ claim / asof as a version identifier / URLs and versions / how to extend / four 
 - Standard premises — Gregorian, Fiscal, ISOWeek: [`stdlib/`](../stdlib/README.md)
   ([日本語](../../stdlib/README.md)). Kyureki (the Japanese lunisolar calendar) is
   [Japanese-only](../../stdlib/kyureki.md) — data-heavy, not mirrored.
-- Design records — 53 ADRs, domain model, expressiveness studies: [`design/INDEX.md`](../../design/INDEX.md) (Japanese)
+- Design records — 55 ADRs, domain model, expressiveness studies: [`design/INDEX.md`](../../design/INDEX.md) (Japanese)
 - The English overview with the capability comparison table is in the repository [README](../../README.md).

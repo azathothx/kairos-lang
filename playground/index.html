@@ -10,7 +10,7 @@ layout: default
 <p><strong>決めたら、いつでも。</strong><br><small>Write the rule once; list the dates.</small></p>
 
 <p>ブラウザの中で Kairos 式を評価する（リファレンス実装をそのまま実行・サーバー送信なし）。
-言語は 1.0（2026-09-14 宣言）——仕様は <a href="../spec/">言語仕様</a>・語彙は
+言語は 1.1（2026-11-04・1.1.0。1.0 は凍結のまま・追加拡張 labelOrdinal・since／before）——仕様は <a href="../spec/">言語仕様</a>・語彙は
 <a href="../reference/">記述語リファレンス</a>・学習は
 <a href="https://exam.kairos-lang.org/">教本とサンプル問題</a>。</p>
 
@@ -30,6 +30,7 @@ layout: default
           <option value="cascade">振替休日・国民の休日の導出</option>
           <option value="friday13">13 日の金曜日（積）</option>
           <option value="empty">空テーブルと被覆サマリ（運用信号）</option>
+          <option value="deadline">締め切りまでの残り営業時間（1.1・since／before）</option>
         </optgroup>
       </select>
     </label>
@@ -44,6 +45,7 @@ layout: default
     <button id="pg-share" type="button" style="padding:4px 12px">URL に固定</button>
     <button id="pg-ics" type="button" style="padding:4px 12px">カレンダーに入れる（.ics）</button>
     <label style="font-size:90%"><input id="pg-ics-split" type="checkbox"> 1 点ずつ別の予定にする（Outlook・スマホのアプリ向け。スマホでは最初からオン）</label>
+    <a id="pg-calendar" href="../calendar/" style="font-size:90%">カレンダーで見る（月めくり・印刷）</a>
     <span id="pg-msg" style="color:#57606a;font-size:90%"></span>
   </div>
   <pre id="pg-out" style="min-height:8em;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow-x:auto;white-space:pre">ここに結果が出る。</pre>

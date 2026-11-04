@@ -1,5 +1,5 @@
 ---
-source_sha: 20e5cb6b3c57
+source_sha: f6b587cebc1a
 ---
 
 # `takeLast` — cut off after the last n points (recent N)
@@ -56,6 +56,9 @@ tensha |> takeLast(2, until: 2026-08-21) |> at(T07:00)
   stream and `until: 2026-08-21`, the 8/21 firing is not included). The right form is the
   composition order above (count in the day layer), or inject `until:` with a time (also correct
   in the sense of "do not count firings still to come today as recent examples").
+- **`until:` is point-inclusive; [`before`](before.md) is exclusive** — "the most recent N" is `until:`; to cut
+  "everything strictly before p" as the half-open [since, before), use [`since`](since.md) / `before` (1.1; ADR-55).
+  The same "up to" has its boundary inverted (the reason `until` was not taken as the sugar's name).
 - **Evaluate from the coverage head.** The evaluation range is a cutting window, so a
   narrow range silently truncates the answer — do not trade the "is 366 days enough?" hole for an
   evaluation-range hole.
@@ -78,4 +81,4 @@ tensha |> takeLast(2, until: 2026-08-21) |> at(T07:00)
 
 [`take`](take.md) (cut off at the head = the dual) · [`stride`](stride.md) (thin) ·
 [`strideBy`](strideBy.md) (step by width) · [`at`](at.md) (the standard composition for attaching
-times) · ADR-31/38/49/52.
+times) · [`before`](before.md) (cutting as a half-open range = exclusive) · ADR-31/38/49/52.

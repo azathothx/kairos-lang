@@ -1,0 +1,60 @@
+---
+title: カレンダー
+# .html ページは jekyll-default-layout（Markdown のみ対象）の自動適用外——明記しないと
+# head ごと欠けた素の断片で配信される（playground/index.html と同じ・2026-08-03 実測）
+layout: default
+---
+
+<link rel="stylesheet" href="calendar.css">
+
+<h1 class="cal-noprint">Kairos カレンダー</h1>
+
+<p class="cal-noprint"><strong>決めたら、いつでも。</strong><br><small>Write the rule once; list the dates.</small></p>
+
+<p class="cal-noprint">暮らしの予定を穴埋めで決める → 月めくりで見る → 印刷するか、カレンダーアプリに入れる（.ics）。
+式はページの裏で組み立て、<a href="../playground/">Playground</a> と同じ評価器がブラウザの中で計算する（サーバー送信なし・保存なし。
+状態は URL に載る）。祝日は内閣府「国民の祝日について」の表（2026・2027 年分）＝Playground の例と同じ表。</p>
+
+<div id="kairos-calendar">
+  <div class="cal-noprint">
+    <div class="cal-controls">
+      <label>例:
+        <select id="cal-example" style="max-width:100%"></select>
+      </label>
+    </div>
+    <p id="cal-note" hidden></p>
+    <div id="cal-fields" class="cal-form"></div>
+    <div class="cal-controls">
+      <label>from <input id="cal-from" type="date"></label>
+      <label>to <input id="cal-to" type="date"></label>
+      <label>tz <input id="cal-tz" type="text" value="Asia/Tokyo" size="14"></label>
+      <button id="cal-print" type="button" style="padding:4px 12px">印刷（1 月 1 枚）</button>
+      <button id="cal-ics" type="button" style="padding:4px 12px">カレンダーに入れる（.ics）</button>
+      <label style="font-size:90%"><input id="cal-ics-split" type="checkbox"> 1 点ずつ別の予定にする（Outlook・スマホのアプリ向け。スマホでは最初からオン）</label>
+      <button id="cal-share" type="button" style="padding:4px 12px">URL に固定</button>
+      <a id="cal-pg" href="../playground/" style="font-size:90%">Playground で開く</a>
+    </div>
+    <p id="cal-msg"></p>
+    <p id="cal-warn" hidden></p>
+    <details id="cal-warn-raw" hidden><summary>原文（評価器の註釈・被覆サマリ）</summary><pre id="cal-warn-raw-pre"></pre></details>
+    <div class="cal-nav">
+      <button id="cal-prev" type="button" aria-label="前の月">◀</button>
+      <span id="cal-month-label"></span>
+      <button id="cal-next" type="button" aria-label="次の月">▶</button>
+      <span id="cal-count"></span>
+    </div>
+    <p class="cal-legend">● 予定（時刻つきは時刻）・<span class="hol">赤</span>＝祝日・<span class="other">破線</span>＝前後の月・← → キーで月めくり</p>
+  </div>
+  <div id="cal-months"></div>
+  <details class="cal-noprint"><summary>この予定の式（Kairos）——Playground で開くとそのまま編集できる</summary><pre id="cal-src"></pre></details>
+  <p id="cal-build" class="cal-noprint" style="color:#57606a;font-size:90%;margin:6px 0 0"></p>
+</div>
+
+<p class="cal-noprint" style="font-size:0.85em;color:#57606a">評価範囲は <code>[from, to)</code> の右開区間。黄色の一言は、祝日の表の外（2028 年以降など）に
+出た予定の知らせ——その期間の予定は祝日を知らずに並んでいる（原文は折りたたみ）。「カレンダーに入れる（.ics）」は Playground と同じ関数で
+ファイルを作る——式ごとに 1 つの繰り返し予定・時刻つきの点は通知つき・PC の Google／Apple カレンダーはそのまま取り込める。
+<strong>スマホのカレンダーアプリで開くときは「1 点ずつ別の予定にする」</strong>（スマホでは最初からオン）。Outlook 系も「1 点ずつ」。
+「URL に固定」で例・穴の値・範囲・tz を URL に載せて共有できる（形は Playground と同じ <code>#s=…&amp;f=…&amp;t=…&amp;z=…</code>＝
+<a href="../recipes/#共有-url-の形">共有 URL の形</a>）。祝日の自動更新・購読（webcal）はこのページでは行わない。</p>
+
+<script type="module" src="app.js"></script>

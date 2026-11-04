@@ -1,5 +1,5 @@
 ---
-source_sha: d6edb30d43fd
+source_sha: 08ec21a8bc23
 ---
 
 # <img src="../../assets/logo/kairos-pipe.svg" width="30" height="30" alt=""> Descriptor Reference
@@ -46,6 +46,7 @@ one page per requirement).
 | Projection | [`ordinalIn`](ordinalIn.md) | the ordinal of the unit window within the frame window (1-based) |
 | Projection | [`epochOrdinal`](epochOrdinal.md) | running ordinal from the epoch (0-based) |
 | Projection | [`coincides`](coincides.md) | window-membership predicate (is a point of S in d's window) |
+| Projection | [`labelOrdinal`](labelOrdinal.md) | the ordinal of a label within its declared value domain (1-based; 1.1) |
 | Window-generating word | [`grid`](grid.md) | uniform partition of the continuous axis (the calendar's atoms) |
 | Window-generating word | [`span`](span.md) | variable aggregation of unit sequences (bottom-up) |
 | Window-generating word | [`split`](split.md) | variable division of a parent window (dependent windows) |
@@ -54,6 +55,7 @@ one page per requirement).
 | Derivation | [`rephase`](rephase.md) | sugar shifting window cut points by a unit (re-phase; formerly the placeholder shiftBoundary) |
 | Sugar definition | [sugar definitions](sugar-definition.md) | naming transformations and templates — stream/value arguments (§4.8) |
 | Sugar (stdlib) | [`at`](at.md) | attaching a wall-clock time to a day set (`at(T17:00)` · ADR-51) |
+| Sugar (stdlib) | [`since`](since.md) / [`before`](before.md) | cutting a point set at date-times (half-open [since, before); `since(p)` = at or after p, `before(p)` = strictly before p · 1.1 · ADR-55) |
 | Literal | [table literal](table-literal.md) | stream constant of an instant sequence (covering:/labels:) |
 | Supply | [`external`](external.md) | external supply declaration (a table literal resolved at run time. ADR-46) |
 | Calendar entity | [`nonWorking`](nonWorking.md) | the entity's reserved public word and the `bizDay` standard derivation (ADR-35) |

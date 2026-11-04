@@ -135,4 +135,36 @@ marks = [2026-02-04] covering: 2026-01-01..2026-04-01
 marks |> at(1)`, { from: '2026-01-01', to: '2026-04-01' });
     expect(d).toEqual(['2026-02-04T09:00']);
   });
+
+  // 還流 2026-10-26 緊急便（収蔵 39）: 1.0.12 までの判定「calendar-system 側で解決された at」は、前文が Gregorian を
+  // with の基底に持つ形（premise P = Gregorian with {…}）と @Gregorian で掛からなかった（便の表の 8 形＝形 4〜7 が素通り）。
+  // 1.1.0 で判定を stdlib の定義そのもの（decl の同一性）に改めた（ADR-51 改訂 1）＝8 形すべてで掛かる
+  const TZ = 'tz: "Asia/Tokyo"';
+  const FORMS: [string, string][] = [
+    ['形 1: premise P { calendar-system: Gregorian }', `premise P {\n  calendar-system: Gregorian\n  ${TZ}\n}\n@P\n`],
+    ['形 2: premise P = B with（B は calendar-system: 形）', `premise B {\n  calendar-system: Gregorian\n  ${TZ}\n}\npremise P = B with { wkst: Mon }\n@P\n`],
+    ['形 3: premise P { calendar-system: H }（H = Gregorian with）', `premise H = Gregorian with { ${TZ} }\npremise P {\n  calendar-system: H\n  ${TZ}\n}\n@P\n`],
+    ['形 4: premise P = Gregorian with {…}（供給側の現行の前文の形）', `premise P = Gregorian with { ${TZ} }\n@P\n`],
+    ['形 5: premise P = Gregorian with { calendar-system: Gregorian }', `premise P = Gregorian with { calendar-system: Gregorian; ${TZ} }\n@P\n`],
+    ['形 6: premise P = P0 with（P0 = Gregorian with）', `premise P0 = Gregorian with { ${TZ} }\npremise P = P0 with { wkst: Mon }\n@P\n`],
+    ['形 7: @Gregorian', `@Gregorian\n`],
+    ['形 8: premise P = Gregorian with { calendar-system: P }（自己参照・1.0.12 でも掛かっていた）', `premise P = Gregorian with { calendar-system: P; ${TZ} }\n@P\n`],
+  ];
+  const R = { from: '2026-01-01', to: '2026-01-06' };
+  it.each(FORMS)('検査は前文の形によらず掛かる（還流 2026-10-26 緊急便の 8 形）: %s', (_label, pre) => {
+    expect(() => run(pre + `everyDay |> at(2026-01-03T07:00)`, R)).toThrow(/at: 引数は単独時刻リテラル/);
+    expect(() => run(pre + `everyDay |> within(month) |> at(T19:30)`, R)).toThrow(/at: 窓付き入力は取らない/);
+    // 対照＝正道はどの形でも 5 点
+    expect(evalDates(pre + `everyDay |> at(T07:00)`, R)).toHaveLength(5);
+  });
+
+  it('派生 with で at を上書きした利用側の定義（別の decl）には掛からない——stdlib の定義そのものに限る', () => {
+    const d = evalDates(`
+premise P = Gregorian with { tz: "Asia/Tokyo"
+  at(a) = s => s |> shift(+9, unit: hour) }
+@P
+marks = [2026-02-04] covering: 2026-01-01..2026-04-01
+marks |> at(1)`, { from: '2026-01-01', to: '2026-04-01' });
+    expect(d).toEqual(['2026-02-04T09:00']);
+  });
 });

@@ -1,9 +1,9 @@
-// Kairos 評価器（プロトタイプ）
+// Kairos 評価器（参照実装）
 //
 // 設計:
 // - core 演算子だけを実装し、Gregorian は stdlib/gregorian.kairos（Kairos ソース）を評価して立てる。
 // - 時間ストリームは計算範囲 [紀元 1970-01-01, to+マージン) で有界に実体化する（I7 の遅延・無限は
-//   プロトタイプでは近似。範囲外・1970 以前は未対応）。
+//   参照実装では近似。範囲外・1970 以前は未対応）。
 // - TZ は固定オフセットのみ（DST 未対応）。市民日＝24h に縮退する。
 // - カレンダー実体（ADR-35）と整列検査（ADR-36）は実装済み——整列タグは評価時伝播（静的検査の近似）で、
 //   tz 成分は名札（幾何はグローバル固定オフセット）。
@@ -18,7 +18,7 @@
 //   オフセットは壁時計ラベル読み（ADR-31 改訂 2＝F87 の修正）。
 // - 未実装: Modified ロール・everyInstant の一般合成・前文 tz: の写像評価。詳細は README。
 import { clipMessage } from './lexer.js';
-import { getTz } from './tz.js';
+import { getTz, utcOfCivil } from './tz.js';
 import { parseCoveringText, MEMBER_KEYS } from './parser.js';
 /** 統治されたエラー。文言は長さ上限で切る（clipMessage——利用者の値を写す診断が 1 MB になっていた。三巡目） */
 export class KairosError extends Error {
@@ -29,8 +29,93 @@ export class KairosError extends Error {
 export class SupplyError extends KairosError {
 }
 const DAY_MS = 86_400_000;
-/** 配列の要素数の上限（ECMAScript の規定＝2^32−1）。言語の上限ではない——実体化できない個数の判定にだけ使う（F137） */
-const ARRAY_MAX = 2 ** 32 - 1;
+/** 実体化する窓・点の数の上限（参照実装の制限・言語の上限ではない）。配列の上限（2^32−1）を下回っていても
+ *  ヒープが先に尽きるとプロセスごと落ち、診断にできない（還流 2026-10-26 緊急便 §2＝grid 1s で OOM・F147）。grid と strideBy は
+ *  紀元（または from:）から計算範囲の端まで実体化するので、見積もりがこれを越える幅は実体化の前に誘導つき静的エラーで止める。
+ *  grid の全列挙（窓列を点列に読む・split・span の全窓）は窓の上限 2^24 で統一＝点列に読んだ先でも窓が付いて回る（2^24〜2^27 の点列が
+ *  選択子で崩れていた＝2026-10-29 所見 7）。strideBy の点列は 2^26＝V8 の packed double 配列が push で RangeError になる長さの下
+ *  （上限は V8 の版で違う＝Node 24 は 2^27 ちょうどで投げ、Node 22／20 は容量の伸び〈1.5 倍〉が先に越えて 112,813,858 で投げる。
+ *  2^27 は Node 22 で 1.29 億点の見積もりが素通りし素の RangeError を漏らした＝2026-10-31 殻のセキュリティレビュー所見 5。
+ *  engines は >=20 なので最も低い版で守れる値にした。strideBy(1s) は 1 日の評価範囲でも to+400 日まで約 3,460 万点〈cli.test の
+ *  86,400 点の例〉で約 280 MB＝通る）。範囲に応じた実体化（序数の算術化）は 90-open 3-19 */
+const GRID_WINDOWS_MAX = 2 ** 24; // 約 1,677 万窓（grid の全列挙の上限＝窓列も units も）
+const STRIDE_POINTS_MAX = 2 ** 26; // 約 6,710 万点（strideBy の点の全列挙の上限）
+const ARITH = Symbol('arith');
+function arithOf(a) { return a[ARITH]; }
+/** 算術グリッドの末端（最後の窓の end） */
+function arithEnd(a) { return a.t0 + a.n * a.step; }
+/** ms を含む窓の添字（なければ -1）。末端以後も -1＝実体化地平線（to+400 日）より先の時点を最後の窓に丸めない
+ *  （丸めると 1.0 で止まっていた形が無言の捏造点になる。2026-10-29 所見 1） */
+function arithIndexOf(a, ms) {
+    if (a.n === 0 || ms < a.t0 || ms >= arithEnd(a))
+        return -1;
+    return Math.floor((ms - a.t0) / a.step);
+}
+/** start が ms 以上の最初の窓の添字（0..n。末端より先なら n） */
+function arithLowerBound(a, ms) {
+    return Math.min(a.n, Math.max(0, Math.ceil((ms - a.t0) / a.step)));
+}
+/** [lo, hi) に交差する窓の添字の範囲 [first, last]（交差しなければ undefined） */
+function arithIntersect(a, lo, hi) {
+    if (a.n === 0 || hi <= a.t0 || lo >= arithEnd(a))
+        return undefined;
+    const first = Math.max(0, Math.floor((lo - a.t0) / a.step));
+    const last = Math.min(a.n - 1, Math.ceil((hi - a.t0) / a.step) - 1);
+    return last >= first ? [first, last] : undefined;
+}
+function lazyArray(a, elem, limit, tooMany) {
+    return new Proxy([], {
+        get(target, key, recv) {
+            if (key === 'length')
+                return a.n;
+            if (key === ARITH)
+                return a;
+            if (typeof key === 'string') {
+                const i = Number(key);
+                if (Number.isInteger(i) && i >= 0)
+                    return i < a.n ? elem(i) : undefined;
+            }
+            const v = Reflect.get(target, key, recv);
+            // 配列の既定メソッド（総称＝length と添字で動く）は at 以外すべて全列挙＝手書きの拒否リストでなく関数値のキーで判定
+            // （ES2023 の toSorted／toReversed／with なども漏れない。2026-10-29 所見 14）
+            if (typeof v === 'function' && key !== 'at' && a.n > limit)
+                tooMany(a.n);
+            return v;
+        },
+        has(target, key) {
+            if (typeof key === 'string') {
+                const i = Number(key);
+                if (Number.isInteger(i))
+                    return i >= 0 && i < a.n;
+            }
+            return Reflect.has(target, key);
+        },
+    });
+}
+/** 枠窓が算術グリッドのとき、選択子が回すべき窓の添字＝点を含む窓（昇順・重複なし）。pts は昇順なので直前値との比較で重複を除く
+ *  （Set は 2^24 要素で生の RangeError＝2026-10-29 所見 2）。註釈区間に交差する窓は列挙しない＝選択子が区間ごとに O(1) で拡幅する（所見 4） */
+function relevantWindowIdx(a, pts, tooMany) {
+    const out = [];
+    let prev = -1;
+    for (const p of pts) {
+        const i = arithIndexOf(a, p);
+        if (i < 0 || i === prev)
+            continue;
+        if (out.length >= GRID_WINDOWS_MAX)
+            tooMany(out.length + 1);
+        out.push(i);
+        prev = i;
+    }
+    return out;
+}
+/** [lo, hi) に交差する窓の数（算術グリッドは O(1)） */
+function countIvIn(iv, lo, hi) {
+    const a = arithOf(iv);
+    if (!a)
+        return iv.filter(w => w.start < hi && w.end > lo).length;
+    const r = arithIntersect(a, lo, hi);
+    return r ? r[1] - r[0] + 1 : 0;
+}
 /** 範囲外分類の失敗（ADR-37 判断 6）: 失敗した参照点が依存の実効被覆域の外。
  *  ストリーム文脈（filter の述語）は捕まえて「落として註釈」、純値文脈はそのまま
  *  範囲外分類の明示エラーとして表面化する（「値なし」スロットは導入しない） */
@@ -73,6 +158,10 @@ const isObj = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 /** 値型（数値・列挙名/文字列・論理）か——適用の引数型 dispatch（ADR-42 判断 4） */
 const isValueV = (v) => typeof v === 'number' || typeof v === 'string' || typeof v === 'boolean';
 const kindOf = (v) => Array.isArray(v) ? 'list' : typeof v === 'object' && v !== null ? v.k : typeof v;
+/** ラベル値の診断表示（識別子形はそのまま・数値・論理値は字面）と値域の表示（ADR-54 の診断）。値域は先頭 12 個まで表示し
+ *  13 個以上は「, …」で打ち切る（干支 60 級の値域で診断が膨らまないため。reference/labelOrdinal.md「値域の外」に明記） */
+const labelText = (l) => String(l);
+const domainText = (domain) => `[${domain.slice(0, 12).map(labelText).join(', ')}${domain.length > 12 ? ', …' : ''}]`;
 export class PremiseInstance {
     name;
     members;
@@ -106,6 +195,9 @@ export function formatAnnotation(a) {
 export class Runtime {
     premises = new Map();
     topBindings = new Map();
+    /** stdlib（Gregorian・Fiscal・ISOWeek）の束縛定義の実体＝登録時に捕捉（registerPremise(st, true)＝index.ts）。標準糖衣 at／since／before の
+     *  名指し検査はこの集合への所属で判定する（名前の再解決は利用側の premise Gregorian {…} 再定義に掛かる。2026-10-29 所見 8） */
+    stdlibDecls = new Set();
     warnings = [];
     /** 本体式の段ごとの記録を残す（RunOptions.explain） */
     explain = false;
@@ -131,14 +223,14 @@ export class Runtime {
         this.epoch = this.tz.civilDayStart(1970, 1, 1);
         this.computeEnd = toMs + 400 * DAY_MS;
         if (fromMs < this.epoch)
-            throw new KairosError('プロトタイプの評価範囲は 1970-01-01 以降');
+            throw new KairosError('参照実装の評価範囲は 1970-01-01 以降（実装定義の下限。言語の軸に下限はない）');
         // 逆順の範囲は黙って 0 点だった（境界チェックリスト 2026-09-29・F117）。from = to は空の範囲として正当
         if (toMs < fromMs)
             throw new KairosError('評価範囲が逆順: to が from より前（[from, to) は半開区間・to は排他。from = to なら空の範囲）');
     }
     /** 実行既定 tz での錨打ち（表示・asof 等の寛容な文脈。隙間→最初の瞬間・重複→最初の候補） */
     dateToMs(d) {
-        const local = Date.UTC(d.y, d.mo - 1, d.d, d.h, d.mi, Math.floor(d.s), Math.round((d.s % 1) * 1000));
+        const local = utcOfCivil(d.y, d.mo, d.d, d.h, d.mi, Math.floor(d.s), Math.round((d.s % 1) * 1000));
         return this.tz.anchor(local).ms;
     }
     /** 表示形（実行既定 tz の市民ラベル） */
@@ -271,6 +363,9 @@ function isLabeledV(v) {
 // ---- 補助: 区間・点列 ----
 /** start でソート済みの区間列から ms を含む区間の添字（なければ -1） */
 function ivIndexOf(iv, ms) {
+    const a = arithOf(iv);
+    if (a)
+        return arithIndexOf(a, ms);
     let lo = 0, hi = iv.length - 1, ans = -1;
     while (lo <= hi) {
         const mid = (lo + hi) >> 1;
@@ -538,7 +633,13 @@ function snapAnn(ann, w) {
 const CORE_STAGES = new Set(['within', 'segmentBy', 'first', 'nth', 'last', 'roll', 'shift',
     'snapTo', 'rebase', 'filter', 'stride', 'strideBy', 'take', 'takeLast']);
 const CORE_WORDS = new Set([...CORE_STAGES, 'everyDay', 'everyInstant', 'chronos',
-    'grid', 'span', 'split', 'cycle', 'ordinalIn', 'epochOrdinal', 'coincides', 'external']);
+    'grid', 'span', 'split', 'cycle', 'ordinalIn', 'epochOrdinal', 'coincides', 'external',
+    'labelOrdinal']); // labelOrdinal＝1.1 の追加拡張（ADR-54）
+/** 1.1 以降に追加した語（ADR-54 判断 8・ADR-55 判断 8＝共通の規約）: core・stdlib を問わず予約語——同名の利用側 top-level
+ *  束縛は誘導つき静的エラー（改名を案内）。1.0 の語の挙動は不変。core 語（labelOrdinal）は CORE_WORDS のガードが先に効き
+ *  coreRedefErr が誘導文を添える。stdlib 糖衣（since／before）は CORE_WORDS を経ないので top-level 束縛のガードで独立に検査する
+ *  （reservedWordErr）。premise ブロック内・派生 `with` の同名束縛は従来どおり（§4.8——利用側が勝つ既存挙動を 1.1 でも変えない） */
+const WORDS_SINCE_1_1 = new Set(['labelOrdinal', 'since', 'before']);
 /** 実在日の検査（ADR-43 の字句検査の解決値向け再執行——external は字句層を経ないため。ADR-46） */
 function isRealDate(y, mo, d) {
     if (mo < 1 || mo > 12 || d < 1)
@@ -632,7 +733,9 @@ export class Evaluator {
                     }
                     case 'binding': {
                         if (CORE_WORDS.has(st.name))
-                            this.err(`core 語 ${st.name} の再定義は静的エラー（§4.8）`);
+                            this.coreRedefErr(st.name);
+                        if (WORDS_SINCE_1_1.has(st.name))
+                            this.reservedWordErr(st.name); // stdlib 糖衣 since／before の予約（ADR-55 判断 8）
                         if (this.rt.topBindings.has(st.name))
                             this.err(`束縛の再定義は静的エラー: ${st.name}（同じ名前の束縛は一度だけ。後の定義が黙って勝つことはない）`); // F134
                         this.rt.topBindings.set(st.name, { params: st.params, rhs: st.rhs, covering: st.covering });
@@ -740,7 +843,7 @@ export class Evaluator {
                     this.fineCache.delete(k);
         }
     }
-    registerPremise(st) {
+    registerPremise(st, stdlib = false) {
         const members = new Map();
         const defs = new Map();
         let base = null;
@@ -750,7 +853,7 @@ export class Evaluator {
                 members.set(m.key, m.value);
             for (const b of block.bindings) {
                 if (CORE_WORDS.has(b.name))
-                    this.err(`core 語 ${b.name} の再定義は静的エラー（§4.8）`);
+                    this.coreRedefErr(b.name);
                 if (defs.has(b.name))
                     this.err(`premise ${st.name} の束縛の再定義は静的エラー: ${b.name}（同じブロックに同じ名前は一度だけ）`); // F134
                 defs.set(b.name, { params: b.params, rhs: b.rhs, covering: b.covering });
@@ -771,7 +874,7 @@ export class Evaluator {
                 absorb(st.expr.withBlock);
             for (const stage of st.expr.stages) {
                 if (stage.name !== 'rephase')
-                    this.err(`premise 段 ${stage.name} は未対応（プロトタイプ）`);
+                    this.err(`premise 段 ${stage.name} は参照実装では未対応`);
                 const { d, W, U } = this.rephaseArgs(stage);
                 defs.set(W, this.expandShiftBoundary(base, d, W, U));
             }
@@ -790,16 +893,19 @@ export class Evaluator {
                 }
             }
         }
-        // epoch: メンバー（ADR-31）——プロトタイプは言語既定（1970-01-01）のみ対応
+        // epoch: メンバー（ADR-31）——参照実装は言語既定（1970-01-01）のみ対応
         const epochE = members.get('epoch');
         if (epochE !== undefined) {
             const env = { rt: this.rt, premise: null, members: new Map(), locals: null, parent: null };
             const v = typeof epochE === 'string' ? undefined : this.evalExpr(epochE, env);
             if (!(v && typeof v === 'object' && !Array.isArray(v) && v.k === 'point' && v.ms === this.rt.epoch)) {
-                this.err('プロトタイプは既定紀元（1970-01-01）のみ対応（epoch: の別値は未実装。ADR-31）');
+                this.err('参照実装は既定紀元（1970-01-01）のみ対応（epoch: の別値は未実装。ADR-31）');
             }
         }
         this.rt.premises.set(st.name, new PremiseInstance(st.name, members, defs, base));
+        if (stdlib)
+            for (const d of defs.values())
+                this.rt.stdlibDecls.add(d); // 標準糖衣の名指し検査の判定材料（所見 8）
     }
     /** rephase(δ, on: W, unit: U) → W = U span (_ => k) phase: φ₀+δ（§3.7） */
     rephaseArgs(stage) {
@@ -875,6 +981,15 @@ export class Evaluator {
         }
         return false;
     }
+    /** 列挙ラベル語彙への登録。1.1 以降に追加した語（予約語）はラベル名にも使えない（2026-10-24・レビュー所見）: 名前解決は premise の
+     *  公開語がラベル語彙より先（上の名前解決の順）なので、1.0 で `before` をラベルにしていた定義は 1.1 で別の文言のエラーに化けていた
+     *  （cycle は「ラベルは名前」・== before は型違い）→ 束縛と同じ誘導つき静的エラーに揃える（ADR-55 判断 8） */
+    addVocab(name) {
+        if (WORDS_SINCE_1_1.has(name)) {
+            this.err(`${name} は 1.1 で追加した語（予約語）——ラベル名（cycle のラベル列・labels:）にも使えない（§4.8）。ラベルは別の名に改名する（ADR-55 判断 8）`);
+        }
+        this.rt.vocab.add(name);
+    }
     /** cycle のラベル列・labels: 列から列挙ラベル語彙を集める（名前解決のフォールバック用） */
     scanVocab(e) {
         const visit = (x) => {
@@ -883,18 +998,18 @@ export class Evaluator {
             if (x.t === 'gen' && x.word === 'cycle' && x.arg.t === 'list') {
                 for (const el of x.arg.elems)
                     if ('t' in el && el.t === 'name')
-                        this.rt.vocab.add(el.name);
+                        this.addVocab(el.name);
             }
             if (x.t === 'list' && x.labels && x.labels.t === 'list') {
                 for (const el of x.labels.elems)
                     if ('t' in el && el.t === 'name')
-                        this.rt.vocab.add(el.name);
+                        this.addVocab(el.name);
             }
             // segmentBy の labels: 引数（ADR-39）の列挙名も語彙に収集（named-arg の形で現れる）
             if (!('t' in x) && x.name === 'labels' && x.value?.t === 'list') {
                 for (const el of x.value.elems) {
                     if ('t' in el && el.t === 'name')
-                        this.rt.vocab.add(el.name);
+                        this.addVocab(el.name);
                 }
             }
             // labels: cycle 形（ADR-47）の列挙名も同様に収集
@@ -902,7 +1017,7 @@ export class Evaluator {
                 && x.value.list?.t === 'list') {
                 for (const el of x.value.list.elems) {
                     if ('t' in el && el.t === 'name')
-                        this.rt.vocab.add(el.name);
+                        this.addVocab(el.name);
                 }
             }
             for (const v of Object.values(x)) {
@@ -1145,8 +1260,10 @@ export class Evaluator {
         const defEnv = { ...env, premise: root, members, locals: null, parent: null };
         this.checkExternalPositions(root, name, def); // external の合法位置（ADR-46 判断 1）
         if (def.params.length > 0) {
-            // 引数付き束縛は lambda 値として返す
-            return { k: 'lambda', params: def.params.map(p => p.name), body: def.rhs, env: defEnv };
+            // 引数付き束縛は lambda 値として返す。stdlib の定義そのものなら出自を付ける＝修飾参照 Gregorian.at(…)(s) も裸名の
+            // 呼び出し形（evalCall）と同じ名指し検査を applyValue で通る（2026-10-30 クラウド機械レビュー所見 3＝1.0.12 からの持ち越し）
+            const lam = { k: 'lambda', params: def.params.map(p => p.name), body: def.rhs, env: defEnv };
+            return this.isStdlibDecl(def) ? { ...lam, std: { name, decl: def } } : lam;
         }
         // asof/source をキーに含める（版差の誤共有防止——註釈が asof を運ぶ。ADR-37）
         const key = `${root.name}#${name}#` + this.memberKey(members);
@@ -1420,7 +1537,8 @@ export class Evaluator {
         }
         // 整列は宣言から静的に決まる（空でも宣言どおり＝ADR-46 判断 2。dates の目盛り所属は錨打ちの構成で保証）
         const align = kind === 'dates' ? this.dayGrain(env) : null;
-        return { k: 'table', pts, labels, covIv: r.iv, covDesc: r.desc, concluded: r.concluded, asof, src, align };
+        return { k: 'table', pts, labels, covIv: r.iv, covDesc: r.desc, concluded: r.concluded, asof, src, align,
+            ...(declLabels ? { domain: declLabels.slice() } : {}) }; // 宣言値域＝labelOrdinal の源（ADR-54 判断 1）
     }
     /** asof: メンバーの表示形（註釈・被覆サマリの属性） */
     asofOf(members) {
@@ -1457,6 +1575,55 @@ export class Evaluator {
             from: x.start, to: x.end, source: src, covering: t.covDesc, covIv: t.covIv,
             ...(t.asof ? { asof: t.asof } : {}),
         }));
+    }
+    /** labelOrdinal の値域（ADR-54 判断 1）: 宣言リスト 3 形に限る——(i) external の labels: 宣言（TableV.domain）・
+     *  (ii) 窓束縛 cycle のリスト（CycleV.labels）・(iii) segmentBy の labels: cycle のリスト（WinLevel.labelsCycle.list）。
+     *  並行ラベル列（segmentBy の静的 labels:・テーブルリテラルの labels:）は窓順・点順の割り当て列で列挙順ではなく
+     *  （labels: [m12, m1, …] の m1 は位置 2）、label: ラムダは列挙不能（ADR-42 判断 7 (g)）——いずれも誘導つき静的エラー */
+    labelDomainOf(bV, who) {
+        const guideParallel = (what) => this.err(`labelOrdinal: ${who} の labels: は${what}（窓順・点順の割り当て列）で列挙順ではない`
+            + '——値域は宣言リスト（external の labels:・窓束縛 cycle・segmentBy の labels: cycle）に限る。'
+            + '番号が要るなら labels: に数値を直接書く（stdlib/kyureki の形）か epochOrdinal の差で（ADR-54 判断 1）');
+        const guideLambda = () => this.err(`labelOrdinal: ${who} のラベル源は label: ラムダ（計算ラベル）で値域を列挙できない`
+            + `——値域を持つ側の束縛を渡す（labelOrdinal(B, ${who}(d)) の形〈B＝値域を宣言した束縛〉。ADR-42 判断 7 (g)・ADR-54 判断 1）`);
+        const guideNone = (what) => this.err(`labelOrdinal: ${who}（${what}）にラベル源がない——第 1 引数は値域を宣言した束縛`
+            + '（external の labels:・窓束縛 cycle・segmentBy の labels: cycle。ADR-54 判断 1）');
+        let domain;
+        if (isObj(bV)) {
+            if (bV.k === 'cycle')
+                domain = bV.labels;
+            else if (bV.k === 'table') {
+                if (bV.domain)
+                    domain = bV.domain;
+                else if (bV.labels)
+                    guideParallel('テーブルの点列への並行ラベル列');
+                else
+                    guideNone('テーブル');
+            }
+            else if (bV.k === 'stream' && bV.wins.length > 0) {
+                const top = bV.wins[bV.wins.length - 1];
+                if (top.labelsCycle)
+                    domain = top.labelsCycle.list;
+                else if (top.labels)
+                    guideParallel('窓列への並行ラベル列');
+                else if (top.labelFn)
+                    guideLambda();
+                else
+                    guideNone('窓束縛');
+            }
+            else if (bV.k === 'windows') {
+                if (bV.labelFn)
+                    guideLambda();
+                guideNone('窓');
+            }
+        }
+        if (!domain) {
+            this.err('labelOrdinal: 第 1 引数は値域を宣言した束縛（external の labels:・窓束縛 cycle・segmentBy の labels: cycle）'
+                + `——${kindOf(bV)} は受け取れない（ADR-54 判断 1）`);
+        }
+        if (domain.length === 0)
+            this.err(`labelOrdinal: ${who} の値域が空`);
+        return domain;
     }
     /** 窓相当の値の註釈（窓列の実効被覆域の補集合）。生成語の windows（暦法純粋）は無註釈 */
     winAnnOfV(v) {
@@ -1509,7 +1676,7 @@ export class Evaluator {
         const tz = this.tzObjOf(env);
         if (!d.hasTime)
             return tz.civilDayStart(d.y, d.mo, d.d);
-        const local = Date.UTC(d.y, d.mo - 1, d.d, d.h, d.mi, Math.floor(d.s), Math.round((d.s % 1) * 1000));
+        const local = utcOfCivil(d.y, d.mo, d.d, d.h, d.mi, Math.floor(d.s), Math.round((d.s % 1) * 1000));
         const a = tz.anchor(local);
         const p = (n) => String(n).padStart(2, '0');
         const lit = `${d.y}-${p(d.mo)}-${p(d.d)}T${p(d.h)}:${p(d.mi)}`;
@@ -2069,10 +2236,10 @@ export class Evaluator {
                     this.err('0 で割れない（div の右辺は 0 以外。§4.9）');
                 return Math.floor(this.num(l) / b);
             }
-            case '<': return this.num(l) < this.num(r);
-            case '<=': return this.num(l) <= this.num(r);
-            case '>': return this.num(l) > this.num(r);
-            case '>=': return this.num(l) >= this.num(r);
+            case '<':
+            case '<=':
+            case '>':
+            case '>=': return this.ord(e.op, l, r); // 数値どうし・時点どうし（§4.9・ADR-55）
             case '==': return this.eq(l, r);
             case '!=': return !this.eq(l, r);
             case 'in': {
@@ -2095,6 +2262,29 @@ export class Evaluator {
             this.err(`等値比較の両辺の型が異なる: ${tl} と ${tr}（比較は同じ型どうし。§4.9）`);
         return l === r;
     }
+    /** 順序比較（§4.9「等値・順序の型」）: 数値どうし・時点どうしに定義する。時点の順序は chronos 上の瞬間の全順序＝等値の
+     *  時点規則と同じ台で単位を持たない（1.1 の追加拡張＝ADR-55 判断 2。1.0 では「数値ではない: point」の評価エラーだった形の合法化）。
+     *  型違いは typeName（日本語）で両辺を見て診断する（判断 3）——単独時刻は ADR-51 の錨の明示へ・ラベルは labelOrdinal へ誘導 */
+    ord(op, l, r) {
+        const cmp = (a, b) => op === '<' ? a < b : op === '<=' ? a <= b : op === '>' ? a > b : a >= b;
+        if (typeof l === 'number' && typeof r === 'number')
+            return cmp(l, r);
+        if (isObj(l) && l.k === 'point' && isObj(r) && r.k === 'point')
+            return cmp(l.ms, r.ms);
+        const tl = this.typeName(l), tr = this.typeName(r);
+        if ((isObj(l) && l.k === 'time') || (isObj(r) && r.k === 'time')) {
+            // 単独時刻は chronos 上の位置を持たない——単独時刻どうしの順序も定義しない（ADR-55 判断 3・3-11 と同時）
+            this.err(`順序比較 ${op} の両辺（${tl} と ${tr}）に単独時刻リテラルがある——単独時刻リテラルは strideBy(1d, from:)（壁時計 tick）の`
+                + '位置でのみ使える。ここでは日付つきの日時リテラルで錨を明示する（ADR-51。単独時刻どうしの順序も定義しない＝ADR-55）');
+        }
+        if (tl !== tr)
+            this.err(`順序比較の両辺の型が異なる: ${tl} と ${tr}（順序比較は数値どうし・時点どうし。§4.9・ADR-55）`);
+        if (typeof l === 'string') {
+            this.err(`ラベルの順序は定義しない: ${tl} どうしの ${op}——ラベルの順序は labelOrdinal(B, x) で宣言値域の序数（数値）にしてから`
+                + '比較する（§4.9・ADR-54／55）');
+        }
+        this.err(`順序比較は数値どうし・時点どうしに限る: ${tl} どうしの ${op}（§4.9・ADR-55）`);
+    }
     typeName(v) {
         if (typeof v === 'number')
             return '数値';
@@ -2115,6 +2305,7 @@ export class Evaluator {
                 return this.evalExternal(e, env); // 外部供給宣言（ADR-46）
             // 射影（§4.9・ADR-30）。窓所属の失敗は実効被覆域で分類（ADR-37 判断 6）
             if (name === 'ordinalIn') {
+                this.positionalArity(e, 'ordinalIn', 3, '（単位, 窓, 点）——ordinalIn(day, month, d) のように単位・窓・点を書く'); // 2026-10-29（epochOrdinal と同じ穴）
                 const [uV, wV, dV] = e.args.map(a => this.evalExpr(a.value, env));
                 const d = this.point(dV);
                 // 免除系の tz 名検査（ADR-40）: 単位窓×枠窓・述語入力×枠窓
@@ -2143,12 +2334,20 @@ export class Evaluator {
                             + ' isOpen・壁時計の時点は at(Thh:mm) が正準。ADR-50/51）');
                     }
                 }
+                // 枠窓の先頭以後の最初の単位窓: 算術グリッドは O(1)——後退走査は 1 歩ごとに Proxy 越しの窓生成で、grid 60s では点ごとに
+                // 数百万歩の無言のハングだった（2026-10-29 所見 6）
+                const ua = arithOf(u);
                 let first = ui;
-                while (first > 0 && u[first - 1].start >= w[wi].start)
-                    first--;
+                if (ua)
+                    first = Math.min(ui, arithLowerBound(ua, w[wi].start));
+                else
+                    while (first > 0 && u[first - 1].start >= w[wi].start)
+                        first--;
                 return ui - first + 1; // 1 起点（ADR-30）
             }
             if (name === 'epochOrdinal') {
+                // 引数の数（2026-10-29・1.0 由来の宿題）: 1 つだけ（epochOrdinal(T09:00) など）だと点が undefined になり「時点ではない: undefined」と語名なしで漏れていた
+                this.positionalArity(e, 'epochOrdinal', 2, '（単位, 点）——epochOrdinal(month, d) のように窓と点を書く');
                 const [uV, dV] = e.args.map(a => this.evalExpr(a.value, env));
                 const d = this.point(dV);
                 this.checkTzMembership(this.predicateAlign, this.winGrainOf(uV), 'epochOrdinal', true); // ADR-40
@@ -2158,6 +2357,40 @@ export class Evaluator {
                     this.outOrErr(d, this.winAnnOfV(uV), 'epochOrdinal: 点が窓の外');
                 this.winCovOrOut(uIv[idx], this.winAnnOfV(uV), 'epochOrdinal');
                 return idx; // 存在する窓列の通し序数（先頭 0。データ由来窓の規則は F60＝ADR-31 改訂で確定）
+            }
+            // 列挙ラベルの序数射影（ADR-54・1.1 の追加拡張）: labelOrdinal(B, x)＝x が B の宣言値域の中で第何番目か（1 起点・宣言順）。
+            // 意味論は定義的等式 labelOrdinal(B, v) ≡ v == E₁ ? 1 : … : v == Eₙ ? n : ⊥——三項 12 段の畳み込みで、既定枝だけが
+            // ⊥＝明示エラー「値域の外」に変わる（判断 2）。点形 labelOrdinal(B, d) ≡ labelOrdinal(B, B(d))——B(d) の射影経路を
+            // そのまま通すので、範囲外の註釈輸送（§4.10）と tz 名検査（ADR-40）を継承し、本語自身は註釈を生まない（判断 3）
+            if (name === 'labelOrdinal') {
+                // 引数は位置 2 個に固定——名前付き引数は個数ではなく「名前付き」を理由に止める（射影語 3 つで同じ規則・同じ文言＝2026-10-30 所見 2）
+                this.positionalArity(e, 'labelOrdinal', 2, '（B, x）——B は値域を宣言した束縛・x はラベル値または点（ADR-54）');
+                const bExpr = e.args[0].value;
+                const who = bExpr.t === 'name' ? bExpr.name : bExpr.t === 'qualified' ? `${bExpr.ns}.${bExpr.name}` : '(式)';
+                const bV = this.evalExpr(bExpr, env);
+                const domain = this.labelDomainOf(bV, who);
+                // 値域の重複は呼び出し時の静的エラー（判断 5）——宣言側は 1.0 で合法のまま（4 勤 4 休 cycle [On, On, …] は窓ラベルとして動く）
+                const seen = new Set();
+                for (const l of domain) {
+                    if (seen.has(l)) {
+                        this.err(`labelOrdinal: ${who} の値域に ${labelText(l)} が重複——序数が一意でない`
+                            + '（宣言は合法のまま。位相の量〈サイクルの何日目〉は epochOrdinal の差で書く。ADR-54 判断 5）');
+                    }
+                    seen.add(l);
+                }
+                let x = this.evalExpr(e.args[1].value, env);
+                if (isObj(x) && x.k === 'point')
+                    x = this.applyValue(bV, [x], env, who); // 点形（判断 3）: B(d) の射影経路
+                if (typeof x !== typeof domain[0]) {
+                    this.err(`labelOrdinal: x の型（${this.typeName(x)}）が ${who} の値域の型（${this.typeName(domain[0])}）と`
+                        + '不一致（==/!= と同じ規則——比較は同じ型どうし。§4.9・ADR-54 判断 2）');
+                }
+                const i = domain.indexOf(x);
+                if (i < 0) {
+                    this.err(`labelOrdinal: ${labelText(x)} は ${who} の値域の外`
+                        + `（値域 ${domainText(domain)}。三項形の既定枝が黙って吸っていた形＝ADR-54 判断 2）`);
+                }
+                return i + 1; // 1 起点（判断 4。0 起点は添字 l[i]・epochOrdinal に温存）
             }
             // 窓所属の述語（仮称 coincides。ADR-38）: 点 d の属する w 窓の中に S の点が在るか——
             // 値式の有界存在量化。整列要求（同一 G）は課さない（区間所属＝ADR-36 判断 7 の免除系）
@@ -2241,6 +2474,8 @@ export class Evaluator {
                 const binding = this.lookupBinding(name, env);
                 if (binding && binding.decl.params.length > 0) {
                     const locals = this.bindParams(binding.decl.params, e.args, env, name);
+                    // 標準糖衣 at／since／before の名指し検査＝段の形（applyStage）と同じ 1 か所。呼び出し形 at(…)(s) は段の検査を素通りしていた（2026-10-29 所見 9）
+                    const std = this.checkStdlibSugarArgs(name, binding.decl, locals);
                     // 引数付き束縛の右辺も呼び出し側 locals 鎖を遮断（ADR-53 判断 3 の完遂＝還流第 17 便 §1:
                     // この経路だけ漏れて「T(x) = dayNo(d)」が使用箇所の変数名に依存していた。実引数は遮断前の
                     // env で評価済み——値渡しの意味は不変）
@@ -2249,7 +2484,9 @@ export class Evaluator {
                     const prevSevered = this.severedLocalsEnv;
                     this.severedLocalsEnv = this.severedLocalsEnv ?? env; // 最外の遮断点を保持
                     try {
-                        return this.evalExpr(binding.decl.rhs, childEnv(base, locals));
+                        const v = this.evalExpr(binding.decl.rhs, childEnv(base, locals));
+                        // stdlib の at(Thh:mm) が返す変換（s => …）に出自を付ける＝窓付き入力への適用を applyValue で止める（所見 9・段の形と同じ検査）
+                        return std === 'at' && isObj(v) && v.k === 'lambda' ? { ...v, stdAt: true } : v;
                     }
                     finally {
                         this.severedLocalsEnv = prevSevered;
@@ -2314,6 +2551,9 @@ export class Evaluator {
     applyValue(callee, args, env, calleeName) {
         if (isObj(callee)) {
             if (callee.k === 'lambda') {
+                // stdlib の at(Thh:mm)(s) の呼び出し形: 段の形（… |> at(Thh:mm)）と同じく窓付き入力は取らない（所見 9）
+                if (callee.stdAt && args.length === 1 && isObj(args[0]) && args[0].k === 'stream' && args[0].wins.length > 0)
+                    this.atWindowedErr();
                 // 糖衣定義の再帰適用の検出（§4.8「展開＝有限の機械的差し込み」・F110）: 本体評価中に
                 // 同じ本体の適用が再入したら静的エラー（自己再帰も相互再帰もここで止まる）
                 if (this.applyingBodies.has(callee.body)) {
@@ -2328,7 +2568,10 @@ export class Evaluator {
                     }
                     const locals = new Map();
                     callee.params.forEach((p, i) => locals.set(p, args[i]));
-                    return this.evalExpr(callee.body, childEnv(callee.env, locals));
+                    // stdlib の at／since／before を修飾参照で適用した形も evalCall と同じ名指し検査（2026-10-30 所見 3）
+                    const std = callee.std ? this.checkStdlibSugarArgs(callee.std.name, callee.std.decl, locals) : undefined;
+                    const v = this.evalExpr(callee.body, childEnv(callee.env, locals));
+                    return std === 'at' && isObj(v) && v.k === 'lambda' ? { ...v, stdAt: true } : v;
                 }
                 finally {
                     this.applyingBodies.delete(callee.body);
@@ -2417,7 +2660,12 @@ export class Evaluator {
                     + '（S |> filter(d => …)。ADR-42 判断 7 (b)）');
             }
         }
-        this.err(`適用できない値: ${kindOf(callee)}`);
+        // 公開語と同名の top-level 束縛は在圏 premise の公開語に隠れる（名前解決の順＝在圏 premise → calendar-system → top-level。
+        // 90-open 3-17）——「day = day cycle […]」の day(d) がここに落ちる。影の規則は未規定のまま、診断に誘導だけ添える（1.1.0・言語不変）
+        const shadowed = calleeName !== undefined && this.rt.topBindings.has(calleeName)
+            && !!(env.premise?.findDef(calleeName) ?? this.calendarSystemOf(env)?.findDef(calleeName));
+        this.err(`適用できない値: ${kindOf(callee)}` + (shadowed
+            ? `（${calleeName} は在圏 premise の公開語で、同名の利用側 top-level 束縛は隠れる＝束縛を別の名に改名する。§3.4・90-open 3-17）` : ''));
     }
     /** 窓束縛への引数の型域（ADR-42 判断 7 (e)）: 点（射影）か値（インスタンス参照）のみ */
     checkArgIsPoint(arg, who) {
@@ -2641,25 +2889,23 @@ export class Evaluator {
                 if (e.named.anchor) {
                     const anchor = this.point(this.evalExpr(e.named.anchor, env));
                     const k = Math.ceil((tzEpoch - anchor) / step);
-                    t0 = anchor + k * step; // 紀元以後で最初の位相点（それ以前はプロトタイプの評価範囲外）
+                    t0 = anchor + k * step; // 紀元以後で最初の位相点（それ以前は参照実装の評価範囲外）
                 }
-                const iv = [];
-                if ((this.rt.computeEnd - t0) / step > ARRAY_MAX)
-                    this.tooManyPoints('grid', (this.rt.computeEnd - t0) / step); // F137
-                try {
-                    for (let t = t0; t < this.rt.computeEnd; t += step)
-                        iv.push({ start: t, end: t + step });
-                    const grain = { kind: 'elapsed', step, phase: mod(t0, step), off: 0, tz: '' };
-                    return { k: 'windows', iv, units: iv.map(x => x.start), labelFn, grain };
-                }
-                catch (err) {
-                    if (err instanceof RangeError)
-                        this.tooManyPoints('grid', (this.rt.computeEnd - t0) / step); // F137
-                    throw err;
-                }
+                // 窓列は実体化しない（90-open 3-19 の根本・1.1.0）: 紀元 t0 からの算術で引く配列もどき＝添字の意味は従来と同一。
+                // 全列挙が要る操作（窓列を点列に読む・split・span の全窓）だけ上限（2^24）で止める（F137・F147）。units も窓の上限＝点列に
+                // 読んだ先でも窓が付いて回る（2^24〜2^27 の点列は選択子で崩れていた。2026-10-29 所見 7）
+                const n = Math.max(0, Math.ceil((this.rt.computeEnd - t0) / step));
+                const a = { t0, step, n };
+                const iv = lazyArray(a, i => ({ start: t0 + i * step, end: t0 + (i + 1) * step }), GRID_WINDOWS_MAX, k => this.tooManyPoints('grid', k, GRID_WINDOWS_MAX, 24));
+                const units = lazyArray(a, i => t0 + i * step, GRID_WINDOWS_MAX, k => this.tooManyPoints('grid', k, GRID_WINDOWS_MAX, 24));
+                const grain = { kind: 'elapsed', step, phase: mod(t0, step), off: 0, tz: '' };
+                return { k: 'windows', iv, units, labelFn, grain };
             }
             case 'span': {
                 const units = this.windowsOf(operand);
+                const ua = arithOf(units.iv);
+                if (ua && ua.n > GRID_WINDOWS_MAX)
+                    this.tooManyPoints('span', ua.n, GRID_WINDOWS_MAX, 24); // 全窓を回す＝列挙の上限
                 const f = this.evalExpr(e.arg, env);
                 const phase = e.named.phase ? this.num(this.evalExpr(e.named.phase, env)) : 0;
                 if (!Number.isInteger(phase) || phase < 0)
@@ -2693,15 +2939,20 @@ export class Evaluator {
                 // 境界整合検査（ADR-48 新設）: 親窓の両端が u の窓境界に一致すること（per-instance・
                 // 実体化の端は免除）。ADR-36 の G 同一検査は本件を覆わない（暦年×isoWeek はどちらも
                 // day グリッドで通ってしまう）——非整列（暦年×週など）はここで弾く
-                const uBounds = new Set();
-                for (const x of u.iv) {
-                    uBounds.add(x.start);
-                    uBounds.add(x.end);
-                }
+                // by: が算術グリッドなら境界・親窓内の単位数・最初の単位の添字はすべて算術（O(1)）——Proxy 越しの全走査は main の
+                // 10 倍の CPU で、完走していたプログラムが完走しなくなっていた（2026-10-29 所見 3）
+                const ua = arithOf(u.iv);
+                const uBounds = ua ? null : new Set();
+                if (uBounds)
+                    for (const x of u.iv) {
+                        uBounds.add(x.start);
+                        uBounds.add(x.end);
+                    }
+                const isBound = (x) => ua ? x >= ua.t0 && x <= arithEnd(ua) && (x - ua.t0) % ua.step === 0 : uBounds.has(x);
                 const iv = [];
                 parent.iv.forEach((p, y) => {
                     if (p.start > this.rt.epoch && p.end < this.rt.computeEnd
-                        && (!uBounds.has(p.start) || !uBounds.has(p.end))) {
+                        && (!isBound(p.start) || !isBound(p.end))) {
                         this.err(`split: 親窓の境界（${this.rt.fmt(p.start)}..${this.rt.fmt(p.end)}）が by: 単位の`
                             + '窓境界に一致しない——非整列の親×単位（暦年×週など）は分割できない（ADR-48）');
                     }
@@ -2709,8 +2960,17 @@ export class Evaluator {
                     if (!Array.isArray(widths))
                         this.err('split の g は幅リストを返す');
                     // 親窓内の単位窓を幅リストで割る。幅総和＝親は I5 で検査
-                    let ui = u.iv.findIndex(x => x.start >= p.start);
-                    const inParent = u.iv.filter(x => x.start >= p.start && x.end <= p.end).length;
+                    // 親窓内の単位窓＝start >= p.start かつ end <= p.end（「含まれる」。countIvIn の「交差」とは違う）
+                    let ui, inParent;
+                    if (ua) {
+                        const lo = arithLowerBound(ua, p.start);
+                        ui = lo < ua.n ? lo : -1;
+                        inParent = Math.max(0, Math.min(ua.n, Math.floor((p.end - ua.t0) / ua.step)) - lo);
+                    }
+                    else {
+                        ui = u.iv.findIndex(x => x.start >= p.start);
+                        inParent = u.iv.filter(x => x.start >= p.start && x.end <= p.end).length;
+                    }
                     const endIdx = ui + inParent - 1; // 親窓内の最後の単位
                     for (const w of widths) { // 0・負・非整数の幅は統治外エラーだった（F128）
                         const wn = this.num(w);
@@ -2816,7 +3076,7 @@ export class Evaluator {
         // everyInstant は連続基底の全点＝実体化できないので strideBy が直接受ける（§4.2）
         if (isObj(v) && v.k === 'instant') {
             if (e.stages[0]?.name !== 'strideBy') {
-                this.err('everyInstant は strideBy を直後に要する（プロトタイプ）');
+                this.err('everyInstant は strideBy を直後に要する（参照実装の制限）');
             }
             const empty = { k: 'stream', pts: [], wins: [], align: null, ann: [], endless: true };
             onStage?.(exprLabel(e.head), empty);
@@ -2847,7 +3107,7 @@ export class Evaluator {
             count++;
         }
         const top = s.wins.length > 0 ? s.wins[s.wins.length - 1] : undefined;
-        const windows = top ? top.iv.filter(w => w.start < hi && w.end > lo).length : undefined;
+        const windows = top ? countIvIn(top.iv, lo, hi) : undefined;
         return { stage: label, count,
             ...(first >= 0 ? { first: this.rt.fmt(first), last: this.rt.fmt(last) } : {}),
             ...(windows !== undefined ? { windows } : {}),
@@ -3066,7 +3326,20 @@ export class Evaluator {
                 const widened = [];
                 const out = [];
                 let pi = 0;
-                for (const w of iv) {
+                const arith = arithOf(iv);
+                const order = arith ? relevantWindowIdx(arith, stream.pts, k => this.tooManyWindows(`選択子 ${stage.name}`, k)) : null;
+                if (arith) {
+                    // 註釈区間に交差する窓への拡幅は区間ごとに O(1)（交差する窓の和＝1 区間。経過幅グリッドは openEnd を持たないので readsEnd は常に偽）
+                    // ——窓を列挙して積むと、利用者が書いていない先頭註釈 × 細かい幅で紀元からの窓数を「from: を近づける」と誤って診断していた（2026-10-29 所見 4）
+                    for (const x of combined) {
+                        const r = arithIntersect(arith, x.from, x.to);
+                        if (r)
+                            widened.push({ ...x, from: arith.t0 + r[0] * arith.step, to: arith.t0 + (r[1] + 1) * arith.step });
+                    }
+                }
+                const total = order ? order.length : iv.length;
+                for (let k = 0; k < total; k++) {
+                    const w = order ? iv[order[k]] : iv[k];
                     const inWin = [];
                     while (pi < stream.pts.length && stream.pts[pi] < w.start)
                         pi++;
@@ -3116,7 +3389,7 @@ export class Evaluator {
                 this.checkAlign(stream.align, axisS.align, 'roll(on:)');
                 const axis = axisS.pts;
                 if (conv === 'Modified')
-                    this.err('Modified は未実装（プロトタイプ）');
+                    this.err('Modified は参照実装では未実装');
                 if (conv !== 'Following' && conv !== 'Preceding')
                     this.err(`未知のロール規約: ${conv}`);
                 const pts = [];
@@ -3468,21 +3741,14 @@ export class Evaluator {
                 }
                 else {
                     const step = wV.w.ms;
-                    // 点数が配列の上限を越えると RangeError（Invalid array length）が統治外で漏れた——1 ms 幅や、遠い過去の
-                    // from: と細かい幅の組（境界チェックリスト三巡目・F137）。言語の上限は置かない（裁定 2026-09-29）——配列に
-                    // 入らないと分かっている個数（2^32−1 超）は実体化の前に、その手前で処理系が音を上げた場合は落ちた時点で診断にする
+                    // 点数の見積もりが上限（2^26＝どの対応 Node でも V8 の packed double 配列が push で RangeError にならない長さ）を越える幅は
+                    // 実体化の前に誘導つき静的エラー（F137・F147・F159）。1.0.x は配列の上限（2^32−1）だけを事前判定し push の RangeError を
+                    // 拾っていたが、事前判定の後は到達不能（ヒープ枯渇は致命エラーで catch できない）＝外した（2026-10-29 所見 15）。言語の上限ではない
                     const est = (this.rt.computeEnd - anchor) / step;
-                    if (est > ARRAY_MAX)
-                        this.tooManyPoints('strideBy', est);
-                    try {
-                        for (let t = anchor; t < this.rt.computeEnd; t += step)
-                            pts.push(t);
-                    }
-                    catch (err) {
-                        if (err instanceof RangeError)
-                            this.tooManyPoints('strideBy', est);
-                        throw err;
-                    }
+                    if (est > STRIDE_POINTS_MAX)
+                        this.tooManyPoints('strideBy', est, STRIDE_POINTS_MAX, 26);
+                    for (let t = anchor; t < this.rt.computeEnd; t += step)
+                        pts.push(t);
                     align = { kind: 'elapsed', step, phase: mod(anchor, step), off: 0, tz: '' };
                 }
                 // ADR-36: strideBy の出力は定義上 anchor 付きグリッドの目盛りそのもの。
@@ -3497,22 +3763,12 @@ export class Evaluator {
                 const locals = this.bindParams(binding.decl.params, stage.args, env, stage.name);
                 // 標準糖衣 at の名指し検査（ADR-51 追記＝還流第 15 便 (a)(c)）: 展開形は入力 s を
                 // 述語として読み直すため、窓と anchor 引数の逸脱が黙って誤結果になる——展開前に塞ぐ。
-                // 検査は標準語彙の名の防御（calendar-system 側で解決された at）——利用側 premise の
-                // 同名再定義には掛からない
-                if (stage.name === 'at' && binding.premise !== null
-                    && binding.premise === this.calendarSystemOf(env)) {
-                    if (stream.wins.length > 0) {
-                        this.err('at: 窓付き入力は取らない——展開形は入力の窓を引き継がない（通し数えや選択子の'
-                            + '型エラーに化ける）。窓は at の後で切る: … |> at(Thh:mm) |> within(…)（外延同値。ADR-51 追記）');
-                    }
-                    const p0 = binding.decl.params[0];
-                    const a0 = p0 ? locals.get(p0.name) : undefined;
-                    if (!(a0 !== undefined && isObj(a0) && a0.k === 'time')) {
-                        this.err('at: 引数は単独時刻リテラル（Thh:mm）のみ——日付つきの錨は前方専用で anchor より'
-                            + '前の点が黙って空になる（anchor 引数形は不採＝ADR-51 判断 8）。日の調整は日の層で: '
-                            + 'shift(±k, unit: day) |> at(Thh:mm)');
-                    }
-                }
+                // 検査は標準語彙の名の防御＝stdlib の定義そのもの（decl の同一性・since／before と同じ判定）に掛かる。
+                // 「calendar-system 側で解決された at」の判定（1.0.12 まで）は premise P = Gregorian with {…} と
+                // @Gregorian で掛からなかった（還流 2026-10-26 緊急便・ADR-51 改訂 1）。利用側 premise の
+                // 同名再定義（派生 with の上書きを含む＝別の decl）には掛からない
+                // since／before も同じ検査（2026-10-24・レビュー所見）。段の形と呼び出し形（evalCall）で 1 か所＝checkStdlibSugarArgs
+                this.checkStdlibSugarArgs(stage.name, binding.decl, locals, stream);
                 // 糖衣右辺も呼び出し側 locals 鎖を遮断（ADR-53 の同一原則——実引数は遮断前の env で評価済み）
                 const base = { ...(binding.premise ? { ...env, premise: binding.premise } : env),
                     locals: null, parent: null };
@@ -3559,10 +3815,15 @@ export class Evaluator {
                 + '（評価範囲 [from, to) の外へ動いた点は出力に含まれない——範囲を広げて評価する。§7.8）');
         }
     }
-    /** 実体化が配列の上限で落ちたときの診断（F137）。上限値は処理系のもの——言語の上限ではない */
-    tooManyPoints(op, estimate) {
+    /** 実体化の見積もりが上限を越えたときの診断（F137・F147）。上限値は処理系のもの——言語の上限ではない */
+    tooManyPoints(op, estimate, limit, pow) {
         this.err(`${op}: 点が多すぎて実体化できない（紀元または from: から計算範囲の端 to+400 日まで約 ${Math.ceil(estimate).toLocaleString('en-US')} 個`
-            + '——参照実装の配列の上限。幅を粗くするか、from: と評価範囲を近づける。言語の上限ではない）');
+            + `——参照実装の実体化の上限 ${limit.toLocaleString('en-US')}（2^${pow}）。幅を粗くするか、from: と評価範囲を近づける。言語の上限ではない）`);
+    }
+    /** 選択子が回す窓（点の属する窓）の数が上限を越えたときの診断（2026-10-29 所見 2・4＝註釈由来の窓は数えないので紀元からの個数ではない） */
+    tooManyWindows(op, n) {
+        this.err(`${op}: 点の属する窓が多すぎて実体化できない（約 ${n.toLocaleString('en-US')} 個——参照実装の実体化の上限 `
+            + `${GRID_WINDOWS_MAX.toLocaleString('en-US')}（2^24）。幅を粗くするか、評価範囲を狭める。言語の上限ではない）`);
     }
     /** 前文メンバー roll:（spec §3.3＝ロール規約の畳み込み・1.0.2 で実装）: 規約の位置引数が無いときの既定 */
     rollMember(env) {
@@ -3596,7 +3857,7 @@ export class Evaluator {
             if (v.k === 'point')
                 return { k: 'stream', pts: [v.ms], wins: [], align: null, ann: [], endless: false };
             if (v.k === 'instant')
-                this.err('everyInstant は strideBy(w, from:) と併用する（プロトタイプ）');
+                this.err('everyInstant は strideBy(w, from:) と併用する（参照実装の制限）');
         }
         this.err(`時間ストリームではない: ${kindOf(v)}`
             + (Array.isArray(v) && v.length === 0 ? '（空リストは covering: を付ければ空テーブル。ADR-45）' : ''));
@@ -3652,12 +3913,14 @@ export class Evaluator {
                 this.err(`split(${role}): データ由来（covering 付き）マーカーの窓列は受理しない——覆域の`
                     + '編集で g の引く序数が黙って動く（規則マーカーの窓列か segmentBy 正準形へ。ADR-48）');
             }
-            for (let i = 1; i < top.iv.length; i++) {
-                if (top.iv[i].start !== top.iv[i - 1].end) {
-                    this.err(`split(${role}): 窓列が連続でない（empties: drop の親は受理しない——空窓の除去が`
-                        + '序数を詰める。keep/error へ。ADR-48）');
+            // 算術グリッドは構成上 elem(i).end === elem(i+1).start——添字走査は上限に掛からず grid 1s で 37 分スピンしていた（2026-10-29 所見 5）
+            if (!arithOf(top.iv))
+                for (let i = 1; i < top.iv.length; i++) {
+                    if (top.iv[i].start !== top.iv[i - 1].end) {
+                        this.err(`split(${role}): 窓列が連続でない（empties: drop の親は受理しない——空窓の除去が`
+                            + '序数を詰める。keep/error へ。ADR-48）');
+                    }
                 }
-            }
             return { k: 'windows', iv: top.iv, units: v.pts.slice(), labelFn: top.labelFn, grain: top.grain ?? null };
         }
         this.err(`窓（パーティション）ではない: ${kindOf(v)}${isObj(v) && v.k === 'cycle'
@@ -3676,6 +3939,8 @@ export class Evaluator {
         this.err(`窓として使えない値: ${kindOf(v)}`);
     }
     checkPartition(iv, name) {
+        if (arithOf(iv))
+            return; // 算術グリッドは構成上の分割（隣接・隙間なし）
         for (let i = 1; i < iv.length; i++) {
             if (iv[i].start !== iv[i - 1].end) {
                 this.rt.warnings.push(`I5: 窓 ${name} は連続でない（${this.rt.fmt(iv[i - 1].end)} 付近）`);
@@ -3710,6 +3975,69 @@ export class Evaluator {
     }
     err(msg) {
         throw new KairosError(msg);
+    }
+    /** core 語の再定義（§4.8）。1.1 以降の追加語には予約語の規約（ADR-54 判断 8）の誘導＝改名の案内を添える */
+    coreRedefErr(name) {
+        const since = WORDS_SINCE_1_1.has(name)
+            ? `——${name} は 1.1 で追加した語（予約語）。利用側の束縛は別の名に改名する（ADR-54 判断 8）` : '';
+        this.err(`core 語 ${name} の再定義は静的エラー（§4.8）${since}`);
+    }
+    /** stdlib の定義そのものか＝登録時に捕捉した decl の集合（Runtime.stdlibDecls）への所属。呼び出し時に premises.get('Gregorian') を名指しで
+     *  引く判定は、利用側の premise Gregorian {…} 再定義で利用者の定義に掛かり、@Fiscal 配下の本物の stdlib 定義に掛からなくなっていた
+     *  （2026-10-29 所見 8）。派生 with で上書きした同名束縛は別の decl＝利用側が勝つ既存挙動 */
+    isStdlibDecl(decl) { return this.rt.stdlibDecls.has(decl); }
+    /** 標準糖衣 at／since／before の名指し検査（段の形と呼び出し形の共通経路・2026-10-29 所見 9）。stdlib の定義そのもの（decl の同一性）に
+     *  限る＝利用側 premise の同名再定義（派生 with の上書きを含む）は利用側の定義のまま（§4.8・ADR-51 改訂 1）。
+     *  at（ADR-51 追記＝還流第 15 便 (a)(c)）: 展開形は入力 s を述語として読み直すため、窓と anchor 引数の逸脱が黙って誤結果になる——展開前に塞ぐ。
+     *  since／before（2026-10-24）: 展開 filter(t => t >= p) は点が流れたときにしか ord() を通らず、列が空だと単独時刻や型違いの p が黙って通っていた。
+     *  返り値＝検査した語（stdlib の定義でなければ undefined） */
+    checkStdlibSugarArgs(name, decl, locals, stream) {
+        if (!this.isStdlibDecl(decl))
+            return undefined;
+        if (name === 'at') {
+            if (stream && stream.wins.length > 0)
+                this.atWindowedErr();
+            const p0 = decl.params[0];
+            const a0 = p0 ? locals.get(p0.name) : undefined;
+            if (!(a0 !== undefined && isObj(a0) && a0.k === 'time')) {
+                this.err('at: 引数は単独時刻リテラル（Thh:mm）のみ——日付つきの錨は前方専用で anchor より'
+                    + '前の点が黙って空になる（anchor 引数形は不採＝ADR-51 判断 8）。日の調整は日の層で: '
+                    + 'shift(±k, unit: day) |> at(Thh:mm)');
+            }
+            return 'at';
+        }
+        if (name === 'since' || name === 'before') {
+            this.checkSinceBeforeArg(name, locals.get(decl.params[0].name));
+            return name;
+        }
+        return undefined;
+    }
+    atWindowedErr() {
+        this.err('at: 窓付き入力は取らない——展開形は入力の窓を引き継がない（通し数えや選択子の'
+            + '型エラーに化ける）。窓は at の後で切る: … |> at(Thh:mm) |> within(…)（外延同値。ADR-51 追記）');
+    }
+    /** 射影語の引数＝位置引数 n 個に固定（2026-10-29）: 名前付き引数は位置で数えず「名前付き」を理由に止める（labelOrdinal・bindParams と同じ規則。所見 10） */
+    positionalArity(e, name, n, sig) {
+        if (e.args.some(a => a.name))
+            this.err(`${name}: 名前付き引数は受け取らない——位置引数 ${n} 個${sig}`);
+        if (e.args.length !== n)
+            this.err(`${name}: 引数は ${n} つ${sig}（渡されたのは ${e.args.length} 個）`);
+    }
+    /** since(p)／before(p) の p＝日付つきの日時リテラル（時点）。単独時刻は ADR-51 の誘導（ord() と同じ趣旨・呼び出し時に） */
+    checkSinceBeforeArg(name, p) {
+        if (p !== undefined && isObj(p) && p.k === 'time') {
+            this.err(`${name}(p) の p に単独時刻リテラルは渡せない——単独時刻リテラルは strideBy(1d, from:)（壁時計 tick）の位置でのみ使える。`
+                + '日付つきの日時リテラルで錨を明示する（ADR-51・ADR-55）');
+        }
+        if (!(p !== undefined && isObj(p) && p.k === 'point')) {
+            this.err(`${name}(p) の p は日付つきの日時リテラル（時点）: ${p === undefined ? '（なし）' : this.typeName(p)} が渡された（ADR-55）`);
+        }
+    }
+    /** 1.1 以降に追加した stdlib 語（since／before）と同名の利用側 top-level 束縛（ADR-55 判断 8）。1.0 の stdlib 語（at 等）は
+     *  黙って覆う既存挙動のまま＝ここは WORDS_SINCE_1_1 の語だけ */
+    reservedWordErr(name) {
+        this.err(`${name} は 1.1 で追加した語（予約語・stdlib の標準糖衣）——同名の利用側 top-level 束縛は静的エラー（§4.8）。`
+            + `利用側の束縛は別の名に改名する（ADR-55 判断 8）`);
     }
     /** 解決値の契約違反（昇順・覆域の包含・labels の同長と値域・形）は供給側の責任＝SupplyError（CLI／MCP の error.kind は supply。1.0 追補 28） */
     supplyErr(msg) {

@@ -44,8 +44,9 @@ const STRINGS = {
 };
 
 // 暮らしの例（2026-10-06 決定＝エンジニアでない一般の人向けの入口）: 式を読まずに「カレンダーに入れる」まで行ける
-// 最短経路。先頭のコメント行が予定の名前（.ics の SUMMARY）になる。ブログ第 30・31 弾の例と同じ定義
-const JP_PREMISE = `premise JP {
+// 最短経路。先頭のコメント行が予定の名前（.ics の SUMMARY）になる。ブログ第 30・31 弾の例と同じ定義。
+// 祝日表は「例の資産」（毎年延ばす・出所を添える）——カレンダーページ（/calendar/）の例も同じ前文を import して使う（表を増やさない）
+export const JP_PREMISE = `premise JP {
   calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon
   # 祝日の表: 内閣府「国民の祝日について」（2026-10-09 取得）。表の外の日は ⚠ で知らせる
   national = [2026-01-01, 2026-01-12, 2026-02-11, 2026-02-23, 2026-03-20, 2026-04-29, 2026-05-03..2026-05-06,
@@ -179,12 +180,36 @@ bizDay = everyDay \\ (satSun | holidays2027)
 
 bizDay`,
   },
+  // 1.1 の例（ADR-55・2026-10-21）: 時点どうしの順序比較と糖衣 since／before——「今」から締め切りまでの営業時間の毎正時。
+  // 営業時間は実体の sessionOpens／sessionCloses と isOpen（ADR-41）・休みは JP_PREMISE の表を参照（表を増やさない）
+  deadline: {
+    from: '2026-11-02', to: '2026-11-06',
+    code: `# 締め切りまでの残り営業時間（営業日 9〜17 時の毎正時）
+${JP_PREMISE}
+premise Office {
+  calendar-system: Gregorian
+  tz: "Asia/Tokyo"
+  source: "example"
+  # 休みは JP の表と同じ・営業時間は 9:00 開場・17:00 閉場
+  nonWorking = JP.satSun | JP.national
+  nine = chronos grid 1d anchor: 2026-01-01T09:00
+  five = chronos grid 1d anchor: 2026-01-01T17:00
+  sessionOpens  = nine |> first
+  sessionCloses = five |> first
+}
+premise JPO { calendar-system: Gregorian; calendar: Office; tz: "Asia/Tokyo"; wkst: Mon }
+
+@JPO
+hourly = everyInstant |> strideBy(1h, from: 2026-01-01)
+# 「今」と締め切りは呼ぶ側が注入する——日時を書き換えて試す。since は含む・before は含まない（半開）
+hourly |> filter(t => isOpen(t)) |> since(2026-11-02T14:30) |> before(2026-11-05T17:00)`,
+  },
 };
 
 // 英語ページのプリセット（2026-09-01 言語別化）: payday/monthend3/friday13/empty は米国連邦祝日
 //（observed）・America/New_York 版。cascade（日本の振替休日・国民の休日の導出）だけは言語の
 // 見せ場として日英共通——「法定表から規則で導く」の実演は日本の暦がいちばん濃い。
-const US_PREMISE = `premise US {
+export const US_PREMISE = `premise US {
   calendar-system: Gregorian; tz: "America/New_York"; wkst: Sun
   # Holiday table: OPM Federal Holidays, observed dates (fetched 2026-10-09). Days outside the table are flagged with ⚠
   federal = [2026-01-01, 2026-01-19, 2026-02-16, 2026-05-25, 2026-06-19, 2026-07-03, 2026-09-07, 2026-10-12,
@@ -292,6 +317,28 @@ bizDay = everyDay \\ (satSun | holidays2027)
 
 bizDay`,
   },
+  deadline: {
+    from: '2026-11-09', to: '2026-11-13', tz: 'America/New_York',
+    code: `# Business hours left until a deadline (every hour, business days 9:00-17:00)
+${US_PREMISE}
+premise Office {
+  calendar-system: Gregorian
+  tz: "America/New_York"
+  source: "example"
+  # Same days off as the US table; opens 9:00, closes 17:00
+  nonWorking = US.satSun | US.federal
+  nine = chronos grid 1d anchor: 2026-01-01T09:00
+  five = chronos grid 1d anchor: 2026-01-01T17:00
+  sessionOpens  = nine |> first
+  sessionCloses = five |> first
+}
+premise USO { calendar-system: Gregorian; calendar: Office; tz: "America/New_York"; wkst: Sun }
+
+@USO
+hourly = everyInstant |> strideBy(1h, from: 2026-01-01)
+# "Now" and the deadline are injected by the caller — edit the two instants. since includes, before excludes (half-open)
+hourly |> filter(t => isOpen(t)) |> since(2026-11-09T14:30) |> before(2026-11-12T17:00)`,
+  },
 };
 
 /** 「カレンダーに入れる」の本体（純関数・ブラウザ API を使わない＝テストから直接呼べる）。
@@ -318,6 +365,26 @@ export function rollingWindow(tz, days, now = new Date()) {
   const to = new Date(Date.UTC(y, m - 1, d + days));
   const p = n => String(n).padStart(2, '0');
   return { from: ymd, to: `${to.getUTCFullYear()}-${p(to.getUTCMonth() + 1)}-${p(to.getUTCDate())}` };
+}
+
+/** 共有 URL のハッシュの base64url（UTF-8）——`#s=<base64url(ソース全文)>&f=<from>&t=<to>&z=<IANA tz>` の s の符号化。
+ *  この形は公開の約束（recipes/README「共有 URL の形」・2026-10-30）: Playground と /calendar/ が同じ形で受け渡し、供給側もそのまま受け取る。
+ *  バイト列は小分けにして文字列へ——fromCharCode(...全体) のスプレッドは 130 KB 前後で引数の上限を越え、
+ *  「URL に固定」が例外で黙って何も起きなかった（境界チェックリスト三巡目 2026-09-30・F146） */
+export const b64e = s => {
+  const bytes = new TextEncoder().encode(s);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+export const b64d = s => new TextDecoder().decode(
+  Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)));
+
+/** 共有 URL のハッシュ（URLSearchParams）: s・f・t は常に・z は Asia/Tokyo 以外のときだけ（Playground の「URL に固定」と同じ） */
+export function shareHash(source, from, to, tz) {
+  const h = new URLSearchParams({ s: b64e(source), f: from, t: to });
+  if (tz && tz !== 'Asia/Tokyo') h.set('z', tz);
+  return h;
 }
 
 /** スマホらしさの判定（タッチ主体のポインタか狭い画面）。判定できない環境（テスト・古いブラウザ）では false＝PC 扱い */
@@ -367,25 +434,21 @@ export function init(lang) {
     } catch (e) {
       out.textContent = String(e && e.message ? e.message : e);
     }
+    updateCalendarLink();
   }
 
-  // バイト列は小分けにして文字列へ——fromCharCode(...全体) のスプレッドは 130 KB 前後で引数の上限を越え、
-  // 「URL に固定」が例外で黙って何も起きなかった（境界チェックリスト三巡目 2026-09-30・F146）
-  const b64e = s => {
-    const bytes = new TextEncoder().encode(s);
-    let bin = '';
-    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  // 「カレンダーで見る」（/calendar/ への往復・2026-10-30）: いま画面にある式と範囲を同じハッシュ形で渡す。評価のたびに更新する
+  const calLink = $('pg-calendar');
+  const updateCalendarLink = () => {
+    if (!calLink) return;
+    calLink.href = '../calendar/#' + shareHash(src.value, $('pg-from').value, $('pg-to').value, $('pg-tz').value.trim()).toString();
   };
-  const b64d = s => new TextDecoder().decode(
-    Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)));
 
   function share() {
-    const h = new URLSearchParams({ s: b64e(src.value), f: $('pg-from').value, t: $('pg-to').value });
-    const tz = $('pg-tz').value.trim();
-    if (tz && tz !== 'Asia/Tokyo') h.set('z', tz);
+    const h = shareHash(src.value, $('pg-from').value, $('pg-to').value, $('pg-tz').value.trim());
     location.hash = h.toString();
     out.textContent = T.shared(location.href);
+    updateCalendarLink();
   }
 
   function restore() {

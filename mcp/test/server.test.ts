@@ -97,6 +97,35 @@ describe('kairos_list', () => {
     expect(stat.rep!.error!.message).toContain('nth');
     expect(stat.rep!.version).toBe(SERVER_VERSION);
   });
+  it('入力の境界（2026-10-31 殻のセキュリティレビュー）: 実在しない日付は usage・tz は評価器と同じ値域（+09:00 は通り +0900 は usage）・本体式 101 個は usage', async () => {
+    // 所見 6: 2026-13-45 は評価器で 2027-02-14 に正規化され「評価範囲が逆順」（static）と見当違いの診断になっていた
+    const bad = await call('kairos_list', { source: GARBAGE, from: '2026-13-45', to: '2027-01-01', tz: 'Asia/Tokyo' });
+    expect(bad.isError).toBe(true);
+    expect(bad.rep!.error).toMatchObject({ kind: 'usage' });
+    expect(bad.rep!.error!.message).toMatch(/^from は実在する日付（YYYY-MM-DD・月は 01〜12・日はその月の日数まで）: 2026-13-45$/);
+    expect((await call('kairos_list', { source: GARBAGE, from: '2026-01-01', to: '2026-02-30', tz: 'Asia/Tokyo' })).rep!.error!.message).toMatch(/^to は実在する日付/);
+    expect((await call('kairos_next', { source: GARBAGE, from: '2026-04-31', tz: 'Asia/Tokyo' })).rep!.error!.message).toMatch(/^from は実在する日付/);
+    // 所見 11: 固定オフセットは正準形 "±HH:MM" だけ（評価器の getTz と同じ）。Intl だけだと "+0900" も通って評価器で static に落ちていた
+    const off = await call('kairos_list', { source: GARBAGE, from: '2026-01-01', to: '2026-02-01', tz: '+09:00' });
+    expect(off.isError).toBe(false);
+    expect(off.rep!.results[0].dates).toEqual(['2026-01-07', '2026-01-21']);
+    for (const tz of ['+0900', '+09', 'Z', 'UTC+9', 'GMT+9']) {
+      const r = await call('kairos_list', { source: GARBAGE, from: '2026-01-01', to: '2026-02-01', tz });
+      expect(r.rep!.error, tz).toMatchObject({ kind: 'usage' });
+      expect(r.rep!.error!.message, tz).toContain('tz が無効');
+    }
+    // 所見 1・2: 本体式の数の上限（1 行に式を N 個並べると各 result の source が行全体になり応答が N² で増えた）。100 個は通り 101 個は usage
+    const many = (k: number) => JP + Array.from({ length: k }, () => 'everyDay |> within(month) |> first').join(' ') + '\n';
+    const ok100 = await call('kairos_validate', { source: many(LIMITS.expressions), tz: 'Asia/Tokyo' });
+    expect(ok100.rep).toMatchObject({ ok: true, expressions: LIMITS.expressions });
+    const over = await call('kairos_list', { source: many(LIMITS.expressions + 1), from: '2026-01-01', to: '2026-02-01', tz: 'Asia/Tokyo' });
+    expect(over.rep!.error).toMatchObject({ kind: 'usage', message: `本体式が多すぎる（${LIMITS.expressions + 1} 個・上限 ${LIMITS.expressions}）` });
+    const overV = await call('kairos_validate', { source: many(LIMITS.expressions + 1), tz: 'Asia/Tokyo' });
+    expect(overV.rep).toMatchObject({ ok: false, diagnostics: [{ kind: 'usage' }] });
+    // 構文の誤りは数えずに通し、評価の static で止まる（文言は CLI と同じ）
+    const syn = await call('kairos_list', { source: JP + 'everyDay |> within(\n', from: '2026-01-01', to: '2026-02-01', tz: 'Asia/Tokyo' });
+    expect(syn.rep!.error).toMatchObject({ kind: 'static' });
+  });
   it('引数の形の誤り（from の書式・tz の欠落）は SDK の検証で止まる（tool は呼ばれない）', async () => {
     const r = await client.callTool({ name: 'kairos_list', arguments: { source: GARBAGE, from: '2026/01/01', to: '2026-02-01', tz: 'Asia/Tokyo' } });
     expect(r.isError).toBe(true);
@@ -160,7 +189,7 @@ describe('kairos_reference と resources', () => {
     const traversal = await call('kairos_reference', { word: '../llms' });
     expect(traversal.isError).toBe(true);
   });
-  it('kairos://llms.txt と kairos://reference/{lang}/{word} が読める・一覧に 33 語×2', async () => {
+  it('kairos://llms.txt と kairos://reference/{lang}/{word} が読める・一覧に 36 語×2（1.1 で labelOrdinal・since・before の 3 ページ）', async () => {
     const llms = await client.readResource({ uri: 'kairos://llms.txt' });
     const textOf = (c: { text?: string; blob?: string }) => c.text ?? '';
     expect(textOf(llms.contents[0])).toContain('Kairos');
@@ -169,7 +198,8 @@ describe('kairos_reference と resources', () => {
     const list = await client.listResources();
     const uris = list.resources.map(r => r.uri);
     expect(uris).toContain('kairos://llms.txt');
-    expect(uris.filter(u => u.startsWith('kairos://reference/ja/')).length).toBe(33);
-    expect(uris.filter(u => u.startsWith('kairos://reference/en/')).length).toBe(33);
+    expect(uris.filter(u => u.startsWith('kairos://reference/ja/')).length).toBe(36);
+    expect(uris.filter(u => u.startsWith('kairos://reference/en/')).length).toBe(36);
+    for (const w of ['labelOrdinal', 'since', 'before']) expect(uris, `1.1 の新語 ${w} の reference が同梱されている`).toContain(`kairos://reference/ja/${w}`);
   });
 });

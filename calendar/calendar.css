@@ -1,0 +1,74 @@
+/* Kairos カレンダー（/calendar/・/en/calendar/ 共通）——画面は 1 か月ずつ・印刷は A4 縦に 1 月 1 枚 */
+#kairos-calendar .cal-controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 8px 0; }
+#kairos-calendar .cal-form { font-size: 1.05em; line-height: 2.2; margin: 8px 0; }
+#kairos-calendar .cal-hole { font-size: inherit; padding: 1px 4px; margin: 0 2px; }
+#kairos-calendar .cal-check { margin-left: 2px; white-space: nowrap; }
+#kairos-calendar .cal-check input { margin-right: 4px; }
+#kairos-calendar .cal-nav { display: flex; gap: 12px; align-items: center; margin: 12px 0 4px; }
+#kairos-calendar .cal-nav button { padding: 2px 14px; font-size: 1em; }
+#kairos-calendar #cal-month-label { font-weight: bold; min-width: 12em; }
+#kairos-calendar #cal-count { color: #57606a; font-size: 90%; }
+#kairos-calendar #cal-warn { background: #fff8c5; border: 1px solid #d4a72c; border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
+#kairos-calendar #cal-warn.cal-error { background: #ffebe9; border-color: #cf222e; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 90%; }
+#kairos-calendar #cal-note { color: #57606a; font-size: 90%; }
+#kairos-calendar details { margin: 8px 0; }
+#kairos-calendar details pre { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 12px; overflow-x: auto; white-space: pre; font-size: 13px; }
+#kairos-calendar #cal-msg { color: #57606a; font-size: 90%; white-space: pre-wrap; word-break: break-all; }
+#kairos-calendar .cal-legend { color: #57606a; font-size: 85%; margin: 4px 0 12px; }
+#kairos-calendar .cal-legend .hol { color: #cf222e; font-weight: bold; }
+#kairos-calendar .cal-legend .other { border: 1px dashed #8c959f; padding: 0 4px; color: #8c959f; }
+
+/* 月の格子（週の始まりは在圏 premise の wkst・既定は月曜） */
+#kairos-calendar .cal-month { margin: 0 0 16px; }
+#kairos-calendar .cal-month-title { font-size: 1.4em; margin: 0 0 6px; border: none; padding: 0; }
+#kairos-calendar .cal-grid { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 2px; display: table; }
+#kairos-calendar .cal-grid th { font-weight: normal; color: #57606a; font-size: 85%; text-align: center; padding: 2px 0; border: none; background: none; }
+#kairos-calendar .cal-grid th.sun, #kairos-calendar .cal-grid td.sun .num { color: #cf222e; }
+#kairos-calendar .cal-grid th.sat, #kairos-calendar .cal-grid td.sat .num { color: #0969da; }
+#kairos-calendar .cal-grid td { vertical-align: top; height: 4.6em; padding: 3px 4px; border: 1px solid #d0d7de; border-radius: 4px; background: #fff; }
+#kairos-calendar .cal-grid tr:nth-child(2n) td { background: #fff; }
+#kairos-calendar .cal-grid td.other { border-style: dashed; color: #8c959f; background: #fafbfc; }
+#kairos-calendar .cal-grid td.other .num { color: #8c959f; }
+#kairos-calendar .cal-grid td.hol .num { color: #cf222e; font-weight: bold; }
+#kairos-calendar .cal-grid td.hol.other .num { color: #e9a0a5; }
+#kairos-calendar .cal-grid td.today { outline: 2px solid #0969da; outline-offset: -2px; }
+#kairos-calendar .cal-grid td.has { background: #ddf4ff; }
+#kairos-calendar .cal-grid td .num { font-size: 95%; line-height: 1.2; }
+#kairos-calendar .cal-grid td .pts { margin-top: 2px; line-height: 1.25; font-size: 85%; }
+#kairos-calendar .cal-grid td .dot { color: #0969da; font-size: 110%; }
+#kairos-calendar .cal-grid td .t { display: block; font-variant-numeric: tabular-nums; }
+#kairos-calendar .cal-grid td .more { color: #57606a; }
+#kairos-calendar .cal-foot { display: none; }
+
+@media screen {
+  #kairos-calendar .cal-month:not(.cal-current) { display: none; }
+}
+
+@media (max-width: 600px) {
+  #kairos-calendar .cal-grid td { height: 3.4em; padding: 2px; }
+  #kairos-calendar .cal-grid td .pts { font-size: 75%; }
+}
+
+/* 印刷: A4 縦・1 月 1 枚・紙向けの配色（塗りは使わず、祝日は赤の文字・前後の月は破線） */
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  body { background: #fff !important; color: #000; }
+  .cal-page .markdown-body { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .cal-page .markdown-body > div { display: none !important; }       /* パンくず・言語切り替え・フッター */
+  .cal-page .cal-noprint { display: none !important; }
+  #kairos-calendar .cal-month { display: block !important; break-after: page; page-break-after: always; margin: 0; }
+  #kairos-calendar .cal-month:last-child { break-after: auto; page-break-after: auto; }
+  #kairos-calendar .cal-month-title { font-size: 22pt; margin: 0 0 4mm; }
+  #kairos-calendar .cal-grid { border-spacing: 0; }
+  #kairos-calendar .cal-grid th { font-size: 10pt; color: #000; padding: 1mm 0; }
+  #kairos-calendar .cal-grid td { height: 36mm; border: 0.3pt solid #000; border-radius: 0; background: #fff !important; padding: 1.5mm 2mm; font-size: 11pt; }
+  #kairos-calendar .cal-grid td.other { border-style: dashed; color: #888; background: #fff !important; }
+  #kairos-calendar .cal-grid td.other .num { color: #888; }
+  #kairos-calendar .cal-grid td.hol .num, #kairos-calendar .cal-grid th.sun, #kairos-calendar .cal-grid td.sun .num { color: #c00; }
+  #kairos-calendar .cal-grid th.sat, #kairos-calendar .cal-grid td.sat .num { color: #000; }
+  #kairos-calendar .cal-grid td.today { outline: none; }
+  #kairos-calendar .cal-grid td.has { background: #fff !important; }
+  #kairos-calendar .cal-grid td .dot { color: #000; }
+  #kairos-calendar .cal-grid td .pts { font-size: 10pt; }
+  #kairos-calendar .cal-foot { display: block; margin: 3mm 0 0; font-size: 9pt; color: #444; text-align: right; }
+}

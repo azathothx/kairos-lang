@@ -1,5 +1,5 @@
 ---
-source_sha: dfcb2d9cf4c1
+source_sha: 030c595be42d
 ---
 
 # `cycle` — parallel repeating labels (labels, not windows)
@@ -28,6 +28,8 @@ period length is arbitrary (7, 10, 12, 60, …), and so is the target window (no
   carries the head label".
 - **The binding name reads as a value-expression "point → label" function** — `weekday(d)`,
   `yearBranch(d)`. Resolution is the two steps point → containing window → label (ADR-27/30).
+- **The list order also reads as an ordinal** (1.1, ADR-54) — [`labelOrdinal`](labelOrdinal.md)`(weekday, d)`
+  returns the position of `d`'s weekday within the list (1-based; independent of `wkst`).
 
 ## Examples
 

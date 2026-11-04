@@ -15,6 +15,7 @@ cron・Quartz・iCalendar RRULE で「書けない」と長く言われてきた
 | [Windows 管理者のための Kairos](windows-admin.md) | PowerShell とタスク スケジューラだけで動かす。定義→`list`→`--json`→毎日の判定→Outlook の .ics。開発はしない人向け |
 | [Excel の WORKDAY・EOMONTH で書きにくいスケジュール](excel-workday.md) | 月末最終営業日・25 日払い・第 10 営業日・四半期末の 3 営業日前を Excel の式と並べる。祝日表の期限切れを黙らせない。結果は TSV で Excel へ |
 | [休配日と着日——物流の営業日カレンダー](logistics-delivery.md) | 日祝・年末年始・お盆の休配日から営業日を作り、着日（出荷日＋N 営業日）・15 時の締め・定期便・年末年始の帯を定義から出す。営業日マスタと休配日マスタを TSV で。年次更新は再生成と検算で |
+| [カレンダー（穴埋め→月めくり→印刷・.ics）](https://kairos-lang.org/calendar/) | 暮らしの予定 5 本（資源ごみ・燃えるごみ・給料日・目覚まし・習い事）を穴埋めで決める。式は裏で組む（折りたたみで見える）。月めくり（週の始まりは式の `wkst`）・A4 に 1 月 1 枚の印刷・.ics・Playground との往復 |
 
 - コード例はすべてリファレンス実装の doctest（`impl/test/doctest.test.ts`）が実行検証する。
   `# eval:` が評価範囲・`#=>` が期待値（規約は [reference](../reference/README.md#実行例の規約doctest)）。
@@ -26,3 +27,23 @@ cron・Quartz・iCalendar RRULE で「書けない」と長く言われてきた
   [調査研究 11](../design/40-examples/11-impossible-schedules.md)。本レシピ集はその実測節の
   実用形への再構成。
 - 言語自体の説明は[言語仕様](../spec/)・語彙は[記述語リファレンス](../reference/)。
+
+## 共有 URL の形
+
+[Playground](https://kairos-lang.org/playground/) の「URL に固定」と[カレンダー](https://kairos-lang.org/calendar/)の共有 URL は同じ形。
+式と評価範囲を URL のハッシュに載せる——サーバーも保存もない。この 4 項目と符号化は公開の約束（2026-10-30）で、以後変えない。
+
+```
+https://kairos-lang.org/playground/#s=<source>&f=<from>&t=<to>&z=<tz>
+```
+
+| 項目 | 意味 | 形 |
+|---|---|---|
+| `s` | ソース全文（前文込みの自己完結形） | UTF-8 のバイト列を base64url（RFC 4648 §5・`+`→`-`・`/`→`_`・末尾の `=` なし） |
+| `f` | 評価範囲の始点（含む） | `YYYY-MM-DD` |
+| `t` | 評価範囲の終点（含まない＝半開 `[f, t)`） | `YYYY-MM-DD` |
+| `z` | 表示と範囲の端の tz | IANA 名（例 `Asia/Tokyo`）。省略時は `Asia/Tokyo` |
+
+- カレンダーは同じハッシュに `e=<例の id>&v=<穴の値をカンマ区切り>` を添える（カレンダーだけが読む。Playground は `s`・`f`・`t`・`z` だけを読む）。
+- ブラウザで作る・戻す関数は `playground/core.js` の `b64e`／`b64d`。Node なら `Buffer.from(src, 'utf8').toString('base64url')` と同じ値。
+- 購読（webcal）や利用者ごとの保存は言語側のページでは行わない——式と範囲をこの形で渡す先（供給側）が持つ。

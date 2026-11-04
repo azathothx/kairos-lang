@@ -1,5 +1,5 @@
 ---
-source_sha: cea77a394e81
+source_sha: d04caf2d835e
 ---
 
 # `at` — attaching a wall-clock time to a day set
@@ -71,6 +71,14 @@ previous day" adjusts the day in the day layer before attaching the time:
   each month at 7:00" used to silently become a running count. The correct form is to **cut
   windows after `at`**: `everyDay |> at(T07:00) |> within(month) |> first` (extensionally
   equivalent).
+- **The checks apply regardless of the premise's shape** (1.1.0) — up to 1.0.12 the reference implementation
+  skipped both checks above when the premise had `Gregorian` as the base of a `with` chain
+  (`premise P = Gregorian with {…}` and its derivations) or under `@Gregorian`: a dated anchor silently
+  dropped points and windowed input turned into a running count (ADR-51 revision 1). A user-side
+  redefinition of `at` (including an override in a derived `with`) stays outside the checks, as before.
+- **The call form `at(Thh:mm)(s)` gets the same checks** (1.1.0) — calling `at` as a value
+  (`f = s => at(T09:00)(s)`) escaped both checks up to 1.0.12, and a dated anchor silently dropped points
+  (machine review, 2026-10-29). So does the qualified form `Gregorian.at(T09:00)(s)` (machine review, 2026-10-30).
 - **Points outside coverage that reach `at` are dropped at the `at` stage** (feedback batch 15 (e)).
   The expansion's inner `filter` catches the out-of-coverage signal raised on those days and
   "drops with an annotation" (per the ADR-37 decision 6 convention — sugar inherits the meaning
@@ -114,4 +122,5 @@ previous day" adjusts the day in the day layer before attaching the time:
 
 [`strideBy`](strideBy.md) (the tick of the expansion) · [`coincides`](coincides.md) (the predicate
 of the expansion) · [`takeLast`](takeLast.md) (the standard composition with recent-N) ·
-[`isOpen`](isOpen.md) (time **bands** are a different vessel = business hours) · ADR-51 · F76/F81.
+[`isOpen`](isOpen.md) (time **bands** are a different vessel = business hours) ·
+[`since`](since.md) / [`before`](before.md) (cutting a timed stream at date-times) · ADR-51 · F76/F81.

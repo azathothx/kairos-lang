@@ -1,5 +1,5 @@
 ---
-source_sha: 0c54466dc32f
+source_sha: 565546aa5fed
 ---
 
 # Kairos Language Specification — 2. Types and Layers
@@ -153,3 +153,4 @@ Dispatch (deciding point versus value) branches uniquely on the type of the argu
 - A free wrapper (`f = v => year(v)`) has its type fixed per call (polymorphism is allowed).
 - `W(v)` is legal in every stream-expecting position (head position, combinator operands, `on:`/`unit:`, the S slot of `coincides`, etc.). A pure value position (`x = year(2020) + 1`) is a type error (streams cannot mix into value expressions = the type separation of §2.2).
 - An instant is a member of the value type (§2.2, ADR-43), and dispatch reads "point → projection; **any non-point value** → instance reference". A date literal and a value variable holding a point both branch to projection (`year(2026-05-15)` = `year(d0)` = projection = `2026`).
+- The second argument of `labelOrdinal(B, x)` (§4.9, ADR-54) follows the same rule — a point goes through the projection `B(x)` to a label value; any non-point value is looked up in the domain as is (point form ≡ `labelOrdinal(B, B(d))`).

@@ -10,7 +10,7 @@ const HOUR_MS = 3_600_000;
 const MIN_MS = 60_000;
 const DAY_MS = 86_400_000;
 
-/** 遷移タイムラインの構築範囲（プロトタイプの実体化はこの中に収まる） */
+/** 遷移タイムラインの構築範囲（参照実装の実体化はこの中に収まる） */
 const RANGE_LO = Date.UTC(1969, 0, 1);
 const RANGE_HI = Date.UTC(2101, 0, 1);
 
@@ -118,7 +118,7 @@ export class Tz {
 
   /** 市民日の開始＝「その日付になる最初の瞬間」（ADR-33 判断 4。真夜中が隙間なら遷移点） */
   civilDayStart(y: number, mo: number, d: number): number {
-    const a = this.anchor(Date.UTC(y, mo - 1, d));
+    const a = this.anchor(utcOfCivil(y, mo, d));
     return a.ms;                                 // gap→遷移点・overlap→最初の候補・unique→そのまま
   }
 
@@ -205,6 +205,16 @@ export class Tz {
     const a = Math.abs(o);
     return `${o < 0 ? '-' : '+'}${String(Math.floor(a / 60)).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`;
   }
+}
+
+/** 市民座標（年月日・時分秒ミリ秒）を「UTC として読んだ ms」にする。Date.UTC は年 0〜99 を 1900 年代に読み替える（0099 → 1999）ので
+ *  setUTCFullYear で組む＝字句の 4 桁年 0000〜9999 をそのまま年として読む（2026-10-31 殻のセキュリティレビュー所見 6 の裏取りで検出。
+ *  旧: `--from 0099-01-01` が 1999 として黙って評価された。年 0000〜0069 は 1900〜1969 に読まれて下限の文言で止まっていた） */
+export function utcOfCivil(y: number, mo: number, d: number, h = 0, mi = 0, s = 0, ms = 0): number {
+  const t = new Date(0);
+  t.setUTCFullYear(y, mo - 1, d);
+  t.setUTCHours(h, mi, s, ms);
+  return t.getTime();
 }
 
 const TZ_CACHE = new Map<string, Tz>();

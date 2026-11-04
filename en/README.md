@@ -9,5 +9,11 @@ under `en/` is a translation that follows them (each chapter records its source 
   doctest-verified examples.
 - **[Standard library](stdlib/README.md)** — Gregorian, Fiscal, ISOWeek (Kyureki is documented in
   Japanese only; it is data-heavy and not bundled).
+- **[Recipes](recipes/README.md)** — the schedules cron/Quartz/RRULE cannot express, one page per
+  requirement with Playground links.
+- **[Calendar](https://kairos-lang.org/en/calendar/)** — fill in an everyday schedule, see it month by
+  month, print it or import it as .ics (new in 1.1).
+- **[Authoring skill](skills/kairos-authoring/SKILL.md)** — how to write a definition from a requirement,
+  for people and AI assistants.
 
-[日本語版（正本）はこちら](../README.md)
+[日本語版（正本）はこちら](../README.ja.md)

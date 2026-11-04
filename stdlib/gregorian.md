@@ -37,6 +37,11 @@ premise Gregorian {
   # 日時刻の付与（ADR-51 糖衣・変換）: 日集合 → その日の壁時計 a 時（a は単独時刻リテラル Thh:mm）
   at(a) = s => (everyInstant |> strideBy(1d, from: a)) |> filter(t => coincides(s, day, t))
 
+  # 日時での切り出し（ADR-55 糖衣・1.1）: 半開 [since, before)——since(p)＝p 以後（含む）・before(p)＝p より前（含まず）。
+  # 展開は filter（整列・窓・輸送行を継承。stride 展開は不採）。p は日付つきの日時リテラル（在圏 tz で時点に解決）
+  since(p)  = s => s |> filter(t => t >= p)
+  before(p) = s => s |> filter(t => t <  p)
+
   yearNo  = d => yearOf(epochOrdinal(month, d))             # 暦座標糖衣（spec §4.9）: 暦年（2026 など）
   monthNo = d => monthOf(epochOrdinal(month, d)) + 1        # 暦月（1..12）
   dayNo   = d => ordinalIn(day, month, d)                   # 暦日（1..31）
@@ -53,7 +58,7 @@ premise Gregorian {
 
 窓序数 `m`・`n` の起点となる**紀元**は言語既定の 1970-01-01T00:00（在圏 tz）で、序数は 0 起点（`m = 0` が
 1970 年 1 月。ADR-31）。`epochYear = 1970` はこの既定を引いた値。別紀元の暦法は原始的定義のメンバー
-`epoch:` で基準を張り替えられる（その場合は補助値関数も紀元に合わせて書く。参照実装 1.0.12 は既定紀元のみ＝impl/README）。
+`epoch:` で基準を張り替えられる（その場合は補助値関数も紀元に合わせて書く。参照実装は既定紀元のみ＝impl/README）。
 
 ### 補足: `day` の幅は市民日（86400 秒ではない）
 
@@ -97,6 +102,8 @@ premise Gregorian {
 | `week` | 窓 | WKST 位相の 7 日並列窓（月・年に非入れ子）。`weekStart`（wkst ラベル日）で day 列を区切る。`wkst` は利用側前文の宣言を遅延解決（§4.5）。 |
 | `monthStart`/`monthEnd`/`yearStart` | 公開境界語 | 各窓の先頭・末尾点。選択子（`first`/`last`）の再利用で導く。生成子 `monthEnd`（暦日の月末）の正体はこれ。 |
 | `at` | 糖衣（変換） | 日集合への壁時計時刻の付与——<code>bizDay &#124;> within(month) &#124;> last &#124;> at(T17:00)</code>。展開＝壁時計 tick＋`coincides`（ADR-51。単独時刻リテラル専用〈他の引数・窓付き入力は誘導つき静的エラー＝ADR-51 追記〉・DST 切替日も壁時計保存） |
+| `since` | 糖衣（変換） | 点集合を「p 以後（含む）」に切り出す——<code>hourly &#124;> since(2026-10-26T14:00)</code>。展開＝`filter(t => t >= p)`（時点どうしの順序比較・1.1・ADR-55）。p は在圏 tz で時点に解決・「今」は呼ぶ側が注入 |
+| `before` | 糖衣（変換） | 点集合を「p より前（含まず）」に切り出す——<code>hourly &#124;> before(2026-11-04T17:00)</code>。`since` と組んで半開 [since, before)（評価範囲・窓・`isOpen` と同じ境界規約）。展開＝`filter(t => t < p)`。日粒度の列に時刻付きリテラルを渡すと日の点は 00:00（当日の扱いは日付を 1 日ずらす） |
 | `yearNo`/`monthNo`/`dayNo` | 値関数（暦座標） | 点の暦座標を読む射影糖衣（spec §4.9 が予告する `epochOrdinal`＋`ordinalIn`＋補助値関数の合成）。`dayNo(d) == 11` で固定日など。 |
 
 標準ラベルの下では `year(d)` と `yearNo(d)` が同値の二綴りになる（`month(d)`/`monthNo(d)` も同様）。値引数（`month(5)`・`year(2026)`）は計算ラベルへの逆像なので、`month(13)` のような域外の値は静的エラーにならず空になる（`labels:` リテラルの束縛と違う）。

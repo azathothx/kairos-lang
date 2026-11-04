@@ -1,5 +1,5 @@
 ---
-source_sha: c624b659e76d
+source_sha: c6c2d7a91e76
 ---
 
 # Recipes — practical forms of the schedules long said to be unwritable
@@ -24,6 +24,7 @@ first, the background after.
 | [Kairos for Windows administrators](windows-admin.md) | PowerShell and Task Scheduler, nothing else: definition → `list` → `--json` → a daily check → .ics for Outlook. For people who run commands but do not write software |
 | [Schedules that are hard to write with Excel's WORKDAY and EOMONTH](excel-workday.md) | Last business day of the month, payment on the 25th, the 10th business day, three business days before quarter-end — side by side with the Excel formulas. An expired holiday table is not allowed to stay silent. Results go to Excel as TSV |
 | [Non-delivery days and arrival dates — a logistics business-day calendar](logistics-delivery.md) | Business days from Sundays, holidays, year-end and Obon closures; arrival date (ship date + N business days), the 15:00 order cutoff, scheduled pickups and the year-end band, all from one definition. Business-day and non-delivery masters as TSV; the yearly update is regenerate-and-compare |
+| [Calendar (fill in → month view → print / .ics)](https://kairos-lang.org/en/calendar/) | Five everyday schedules (recycling, trash, payday, alarm clock, weekly class) decided by filling in blanks. The expression is assembled behind the page (visible in a fold). Month view (the week starts on the premise's `wkst`), A4 printing with one month per page, .ics, round trip with the Playground |
 
 - Every code example is execution-verified by the reference implementation's doctests
   (`impl/test/doctest.test.ts`). `# eval:` gives the evaluation range and `#=>` the expected
@@ -37,3 +38,24 @@ first, the background after.
   classification: [study 11](../design/40-examples/11-impossible-schedules.md). These recipes are
   the practical re-arrangement of that study's measured section.
 - The language itself: [specification](../spec/) · vocabulary: [descriptor reference](../reference/).
+
+## The shape of a shared URL
+
+"Pin to URL" in the [Playground](https://kairos-lang.org/en/playground/) and the shared URL of the [Calendar](https://kairos-lang.org/en/calendar/) have the same shape.
+The expression and the evaluation range ride in the URL hash — no server, nothing stored. These four items and their encoding are a
+published commitment (2026-10-30) and will not change.
+
+```
+https://kairos-lang.org/en/playground/#s=<source>&f=<from>&t=<to>&z=<tz>
+```
+
+| Item | Meaning | Form |
+|---|---|---|
+| `s` | The whole source (self-contained, premise included) | UTF-8 bytes in base64url (RFC 4648 §5: `+`→`-`, `/`→`_`, no trailing `=`) |
+| `f` | Start of the evaluation range (included) | `YYYY-MM-DD` |
+| `t` | End of the evaluation range (excluded — half-open `[f, t)`) | `YYYY-MM-DD` |
+| `z` | tz for display and for the range edges | IANA name (e.g. `Asia/Tokyo`); `Asia/Tokyo` when omitted |
+
+- The Calendar adds `e=<example id>&v=<blank values, comma-separated>` to the same hash; the Playground reads only `s`, `f`, `t` and `z`.
+- In the browser: `b64e`/`b64d` in `playground/core.js`. In Node, `Buffer.from(src, 'utf8').toString('base64url')` gives the same value.
+- Subscriptions (webcal) and per-user storage belong to the receiving side that takes this shape.

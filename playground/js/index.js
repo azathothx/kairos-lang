@@ -1,4 +1,4 @@
-// Kairos リファレンス実装（プロトタイプ）— 公開 API
+// Kairos リファレンス実装（参照実装）— 公開 API
 import { STDLIB_SOURCE } from './stdlib-data.js';
 import { parse } from './parser.js';
 import { Runtime, Evaluator, KairosError } from './eval.js';
@@ -17,7 +17,16 @@ export function run(source, opts) {
         const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
         if (!m)
             throw new KairosError(`日付は YYYY-MM-DD: ${s}`);
-        return tzObj.civilDayStart(+m[1], +m[2], +m[3]); // 評価範囲の端は実行 tz の市民日
+        // 実在しない日付（2026-13-45・2026-02-30）は正規化せず止める（F158）。旧: Date.UTC の繰り上がりで 2027-02-14 と読み、
+        // to との前後で「評価範囲が逆順」と見当違いの診断になっていた（2026-10-31 殻のセキュリティレビュー所見 6）。
+        // 年 0000〜0099 を Date.UTC の 2 桁年に読ませないため setUTCFullYear で組む
+        const [y, mo, dd] = [+m[1], +m[2], +m[3]];
+        const probe = new Date(0);
+        probe.setUTCFullYear(y, mo - 1, dd);
+        if (probe.getUTCFullYear() !== y || probe.getUTCMonth() !== mo - 1 || probe.getUTCDate() !== dd) {
+            throw new KairosError(`日付が実在しない: ${s}（月は 01〜12・日はその月の日数まで。YYYY-MM-DD）`);
+        }
+        return tzObj.civilDayStart(y, mo, dd); // 評価範囲の端は実行 tz の市民日
     };
     const rt = new Runtime(d(opts.from), d(opts.to), tz);
     if (opts.resolve)
@@ -30,7 +39,7 @@ export function run(source, opts) {
     // stdlib の premise を先に登録（cycle ラベル語彙の走査を含む）
     for (const st of stdlib.statements) {
         if (st.t === 'premiseDef')
-            ev.registerPremise(st);
+            ev.registerPremise(st, true); // stdlib の decl を捕捉（標準糖衣の名指し検査・2026-10-29）
     }
     for (const st of program.statements) {
         if (st.t === 'premiseDef')

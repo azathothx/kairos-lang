@@ -59,7 +59,7 @@ claude mcp add kairos-lang -- npx -y kairos-lang-mcp
 
 ### `tz` は必須
 
-CLI の既定は実行機のタイムゾーンですが、AI の呼び手には「実行機」がありません。評価する tool はすべて `tz`（`Asia/Tokyo` のような IANA 名）を取ります。
+CLI の既定は実行機のタイムゾーンですが、AI の呼び手には「実行機」がありません。評価する tool はすべて `tz`（`Asia/Tokyo` のような IANA 名。前文の `tz:` と同じ値域なので、固定オフセットの正準形 `+09:00` と `UTC` も受けます）を取ります。
 `tz` はラベルと `[from, to)` の端をどう読むかを決めます。定義の前文に `tz:` があれば評価はそちらを使い、`tz` は出力のラベルに使われます。
 
 **おすすめの運用: 前文を一度定義して持っておく。** 前文は暦法・tz・週の始まり・祝日の表を名前にします。
@@ -94,12 +94,14 @@ schema は https://kairos-lang.org/schema/supply.schema.json です。
 - `kairos_validate`: `{ok: false, version, diagnostics: [{kind, message}]}`。これは所見であってエラーではないので `isError` は付きません。
 - `kairos_reference`: 未知の記述語なら `{error: {kind: "usage", message}, words}`、`isError: true`。
 
-`usage` は呼び方の形（不正な tz・10 年を超える窓・64 KB を超える source）、`supply` は供給契約の違反、`static` は定義について言語が報告するもの
+`usage` は呼び方の形（不正な tz・実在しない日付・10 年を超える窓・64 KB を超える source・100 を超える本体式）、`supply` は供給契約の違反、`static` は定義について言語が報告するもの
 （字句・構文・静的規則・評価）です。診断文は**日本語**です（参照実装の正準の出力言語）。報告そのものは言語中立の JSON で、CLI の `--json` と同じです。
+
+引数の形の誤り（必須の欠け・型違い・`from` の書式）は tool が呼ばれる前に入力 schema で止まり、MCP のプロトコルエラー `-32602` で返ります。知らない引数は黙って捨てます。
 
 ### 上限
 
-評価の窓は最長 10 年、`n` は最大 1000、`horizonYears` は最大 10、`source` は最大 64 KB。事故を防ぐための上限で、攻撃への備えではありません。
+評価の窓は最長 10 年、`n` は最大 1000、`horizonYears` は最大 10、`source` は最大 64 KB、1 つの `source` の本体式は最大 100。事故を防ぐための上限で、攻撃への備えではありません。
 
 ## 名前について
 

@@ -9,7 +9,7 @@
 > [playground](https://kairos-lang.org/en/playground/). CLI: `npx kairos-lang next -n 3 payday.kairos`
 > (evaluator messages are Japanese; `--json` output is language-neutral). Apache-2.0.
 
-スケジュール定義言語 **Kairos**（[`../spec/`](../spec/)）のリファレンス実装の試作。
+スケジュール定義言語 **Kairos**（[`../spec/`](../spec/)）のリファレンス実装。言語は仕様（`../spec/`）が定め、本実装はその実装の 1 つであって言語そのものではない（適合の条件は仕様の付録 A A.1）。
 目的は仕様の実行可能性の検証——**EBNF §5.6 がそのままパーサに、代表例 §7 と 40-examples の実データが
 そのままテストに**なるかを確かめ、仕様の穴を実行で炙り出すこと（結果＝綻び F43〜F50。
 [`../design/40-examples/90-findings.md`](../design/40-examples/90-findings.md)）。
@@ -192,13 +192,29 @@ r.results[0].dates;   // ['2026-01-23', …]
 - **リテラルと値束縛の締め**（ADR-43）: 非実在日付の字句エラー（2026-02-30 級のロールオーバー封止）・固定オフセット tz の厳格一意形（`"±HH:MM"` のみ）・時点の裸の値束縛（F97）の挙動固定。
 - **文の区切りと複数行継続**（ADR-44）: 括弧内自由改行・行頭／行末の段・結合子継続・空行跨ぎ可。
 - **空テーブルリテラル**（ADR-45＝F98）: `[] covering:` 限定の昇格・covering 必須／labels: [] のみの誘導エラー・整列の第三状態「空虚適合」（全整列に適合・結合は相手を継承・rebase は恒等）・空 nonWorking 実体の boot＝bizDay 縮退の観測可能性・F99 修正（roll 空軸の依存像の過小近似。掃引 23 テスト）。
-- **外部供給宣言 `external`**（ADR-46＝socket の確定）: 解決子フック `RunOptions.resolve`（同期）・`SupplyError`（解決失敗の機械可読部分類）・契約検査 12 種（covering／asof 必須・kind 幾何・包含・昇順・同長／値域／無宣言到着・実在日の再執行・有限整数）・スナップショット socketCache（定義側 premise 単位・一評価一解決・要求駆動）・位置／tz／source の静的検査・予約語・wire＝dates 字面／instants ms・doctest `# resolve:` ディレクティブ。external.test.ts 35 本＋観測等価スイート。プロトタイプ注記: 評価器は run ごと生成のため解決値 asof のメモ化キー参加は構成で適合。常駐評価器に転用する場合は defCache キーへ解決値 asof を含めること（ADR-46 判断 6）。
+- **外部供給宣言 `external`**（ADR-46＝socket の確定）: 解決子フック `RunOptions.resolve`（同期）・`SupplyError`（解決失敗の機械可読部分類）・契約検査 12 種（covering／asof 必須・kind 幾何・包含・昇順・同長／値域／無宣言到着・実在日の再執行・有限整数）・スナップショット socketCache（定義側 premise 単位・一評価一解決・要求駆動）・位置／tz／source の静的検査・予約語・wire＝dates 字面／instants ms・doctest `# resolve:` ディレクティブ。external.test.ts 35 本＋観測等価スイート。参照実装の注記: 評価器は run ごと生成のため解決値 asof のメモ化キー参加は構成で適合。常駐評価器に転用する場合は defCache キーへ解決値 asof を含めること（ADR-46 判断 6）。
 - **窓列への周期ラベル**（ADR-47）: `labels: cycle リスト anchor:`。同長性検査なし・位相の宣言のみ。
 - **split の親受理拡張**（ADR-48）: 実効パーティション規則・境界整合検査・総和検査のエラー昇格。
 - **先頭／末尾 N 選択**（ADR-49／52）: `take(n, from:)`・`takeLast(n, until:)`。窓付き入力の誘導エラー・輸送の縮小／鏡像・実装地平線ガード 2 面。
 - **hour 窓と ordinalIn 整合検査**（ADR-50）。
 - **単独時刻リテラルと標準糖衣 at**（ADR-51）: `Thh:mm`・strideBy 時刻分岐＝epoch 錨・at の名指し検査 2 本（窓付き入力・引数限定）。
 - **束縛右辺の名前解決境界とメモ化の正しさ**（ADR-53＋追記 1〜3）: 呼び出し側ラムダ変数の遮断（4 経路）・tz 名検査の記録＋ヒット時再実行（fromPredicate＋baseAlign・再実行の外側フレーム再記録）。
+
+## 実装定義のパラメータ（言語は値を定めない）
+
+言語が値を定めず、各実装が宣言する事項。本実装の値は次のとおりで、**言語の制約ではない**（仕様 §1.4）。
+他の実装は別の値を宣言してよい。
+
+| 事項 | 言語が定めること | 本実装の値 |
+|---|---|---|
+| 評価範囲の下限 | 定めない（軸に下限はない。紀元は言語既定 1970-01-01・`epoch:` で変更可＝ADR-31） | 1970-01-01（それより前の `--from` は明示エラー） |
+| 実体化地平線 | 実装定義。越えは `horizon-clip` 警告で知らせ、黙って切らない（ADR-37 判断 8） | `to`＋400 日 |
+| 時間の分解能 | 軸は連続。分解能は実装定義で、細かすぎる字句は黙って丸めず字句エラー（§5.5） | 1 ms |
+| tz データベース | 版は評価文脈の随伴（ADR-33 判断 10） | 実行環境の ICU（Intl）・遷移の構築範囲 [1969, 2101) |
+| 実体化する窓・点の数の上限 | 定めない | `grid` の経過時間幅の窓列は実体化しない（紀元からの算術＝添字⇄時刻を O(1) で引く。`within` → 選択子・`ordinalIn`・`snapTo`・`shift(unit:)` は幅によらず軽い）。全列挙が要る形だけ上限で止める＝窓列を点列に読む・`split`・`span` の全窓＝2^24＝16,777,216（窓列を点列に読む形も同じ上限）。`strideBy` の点列は実体化する（紀元または `from:` から計算範囲の端まで・上限 2^26＝67,108,864＝対応する Node のどの V8 でも配列の `push` が `RangeError` にならない長さ。`strideBy(1s)` は 1 日の範囲でも約 3,460 万点で通る）。上限を越えると誘導つき静的エラー＝ヒープが尽きて落ちる前に止める |
+| 年の桁 | 4 桁（0000〜9999）＝字句で言語が定める（実装定義ではない） | 同じ |
+
+うるう秒は実装定義ではなく言語のスコープ外（chronos は一様な理想化軸＝ADR-33・§1.4）。
 
 ## 参照実装の制約（仕様との既知の乖離）
 
@@ -231,7 +247,7 @@ r.results[0].dates;   // ['2026-01-23', …]
 
 ## テスト
 
-（39 ファイル・880 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（42 ファイル・981 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・
@@ -240,7 +256,10 @@ r.results[0].dates;   // ['2026-01-23', …]
 `test/memo-key-order-independence.test.ts`〔メモ化の文脈キーと評価順の独立・F114〕・`test/member-self-reference.test.ts`〔前文メンバーの自己参照・F115〕・
 `test/premise-member-inheritance.test.ts`〔前文メンバーの派生継承・ADR-35 改訂 3〕・`test/window-clip.test.ts`〔window-clip 警告・追補 22〕・
 `test/final-window-open-end.test.ts`〔覆域端で閉じた最終窓の終端・ADR-37 改訂 6〕・`test/next-window-and-playground.test.ts`〔next の探索窓と Playground の表示〕・
-`test/schema-and-explain.test.ts`〔JSON Schema 2 本と `--explain`・追補 23〕・`test/boundary-checklist.test.ts`〔境界チェックリスト 10 件の witness〕がある。）
+`test/calendar.test.ts`〔カレンダーページの穴埋めの例が CLI と同じ点列・共有 URL の往復・6 本〕・
+`test/schema-and-explain.test.ts`〔JSON Schema 2 本と `--explain`・追補 23〕・`test/boundary-checklist.test.ts`〔境界チェックリスト 10 件の witness〕・
+`test/label-ordinal.test.ts`〔ADR-54＝1.1 の `labelOrdinal(B, x)`・24 本〕・
+`test/since-before.test.ts`〔ADR-55＝1.1 の時点どうしの順序比較と糖衣 `since`／`before`・32 本〕がある。）
 
 
 - `test/examples.test.ts` — spec §7 の全代表例。糖衣形と core 展開形の一致、JS Date による独立オラクル照合

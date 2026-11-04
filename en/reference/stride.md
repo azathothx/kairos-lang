@@ -1,5 +1,5 @@
 ---
-source_sha: 64c5d4094827
+source_sha: 207eb3dd23b1
 ---
 
 # `stride` — thin the input points to every nth
@@ -78,10 +78,15 @@ everyDay |> filter(d => (ordinalIn(day, month, d) - 1) mod 7 == 0)
 - To step by an absolute magnitude (a width that does not ride the calendar), use
   [`strideBy`](strideBy.md).
 
+**Do not use `stride(1, from: p)` to cut "at or after p"** — the points are the same, but the transport row becomes
+the stride row and the out-of-coverage annotation swells to the end of the evaluation range (and there is no dual on
+the end side). Cutting is [`since`](since.md) / [`before`](before.md) (expands to filter; 1.1; ADR-55).
+
 ## Related
 
 [`take`](take.md) (count and **cut off** — the first n points) · [`takeLast`](takeLast.md)
 (the last n points) ·
 [`strideBy`](strideBy.md) (count by points / step by width — the pair) ·
+[`since`](since.md) / [`before`](before.md) (cutting is done there) ·
 [`nth`](nth.md) (window-relative "the Nth") ·
 [`ordinalIn`](ordinalIn.md) (the reduction target of the window-reset variant) · ADR-11/31/38/49.

@@ -18,7 +18,7 @@ one.ts・probe2.ts・probe3.ts）。ケース数 135（本体 114・CLI 21）。
   window-clip 警告に漏れて 0 点。stride／take／takeLast には整数検査があり shift だけ無かった。→「shift: n は整数（1.5 は不可。方向は符号で表す。§5.2）」
   を静的エラー化・witness 3 本。
 
-### 黙って通る形（設計者裁定「全部」＝10 件とも 1.0.5 で処置・F117〜F126・witness は impl/test/boundary-checklist.test.ts）
+### 黙って通る形（裁定＝全部＝10 件とも 1.0.5 で処置・F117〜F126・witness は impl/test/boundary-checklist.test.ts）
 
 1. **評価範囲の逆順**（to < from）——run() も CLI も黙って 0 点（CLI は「# 0 点」exit 0）。→ 使い方エラー「評価範囲が逆順」（from = to の空範囲は正当のまま）。
 2. **`tz: ""`**——空文字列が「未宣言」と同じ扱いになり黙って機械 tz に落ちる（`memberStr(...) || rt.tzName`）。→ 危険メンバーの空値は静的エラー。

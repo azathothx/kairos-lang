@@ -1,5 +1,5 @@
 ---
-source_sha: 01628095ca89
+source_sha: 5c11f2af14b6
 ---
 
 # Kairos Language Specification — 4. The Body Layer
@@ -126,7 +126,7 @@ argument (`on:`/`unit:`). Each stage is self-sufficient in its premises.
 
 - **`roll(conv, on: P)`** — nudges invalid points to valid ones by conv
   (`Following`/`Preceding`/`Modified`…). Roll conventions are axis-independent; the same system
-  rides on business days and on DST alike. `Modified` (not implemented in reference implementation 1.0.12 — see impl/README) takes an enclosing window as an argument and
+  rides on business days and on DST alike. `Modified` (not implemented in the reference implementation — see impl/README) takes an enclosing window as an argument and
   stays within that window. `on:` accepts derived streams as well as axis names (§3.3, ADR-26).
 - **`shift(n, unit: U)`** — moves by n (signed) in units of U. **Direction is carried by the sign;
   no direction words are taken** (`back: 3` would split direction across a word and a sign once n
@@ -295,7 +295,8 @@ generated set before exclusion and shrinking). After the nth point the output is
 empty** (no annotation; ADR-37 decision 2). **Windowed input is a guided static error** — the
 per-window "first N" is `within` followed by `nth` (§4.3) or an `ordinalIn` predicate (§4.9)
 (take counts through). Time-boxing belongs to the separation of definition and evaluation range,
-not to take.
+not to take. Only cutting at an instant (a dated date-time) uses the standard sugar `since(p)` / `before(p)` (§4.8,
+ADR-55) — "now" is never embedded in the expression; the caller injects the date-time.
 
 The anchor (the phase anchor) is **always made explicit** (absence is a static error; common to
 the family — `from:` as the origin for stride/take/strideBy, `until:` as the terminus for
@@ -320,7 +321,9 @@ different type on the right-hand side.
 
 Defining a binding of the same name twice is a static error (top-level bindings and bindings inside a premise block alike; a
 later definition never wins silently; overriding a base's public word through a derived `with` is unchanged). Applying a lambda
-whose parameter count differs from the argument count is an error (1.0 addendum 22).
+whose parameter count differs from the argument count is an error (1.0 addendum 22). A top-level binding with the
+same name as an in-scope public word is not a double definition but **shadowing** (§3.4): the public word wins and the
+binding is silently hidden.
 
 Sugar **inherits the meaning of its expansion** — the transport rows for evaluation annotations (§4.10, ADR-37 decision 4) and the
 DST conventions are those of the core words that appear in the expansion. That the inner `filter` of the standard sugar `at` (§5.5)
@@ -336,6 +339,11 @@ sequence with `s |>`. `|>` keeps its single meaning, "value → application of a
 businessDays(on: p) = s => s |> filter(on: p)
 nextWeekday(d)      = s => s |> roll(Following, on: (everyDay |> filter(x => weekday(x) == d)))
 ```
+
+The standard sugar `since(p) = s => s |> filter(t => t >= p)` / `before(p) = s => s |> filter(t => t < p)`
+(a Gregorian public word of the stdlib; 1.1; ADR-55) is exactly this form B — it cuts a point set at
+date-times into the half-open [since, before) and inherits the alignment, the windows and the transport
+row of the `filter` it expands to.
 
 **Shorthand A (point-free)** — if the upstream `s` merely flows straight through (the head is
 `s |>` and `s` appears nowhere else), `s =>` may be dropped. This is B's eta-reduction — sugar for
@@ -363,6 +371,22 @@ default sugar). No `sugar` keyword or the like is introduced. Core words (genera
 transforms, combinators, filters, windows, selectors, strides) are built-in reserved words of the
 language; every other named binding is sugar or a public word. A binding that redefines a core
 word (breaking the one-way dependency) is a static error.
+
+**Words added in 1.1 or later are reserved** (ADR-54 decision 8; a convention shared with ADR-55) —
+core and stdlib alike, a consumer-side top-level binding with the same name as a word added in 1.1
+or later (`labelOrdinal`, `since`, `before`) is a guided static error (it suggests renaming). Nor can such
+a word be used as a **label name** (the label list of a `cycle`, `labels:`) — the same guided static error.
+
+The behavior of the 1.0 words is unchanged (the existing shape in which a stdlib public word such as
+`at` silently shadows a same-named consumer-side top-level binding stays as it is). With this, the
+compatibility condition of an additive extension can be stated exactly: "the meaning of every
+existing expression is unchanged (except bindings and labels named after a new word)". This section is
+the authority on the scope of the reserved words (bindings, labels, inside a premise block); §5.4, the
+CHANGELOG, the README and the authoring skill point here.
+
+A same-named binding inside a premise block splits by the kind of word — a core word (`labelOrdinal`)
+is a static error there too, by the core-word rule; a stdlib sugar (`since` / `before`) is shadowed by
+the consumer side inside a premise block or a derived `with`, as before.
 
 **Expansion is finite — definition cycles (self- and mutual recursion) are guided static errors**
 (F110; the formal rule lives in §5.3 — it is the very premise of "expanding all sugar leaves only
@@ -394,13 +418,15 @@ expansion; that one opens into the `with` of `premise → premise`.
 As the **dual** of selectors (window → point), there are projections that read a value from a
 point by way of "the window it belongs to" (ADR-27/30). They are used inside value expressions
 (lambdas) and, combined with `filter`, build expressions that "select by window coordinates". The
-core of the reading side is these three words.
+core of the reading side is these four words (`labelOrdinal` is the additive extension of 1.1 =
+ADR-54).
 
 | Word | Type | Meaning |
 |---|---|---|
 | `ordinalIn(u, w, d)` | point → number | Within the `w` window containing point `d`, the ordinal of the `u` window containing `d` (1-based). `ordinalIn(day, month, d)` = which day of the month. The counting unit `u` is explicit, so it does not depend on the input granularity. **Alignment check** (ADR-50): when `u` is an elapsed-width grid, an explicit error if the start of `d`'s `w` window is off `u`'s lattice (zones whose epoch difference is not an integral number of unit widths — no silently fractional ordinals; per-instance, in the data-relative layer) |
 | `epochOrdinal(u, d)` | point → number | The running ordinal of `u` windows from the epoch (the same coordinate as the window ordinal of §3.6; **0-based**; negative before the epoch. The epoch is the language default 1970-01-01, overridable by the calendar system's `epoch:`. For data-derived windows whose sequence does not reach the epoch, **the first existing window is 0** = ADR-31 revision, F60) |
 | `coincides(S, w, d)` | point → boolean | Whether at least one point of stream `S` lies within the `w` window containing point `d` (**the window-membership predicate** = bounded existential quantification in value expressions; ADR-38, F68). Alone in the family, its first argument is a stream (a window word is a static error — get a point sequence via <code>month &#124;> first</code>) |
+| `labelOrdinal(B, x)` | label value → number (point form: point → number) | The position of `x` within the **declared value domain** of binding `B` (**1-based**, in declaration order). The domain is restricted to the three declared-list forms — `external(…, labels: [E₁ … Eₙ])`, the window binding `cycle [E₁ … Eₙ] anchor:`, and `segmentBy(…, labels: cycle […] anchor:)`. Parallel label lists (the static `labels:` of `segmentBy`, the `labels:` of a table literal) are assignment lists in window or point order, not an enumeration order, and a `label:` lambda cannot be enumerated — together with bindings that have no label source, these are guided static errors. The semantics is the definitional equation `labelOrdinal(B, v) ≡ v == E₁ ? 1 : … : v == Eₙ ? n : ⊥` (the default branch is the explicit error "outside the value domain"). A duplicate in the domain is a static error at the call (the declaration stays legal). **Point form** `labelOrdinal(B, d) ≡ labelOrdinal(B, B(d))` — it inherits the conventions of `B(d)` (out-of-coverage annotation transport §4.10, the tz-name check ADR-40) and produces no annotation of its own. The additive extension of 1.1 (ADR-54) |
 
 `coincides` is the vessel for F68 (applying exception days to timed and mixed schedules); the canonical form is `notices |> filter(t => not coincides(closures, day, t))` (preserve the firing time, exclude by "day"). The intersection form is the same single word: difference versus intersection is written by the presence or absence of `not`.
 
@@ -479,10 +505,22 @@ The **attachment** side of window labels (the `label:` argument at generation ti
 - Labeled data is a point sequence plus a parallel label list (`labels:`; §3.8, ADR-30). **The same `labels:` attaches to window sequences too** (§4.2, ADR-39). The three-source symmetry: table + labels: (data labels on points), window + label: lambda (rule labels on windows), window + labels: list (data labels on windows). When merely pasting a data column, `labels:` is canonical; a `label:` lambda only for computations that need an index expression.
 
 The family's names (`ordinalIn`, `epochOrdinal`, `snapTo`, `label:`, `labels:`) were fixed at RC2 (§5.4).
+`labelOrdinal` was added in 1.1 (ADR-54; settled 2026-10-19; §5.4).
 
-**Types in equality** — both sides of `==` / `!=` must be of the same type (number, string 〈label〉, boolean, point,
+**Types in equality and ordering** — both sides of `==` / `!=` must be of the same type (number, string 〈label〉, boolean, point,
 time-of-day). Comparing different types is an error, not a silent false (1.0 addendum 22). The identifier form and the string
 form of a label are the same string value and therefore equal (§5.5). A zero on the right of `/`, `mod` or `div` is also an error.
+
+Ordering `<` / `<=` / `>` / `>=` is defined **number with number and point with point**. The ordering of points is the total
+order of instants on chronos — the same ground as the point rule for equality — independent of tz, calendar system and
+granularity, and **without a unit** (a literal resolves to an instant in the in-scope tz = ADR-33).
+
+It is the 1.1 additive extension (ADR-55): the legalization of a form that was an evaluation error in 1.0, so the meaning of
+no existing expression changes. Mixing types is an error, diagnosed with the type names of both sides.
+
+A standalone time of day `Thh:mm` has no ordering (it guides to the explicit anchor of ADR-51). Ordering between labels is not
+defined either (turn them into ordinals of the declared domain with `labelOrdinal` first = ADR-54). The standard sugar
+`since` / `before` that cuts a point set at date-times is in §4.8.
 
 ## 4.10 Evaluation annotations — out-of-coverage origin (ADR-37, I6)
 
@@ -514,7 +552,7 @@ gantt
     axisFormat %Y-%m
     title Example — holiday data covering 2026, evaluated over 2026-07 to 2027-06
     section Data
-    covering of holidays (claim of completeness)  :done, 2026-01-01, 2026-12-31
+    covering of holidays (completeness claim)  :done, 2026-01-01, 2026-12-31
     section Evaluation
     evaluation range [from, to)                 :active, 2026-07-01, 2027-06-30
     section Result (bizDay etc.)

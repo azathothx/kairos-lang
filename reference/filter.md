@@ -53,4 +53,4 @@ everyDay |> filter(d => ordinalIn(day, month, d) == 11)
 
 ## 関連
 
-[`roll`](roll.md)（間引かずに寄せる）・[`ordinalIn`](ordinalIn.md)・[`cycle`](cycle.md)（ラベル述語の源）・I8・ADR-25/26。
+[`roll`](roll.md)（間引かずに寄せる）・[`ordinalIn`](ordinalIn.md)・[`cycle`](cycle.md)（ラベル述語の源）・[`since`](since.md)／[`before`](before.md)（日時で切り出す標準糖衣＝展開は filter）・I8・ADR-25/26。

@@ -1,5 +1,5 @@
 ---
-source_sha: 035e916f0bf8
+source_sha: 6f11497aa36e
 ---
 
 # `segmentBy` — interval-sequence windows (cut at markers)
@@ -172,15 +172,24 @@ month repeats a name inside the domain). **A point sequence derived by `filter` 
 the new moons are filtered out of another table — supply the new moons as **their own `external`**
 (if you already compute them upstream, just ship the dates and the month numbers together).
 
-**Using labels as numbers** (the regular feedback batch of 2026-09-08 §3): the value domain of `labels:` is
-**enumeration names** (`labels:` on `external` accepts identifiers only — ADR-30's value-domain
-declaration is static knowledge), so a definition that does arithmetic on a label, such as a lunisolar
-month number, keeps a name-to-number function inside the premise: `monthLabelNo = l => l == m1 ? 1 :
-l == m2 ? 2 : … : 12` (a nested conditional; the readability cost is explicit). In the supplier's
-measurement the rokuyō (大安) definition written this way matched the static `labels:` version point
-for point. A one-word projection that takes the ordinal from the declaration order (something like
-`ord(lunar(d))`) is not in the 1.0 vocabulary; it is a post-1.0 candidate in
-[90-open-questions](../../design/90-open-questions.md).
+**Using labels as numbers**: the value domain of `labels:` is **enumeration names** (`labels:` on
+`external` accepts identifiers only — ADR-30's value-domain declaration is static knowledge). A
+definition that does arithmetic on a label, such as a lunisolar month number, reads the ordinal in
+declaration order with [`labelOrdinal`](labelOrdinal.md)`(saku, lunar(d))` (1.1, ADR-54).
+
+For the rokuyō, `rokuyoNo = d => (labelOrdinal(saku, lunar(d)) + ordinalIn(day, lunar, d)) mod 6` —
+that is the canonical form (the runnable example is on [`labelOrdinal`](labelOrdinal.md)).
+
+**The 1.0-compatible way**: keep a name-to-number function inside the premise —
+`monthLabelNo = l => l == m1 ? 1 : l == m2 ? 2 : … : 12` (a nested conditional; the readability cost is
+explicit). In the supplier's measurement the rokuyō (大安) definition written this way matched the static
+`labels:` version point for point. It stays legal as in 1.0 and returns the same points and the same
+annotations.
+
+But mind **the default-branch trap** — a value the conditional does not list (a month whose declaration
+gained `m13`) silently turns into the default branch's 12 (no warning). `labelOrdinal` reads 13 correctly
+from the declared domain, and stops a value the declaration does not have with the explicit error
+"outside the value domain".
 
 ⚠ Give this function a name that **does not collide with a standard word** — `monthNo` is a public word of the
 standard Gregorian premise, used both by the label projection of `month` (stdlib/gregorian.md §1) and as the

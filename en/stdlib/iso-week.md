@@ -1,5 +1,5 @@
 ---
-source_sha: 7571f290063c
+source_sha: 7a837652639a
 ---
 
 # Standard premise: ISOWeek
@@ -267,7 +267,7 @@ reproached neither statically nor at run time (empty is a legitimate result) —
 using W53 should either make their target years explicit, or be used after confirming the empty is
 no accident.
 
-### 6.3 The epoch-1970 edge (a prototype constraint)
+### 6.3 The epoch-1970 edge (a reference-implementation constraint)
 
 The language-default epoch 1970-01-01 (ADR-31) is a **Thursday**, and the W01 Monday of ISO year 1970 is 1969-12-29. The reference implementation materializes from 1970-01-01 (nothing before 1970 can be evaluated; `../../impl/README.md`), so the ISO-1970 year window lacks its leading 1969-12-29 through 31 (a partial window under `edges: clip`).
 

@@ -12,7 +12,7 @@
    `../reference/` — **記述語リファレンス**（1 語 1 ファイルの解説。実行例は impl の doctest で検証）。
 1. [00-overview.md](00-overview.md) — 目的・スコープ・既存方式との関係・設計の背骨。まずこれで全体像。
 2. [10-domain-model.md](10-domain-model.md) — premise 定義・ドメインモデル・不変条件 I1〜I8。現在の姿（上書き型）。
-3. [20-adr/](20-adr/README.md) — 設計判断の履歴（ADR-01〜53）。なぜそうなったかを遡るとき。相互に参照し合う。
+3. [20-adr/](20-adr/README.md) — 設計判断の履歴（ADR-01〜55）。なぜそうなったかを遡るとき。相互に参照し合う。
 4. [30-syntax/00-syntax-draft.md](30-syntax/00-syntax-draft.md) — 構文の作業中ドラフト。設計を進める層（区切りで spec/ に反映）。
 5. [40-examples/](40-examples/README.md) — 表現力検証（既知スケジュールのサンプル集＝綻び出しの作業層）。判定マトリクスと綻びログ。
 6. [60-reviews/](60-reviews/README.md) — 外部レビューの受領と処置の記録。
@@ -74,6 +74,8 @@
 - [ADR-51](20-adr/adr-51-at-time-of-day.md) 単独時刻リテラル Thh:mm と標準糖衣 at——日集合への壁時計時刻の付与（壁時計正準形の最短化・epoch 錨 1970-01-01・DST は F81 継承・T 接頭形限定。追記 2026-08-26＝還流第 15 便: 名指し検査 2 本〈窓付き入力・引数限定〉・判断 6 括弧書き訂正・覆域/endless 由来は規約の内）
 - [ADR-52](20-adr/adr-52-takelast.md) 末尾 N 選択 takeLast(n, until:)——直近 N 発火（take の鏡像・until: 明示錨が ADR-49 判断 6 の却下理由を解消・輸送は判断 5 の鏡像・実装地平線ガード 2 面）
 - [ADR-53](20-adr/adr-53-binding-scope-memoization.md) 束縛右辺の名前解決境界とメモ化の正しさ——呼び出し側ラムダ変数の捕獲は誘導つき静的エラー・tz 名検査はヒット時再実行で順序独立（還流第 16 便のバグ 2 件が発端・焼き付きは構造的に不可能に）
+- [ADR-54](20-adr/adr-54-label-ordinal.md) 列挙ラベルの序数射影 labelOrdinal(B, x)——宣言値域の宣言順から 1 起点の番号を読む（値形＋点形・値域は external の labels:／cycle／labels: cycle の 3 形・重複は呼び出し時の静的エラー・1.1 以降の新語は予約語・1.1 の追加拡張＝1.1.0 で実装）
+- [ADR-55](20-adr/adr-55-point-order-since-before.md) 時点どうしの順序比較と標準糖衣 since／before——点集合を日時で半開 [since, before) に切り出す（受理拡大＝1.0 でエラーだった形の定義・単位なし・展開は filter・ADR-34 判断 4 は不変・1.1.0 で実装）
 
 ## 運用メモ
 

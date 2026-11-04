@@ -1,5 +1,5 @@
 ---
-source_sha: 22d9cbe5befe
+source_sha: 8211faf150e3
 ---
 
 # Kairos Language Specification — Appendix A. Firing Layer Profile (the contract for conformant implementations)
@@ -57,7 +57,7 @@ The boundary with the language is the shape of `CliReport`. The evaluator may be
 - MUST: The tz for calendar computation is declared on the definition side (the premise's `tz:`) and never depends on the runtime's default tz. The sequence must not change when the runtime's TZ is unset.
 - MUST: The evaluation range `[from, to)` is in whole dates and excludes `to`.
 - Note: When tiling consecutive windows without gaps, use the next `from` = the previous `to` (because `to` is exclusive). In the overlapping re-evaluation shape (A.2), agreement on the overlapping interval is the check.
-- MUST: Cutting at a time-of-day origin is not done with the evaluation range; do it in the expression (ordinal comparison via `epochOrdinal`) or in the firing layer (cut `points` at now). The evaluation range is "where to look", not "where to count from" (§7.8).
+- MUST: Cutting at a time-of-day origin is not done with the evaluation range; do it in the expression (`since` / `before`; on an evaluator of 1.0.12 or earlier, an ordinal comparison via `epochOrdinal`) or in the firing layer (cut `points` at now). The evaluation range is "where to look", not "where to count from" (§7.8).
 
 **Version**
 
@@ -215,12 +215,12 @@ Reconciliation is needed only for side effects that carry meaning. No table on t
 
 ## A.7 Observed examples
 
-The language side's prototype measurements, and values recorded in the feedback reports from the supply side's runtime (its own evaluator, `external` supply, delivery of notifications). The supply side's proper names are withheld, and its values are cited in the frame "according to the supply side's records".
+The language side's trial measurements, and values recorded in the feedback reports from the supply side's runtime (its own evaluator, `external` supply, delivery of notifications). The supply side's proper names are withheld, and its values are cited in the frame "according to the supply side's records".
 
-**The language side's prototype measurements (2026-07-09)**
+**The language side's trial measurements (2026-07-09)**
 
 - Re-evaluation with the window shifted by 3 days matched 30/30 instants on the overlapping interval. Every full hour within business hours 9–18 gave 50 instants a week.
-- In the same prototype, a stop at 10:30 and a restart at 14:10 enumerated 4 unfired instants (11:00–14:00), and the firing instant on February 1 of the following year carried an out-of-coverage annotation and a runway.
+- In the same trial, a stop at 10:30 and a restart at 14:10 enumerated 4 unfired instants (11:00–14:00), and the firing instant on February 1 of the following year carried an out-of-coverage annotation and a runway.
 
 **The supply side's production values** (the conditions: the production environment, one firing per event, not a benchmark)
 

@@ -1,0 +1,63 @@
+---
+title: Calendar
+# .html ページは jekyll-default-layout（Markdown のみ対象）の自動適用外——明記しないと
+# head ごと欠けた素の断片で配信される（日本語版 calendar/index.html と同じ罠・2026-08-03 実測）
+layout: default
+---
+
+<link rel="stylesheet" href="../../calendar/calendar.css">
+
+<h1 class="cal-noprint">Kairos Calendar</h1>
+
+<p class="cal-noprint"><strong>決めたら、いつでも。</strong><br><small>Write the rule once; list the dates.</small></p>
+
+<p class="cal-noprint">Fill in an everyday schedule → see it month by month → print it, or add it to your calendar app (.ics).
+The expression is assembled behind the page and evaluated in your browser by the same evaluator as the
+<a href="../playground/">Playground</a> (nothing is sent to any server, nothing is stored; the state lives in the URL).
+Holidays come from the OPM federal holiday table (observed dates, 2026 and 2027) — the same table as the Playground examples.</p>
+
+<div id="kairos-calendar">
+  <div class="cal-noprint">
+    <div class="cal-controls">
+      <label>Examples:
+        <select id="cal-example" style="max-width:100%"></select>
+      </label>
+    </div>
+    <p id="cal-note" hidden></p>
+    <div id="cal-fields" class="cal-form"></div>
+    <div class="cal-controls">
+      <label>from <input id="cal-from" type="date"></label>
+      <label>to <input id="cal-to" type="date"></label>
+      <label>tz <input id="cal-tz" type="text" value="America/New_York" size="16"></label>
+      <button id="cal-print" type="button" style="padding:4px 12px">Print (one month per page)</button>
+      <button id="cal-ics" type="button" style="padding:4px 12px">Add to calendar (.ics)</button>
+      <label style="font-size:90%"><input id="cal-ics-split" type="checkbox"> one event per point (for Outlook and phone apps; preselected on phones)</label>
+      <button id="cal-share" type="button" style="padding:4px 12px">Pin to URL</button>
+      <a id="cal-pg" href="../playground/" style="font-size:90%">Open in the Playground</a>
+    </div>
+    <p id="cal-msg"></p>
+    <p id="cal-warn" hidden></p>
+    <details id="cal-warn-raw" hidden><summary>Original lines (evaluator annotations and coverage summary; Japanese)</summary><pre id="cal-warn-raw-pre"></pre></details>
+    <div class="cal-nav">
+      <button id="cal-prev" type="button" aria-label="previous month">◀</button>
+      <span id="cal-month-label"></span>
+      <button id="cal-next" type="button" aria-label="next month">▶</button>
+      <span id="cal-count"></span>
+    </div>
+    <p class="cal-legend">● scheduled (timed points show the time) · <span class="hol">red</span> = holiday · <span class="other">dashed</span> = adjacent month · ← → keys flip months</p>
+  </div>
+  <div id="cal-months"></div>
+  <details class="cal-noprint"><summary>The expression behind this schedule (Kairos) — open it in the Playground to edit</summary><pre id="cal-src"></pre></details>
+  <p id="cal-build" class="cal-noprint" style="color:#57606a;font-size:90%;margin:6px 0 0"></p>
+</div>
+
+<p class="cal-noprint" style="font-size:0.85em;color:#57606a">The evaluation range is the half-open interval <code>[from, to)</code>. The yellow line
+reports dates that fall outside the holiday table (2028 onwards, for example) — those dates were laid out without knowing the holidays
+(the original lines are in the fold; the evaluator's own texts are Japanese). "Add to calendar (.ics)" uses the same function as the
+Playground — one recurring event per expression, timed points with an alarm; Google and Apple Calendar on a PC import it as is.
+<strong>On a phone choose "one event per point"</strong> (preselected on phones); Outlook needs it too.
+"Pin to URL" puts the example, its values, the range and the tz into the URL for sharing (the same shape as the Playground:
+<code>#s=…&amp;f=…&amp;t=…&amp;z=…</code> — <a href="../recipes/#the-shape-of-a-shared-url">the shape of a shared URL</a>).
+This page does not refresh holiday data automatically and offers no subscription (webcal).</p>
+
+<script type="module" src="app.js"></script>

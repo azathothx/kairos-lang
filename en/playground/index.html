@@ -10,7 +10,8 @@ layout: default
 <p><strong>決めたら、いつでも。</strong><br><small>Write the rule once; list the dates.</small></p>
 
 <p>Evaluate Kairos expressions in the browser (the reference implementation runs as is —
-nothing is sent to any server). The language is at 1.0 (declared 2026-09-14) —
+nothing is sent to any server). The language is at 1.1 (declared 2026-11-04, 1.1.0; 1.0 stays frozen —
+additive extensions labelOrdinal, since/before) —
 see the <a href="../spec/">language spec</a> and the
 <a href="../reference/">descriptor reference</a>; the
 <a href="https://exam.kairos-lang.org/">workbooks and sample questions</a>
@@ -32,6 +33,7 @@ are in Japanese.</p>
           <option value="cascade">Deriving Japan's substitute &amp; sandwiched holidays</option>
           <option value="friday13">Friday the 13th (intersection)</option>
           <option value="empty">Empty table &amp; coverage summary (operational signals)</option>
+          <option value="deadline">Business hours left until a deadline (1.1: since/before)</option>
         </optgroup>
       </select>
     </label>
@@ -46,6 +48,7 @@ are in Japanese.</p>
     <button id="pg-share" type="button" style="padding:4px 12px">Pin to URL</button>
     <button id="pg-ics" type="button" style="padding:4px 12px">Add to calendar (.ics)</button>
     <label style="font-size:90%"><input id="pg-ics-split" type="checkbox"> one event per point (for Outlook and phone apps; preselected on phones)</label>
+    <a id="pg-calendar" href="../calendar/" style="font-size:90%">View as a calendar (month view, print)</a>
     <span id="pg-msg" style="color:#57606a;font-size:90%"></span>
   </div>
   <pre id="pg-out" style="min-height:8em;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow-x:auto;white-space:pre">Results appear here.</pre>
@@ -54,7 +57,7 @@ are in Japanese.</p>
 
 <p style="font-size:0.85em;color:#57606a">The evaluation range is the half-open interval
 <code>[from, to)</code> — <code>from</code> is included, <code>to</code> is excluded. In the
-output, <code># ⚠</code> marks annotations of out-of-range provenance and
+output, <code># ⚠</code> marks annotations of out-of-coverage provenance and
 <code># coverage summary</code> reports the data runway
 (<a href="../spec/30-body-layer.html">spec §4.10</a>). "Pin to URL" produces a shareable link
 carrying the expression and range. "Add to calendar (.ics)" turns the result into a file for your

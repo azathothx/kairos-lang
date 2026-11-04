@@ -125,3 +125,19 @@ premise JP = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon }
     expect(() => run(CAL + 'everyDay |> within(month) |> nth(1) |> roll(Following, on: bizDay) |> shift(0, unit: bizDay)\n', Y2026)).not.toThrow();
   });
 });
+
+describe('前文の公開語と同名の top-level 束縛（90-open 3-17・1.1.0 の診断の小物）', () => {
+  it('day = day cycle […] の day(d) は公開語の側に解決され、誘導つきの「適用できない値」で止まる。別名（roster）なら通る', () => {
+    expect(() => run(PRELUDE + 'day = day cycle [On, Off] anchor: 2026-01-05\neveryDay |> filter(d => day(d) == On)\n', Y2026))
+      .toThrow(/^適用できない値: windows（day は在圏 premise の公開語で、同名の利用側 top-level 束縛は隠れる＝束縛を別の名に改名する/);
+    expect(() => run(PRELUDE + 'roster = day cycle [On, Off] anchor: 2026-01-05\neveryDay |> filter(d => roster(d) == On)\n', Y2026)).not.toThrow();
+  });
+});
+
+describe('序数射影の引数の数（2026-10-29・1.0 由来の宿題＝語名なしの「時点ではない: undefined」の修正）', () => {
+  it('epochOrdinal(T09:00)・ordinalIn(T09:00) は語名と形つきの静的エラー（undefined は漏れない）。正しい形は通る', () => {
+    expect(() => run(PRELUDE + 'everyDay |> filter(d => epochOrdinal(T09:00) > 3)\n', Y2026)).toThrow(/^epochOrdinal: 引数は 2 つ（単位, 点）——epochOrdinal\(month, d\)/);
+    expect(() => run(PRELUDE + 'everyDay |> filter(d => ordinalIn(T09:00) > 3)\n', Y2026)).toThrow(/^ordinalIn: 引数は 3 つ（単位, 窓, 点）——ordinalIn\(day, month, d\)/);
+    expect(() => run(PRELUDE + 'everyDay |> filter(d => epochOrdinal(month, d) > 3 and ordinalIn(day, month, d) > 1)\n', Y2026)).not.toThrow();
+  });
+});

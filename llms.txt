@@ -10,17 +10,34 @@
 
 Key facts:
 
-- Status: 1.0 (declared 2026-09-14). Semantics, operators, grammar (EBNF), and lexis are
-  frozen; naming is final for every word (the last placeholder was settled as `rephase`).
+- Status: 1.1 (2026-11-04, 1.1.0): 1.0 is frozen; 2 additive extensions (`labelOrdinal`, `since`/`before`);
+  1.0 addenda through no. 29 (1.0.12) reflected. Semantics, operators, grammar (EBNF), and lexis are frozen;
+  naming is final for every 1.0 word (the last placeholder was settled as `rephase`), and 1.1 adds
+  `labelOrdinal`, `since` and `before`.
+- What 1.1 adds (additive — 1.0 stays frozen): `labelOrdinal(B, x)` returns the 1-based
+  ordinal of a label in the binding's declared value domain (e.g. `labelOrdinal(weekday, Sun)` is 7); the stdlib sugar
+  `since(p)` / `before(p)` slices a stream to the half-open interval [since, before) by instant; ordering
+  comparisons between instants (`<`, `<=`, `>`, `>=`) are defined (an evaluation error in 1.0). Every 1.0
+  expression keeps its meaning; the three new words are reserved (a top-level binding or a label of that
+  name is a static error; `labelOrdinal` is a core word, so it is reserved inside a premise block too — spec §4.8).
+  The reference implementation 1.1.0 also stops a few forms that 1.0.12 accepted (materialisation caps 2^24
+  windows / 2^26 points, non-existent `--from`/`--to` dates, years 0000–0099, a dated `at` anchor under
+  `Gregorian with` / `@Gregorian`) — see the 1.1 section of spec/CHANGELOG.md.
 - Architecture: two layers — a premise layer that defines calendars (the Gregorian calendar itself is
   a transparent standard library written in Kairos) and a body layer that composes schedules from
   stream-to-stream operators (`roll`, `shift`, `filter`, `nth`, `stride`, `segmentBy`, combinators).
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 880 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 981 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
+- Language vs implementation: Kairos is a specification; kairos-lang is its reference implementation,
+  one implementation of the language and not the language. Conformance is defined in spec appendix A
+  (A.1: the same verdicts, the same instants, the same diagnostic wording, the doctests as the oracle); an independent evaluator that
+  follows the specification runs in production on the supply side (A.7). The evaluation-range floor,
+  the materialisation horizon, the time resolution, the tz database and the point cap are
+  implementation-defined (listed in impl/README.md) and are not language constraints (spec §1.4).
 - Documentation language: Japanese documentation is canonical; the spec, the descriptor reference,
   and the stdlib guides are fully mirrored in English under en/ (en/spec/, en/reference/,
   en/stdlib/ — Kyureki is Japanese-only), plus an English index of the expressiveness studies
@@ -65,6 +82,8 @@ federal2026 = [2026-01-01, 2026-01-19, 2026-02-16, 2026-05-25, 2026-06-19, 2026-
                2026-09-07, 2026-10-12, 2026-11-11, 2026-11-26, 2026-12-25] covering: 2026..2026
 bizDay = everyDay \ ((everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)) | federal2026)
 monthEnd |> roll(Preceding, on: bizDay) |> shift(-3, unit: bizDay)   # 3 business days before month-end
+bizDay |> since(2026-10-13) |> before(2026-10-20)                     # business days in [Oct 13, Oct 20) — 1.1 sugar, half-open
+everyDay |> filter(d => labelOrdinal(weekday, d) <= 5)                # Mon..Fri by weekday number — 1.1 (Mon=1 … Sun=7, independent of wkst)
 ```
 
 Read it as: take each month-end; if it is not a business day, roll it back to the preceding one
@@ -90,7 +109,7 @@ dates on any machine (the reference CLI prints them with `kairos list` / `kairos
   machine's zone unless you pass `--tz`.)
 - Misuse is an error, not a wrong date. The message names the operator, says what is wrong and,
   in parentheses, how to fix it. Diagnostics are in Japanese (the canonical language); two real
-  ones from the reference CLI (unchanged since 1.0.2; checked on 1.0.12), with a gloss:
+  ones from the reference CLI (unchanged since 1.0.2; checked on 1.1.0), with a gloss:
   - `shift: 点が軸上にない（先に roll で有効点へ寄せる）` — "shift: the point is not on the
     axis (roll it onto a valid point first)". Raised by `monthEnd |> shift(-3, unit: bizDay)`
     when a month-end falls on a non-business day; the fix is the canonical form above.
@@ -104,7 +123,7 @@ dates on any machine (the reference CLI prints them with `kairos list` / `kairos
 
 Every diagnostic has three parts: `operator: what is wrong（how to fix it. where the rule lives）`.
 The text is Japanese; the reference at the end (I3, ADR-38, §3.3) is the spec's own numbering, so
-the rule can be looked up in the English mirror. Three real ones from the reference CLI (unchanged since 1.0.5; checked on 1.0.12):
+the rule can be looked up in the English mirror. Three real ones from the reference CLI (unchanged since 1.0.5; checked on 1.1.0):
 
 - `roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言` — "roll: a
   convention is required (I3) — write Following/Preceding as the positional argument, or declare
@@ -127,7 +146,11 @@ failure mode of a mistake — the error is.
 - **Calendar model**: the proleptic Gregorian calendar as an idealisation (the leap-year rule is applied to
   every year; the 1582 reform is not modelled). Other calendars are built on top of it in the premise layer
   (spec §3.6).
-- **No leap seconds**: the base axis (chronos) is uniform; `23:59:60` is a lexical error (spec §5, ADR-33).
+- **No leap seconds**: the base axis (chronos) is uniform; `23:59:60` is a lexical error (spec §5, ADR-33). This is a
+  language decision made for determinism, not an implementation limit.
+- **No sub-millisecond resolution, no real-time control** (high-frequency trading, scientific instrumentation): the axis
+  is continuous and the resolution is implementation-defined (1 ms in the reference implementation; a finer literal is a
+  lexical error, never a silent rounding). Placing the instants precisely in real time is the host runtime's job (spec §7.8).
 - **Years have four digits** (0000–9999); `10000-01-01` is a lexical error.
 - **DST**: civil widths (`1d`) keep wall-clock time, so a civil day may be 23–25 hours; a time literal that
   falls into a DST gap or overlap is an error, not a guess (spec §3.6, §5; ADR-33, ADR-51). A civil width is
@@ -198,8 +221,10 @@ same paths without the `en/` segment (a hash check keeps the mirror in step).
 
 - Playground (evaluate Kairos in the browser; the reference implementation as-is):
   https://kairos-lang.org/en/playground/ (Japanese UI: https://kairos-lang.org/playground/)
+- Calendar page (fill in an everyday schedule, see it month by month, print it or import it as .ics;
+  the expression is assembled behind the page): https://kairos-lang.org/en/calendar/ (Japanese: https://kairos-lang.org/calendar/)
 - [Kairos exam — study materials](https://exam.kairos-lang.org/): graded textbooks (Grade 3 reading,
   Grade 2 writing, Grade 1 operational semantics) and sample questions, every example executed
   against the reference implementation (Japanese)
 - [Design records index](https://raw.githubusercontent.com/azathothx/kairos-lang/main/design/INDEX.md):
-  53 architecture decision records and the full design history (Japanese)
+  55 architecture decision records and the full design history (Japanese)

@@ -1,5 +1,5 @@
 ---
-source_sha: cd1ad40290f0
+source_sha: 95ce1f18e272
 ---
 
 # 11 — Schedules long said to be unwritable: collecting the world's limitation cases, then measuring them
@@ -389,8 +389,22 @@ period" follows as a consequence of "period starts stop at W48". (The seemingly 
 
 The first receptacle is the **separation of definition and evaluation range** itself (definitions
 are tenseless; evaluation always runs over a bounded [from, to) — cron's "comment it out by hand
-next year" is the consequence of not being able to put a period into a definition). When the
-period must live in the definition, ordinal comparison over the in-scope calendar does it:
+next year" is the consequence of not being able to put a period into a definition).
+
+When the period must live in the definition, cut with the standard sugar `since` / `before`
+(half-open [since, before); 1.1; ADR-55) — "through 12/30" shifts the end point by a day, the same
+convention as the evaluation range:
+
+```kairos
+# eval: 2026-06-25..2026-07-03
+@JP
+everyInstant |> strideBy(1d, from: 2026-01-01T07:00) |> since(2026-06-29) |> before(2026-12-31)
+#=> 2026-06-29T07:00 2026-06-30T07:00 2026-07-01T07:00 2026-07-02T07:00
+```
+
+When the unit must be spelled out (when you want to say "cut at the floor of the day"), the
+`epochOrdinal` ordinal comparison from 1.0 still works — for a literal on the grid the two are
+extensionally equal:
 
 ```kairos
 # eval: 2026-06-25..2026-07-03
@@ -400,8 +414,9 @@ everyInstant |> strideBy(1d, from: 2026-01-01T07:00)
 #=> 2026-06-29T07:00 2026-06-30T07:00 2026-07-01T07:00 2026-07-02T07:00
 ```
 
-(Direct comparison of a point against a date literal, `d >= 2026-06-29`, is absent from the value
-layer — `epochOrdinal` is the current canonical route. → §11.5)
+(Ordering comparison of a point against a date-time literal, `d >= 2026-06-29`, was absent from
+the value layer in 1.0, and the `epochOrdinal` route was canonical. 1.1 defined ordering between
+points, and the sugar form became canonical. → §11.5)
 
 ### (o) Exclusion and negation (catalog 14)
 
@@ -472,14 +487,22 @@ Four records from the measurements:
 - Widening acceptance needs a consistency ruling against ADR-08 (the two window kinds) —
   **undecided at the time; does not block 1.0** (introduced as ADR-48 in the follow-up below).
 
-**No ordering comparison between a point and a date literal** (`d >= 2026-06-29` fails with
-"not a number").
+**No ordering comparison between a point and a date literal** (a record as of 1.0: `d >= 2026-06-29`
+failed with "not a number").
 
-- Current receptacles: the evaluation-range separation (first) and `epochOrdinal` ordinal
+- Receptacles at the time: the evaluation-range separation (first) and `epochOrdinal` ordinal
   comparison ((n)).
 - Readable as the same governance that kept point ± width arithmetic out (ADR-34: points are not
   bare numbers), though ordering is arguably a separate question from arithmetic.
 - A sugar candidate if demand persists (recorded only; no F number).
+
+**Resolved (1.1; ADR-55)**: the second demand case, "business hours left until the deadline",
+defined ordering between points and placed the standard sugar `since` / `before` (half-open
+[since, before); expands to filter) — (n) was rewritten in the sugar form and the `epochOrdinal`
+form became the way to write it "when the unit must be spelled out".
+
+Ordering is not arithmetic: ADR-34 decision 4 (no point ± width arithmetic) stands unchanged, and
+the matter settled exactly as the "separate question" reading above.
 
 **No `hour` window in the Gregorian standard.**
 
@@ -501,7 +524,8 @@ One verdict update: **03 §3.5 Easter, "value computes / lifting needs completio
 
 **(Postscript, same day, 2026-08-17)**: three of the four records above **went the whole way —
 ruling → candidate design → four-perspective verification → ADR → implementation — within the
-day**. Only point-vs-date-literal comparison stays under watch.
+day**. Only point-vs-date-literal comparison stayed under watch at the time (later resolved in 1.1,
+ADR-55 — see "Resolved" above).
 
 - F109 → **ADR-48** (split's widened acceptance, restricted to rule markers). The split form of
   4-4-5, with the g(i) 53-week branch, measured extensionally identical to the canonical form of

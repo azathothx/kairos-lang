@@ -176,6 +176,24 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     expect(stale).toEqual([]);
   });
 
+  it('現在形の公開文書・参照実装のソース・診断文に「プロトタイプ」が残っていない（2026-10-22 決定＝外部の技術評価が参照実装の定数を言語の限界として引く原因だった自称を外した。歴史記録〈CHANGELOG・ADR・レビュー受領記録〉は対象外）', () => {
+    const banned = /プロトタイプ|prototype/i;
+    const legend = /「プロトタイプ」が残っていない/;   // 規約自体を説明する行は対象外
+    const srcFiles = readdirSync(new URL('impl/src/', root)).filter(f => f.endsWith('.ts')).map(f => `impl/src/${f}`);
+    // 出荷される stdlib ソース（npm の同梱物・Playground の stdlib-data.js）も網に（2026-10-29 機械レビュー所見 12＝*.kairos が網の外だった）
+    const stdlibFiles = readdirSync(new URL('impl/stdlib/', root)).filter(f => f.endsWith('.kairos')).map(f => `impl/stdlib/${f}`);
+    const targets = [...CURRENT_DOCS, 'llms.txt', 'impl/vitest.config.ts', 'mcp/README.md', 'mcp/README.ja.md', ...srcFiles, ...stdlibFiles]
+      .filter(p => p !== 'spec/CHANGELOG.md');
+    const stale: string[] = [];
+    for (const p of targets) {
+      if (!existsSync(new URL(p, root))) continue;
+      for (const [i, line] of read(p).split('\n').entries()) {
+        if (banned.test(line) && !legend.test(line)) stale.push(`${p}:${i + 1}: ${line.trim().slice(0, 60)}`);
+      }
+    }
+    expect(stale).toEqual([]);
+  });
+
   it('図（assets/figures/*.svg）にも仮称印・placeholder が残っていない（外部レビュー第 13 回 F2＝.md だけの走査では SVG が網の外だった）', () => {
     const svgs = readdirSync(new URL('assets/figures/', root)).filter(f => f.endsWith('.svg'));
     expect(svgs.length).toBeGreaterThan(0);
@@ -229,7 +247,9 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
 
   it('状態行の追補番号が CHANGELOG の最終追補番号と一致する（4 入口——第 11 回レビュー D の再発防止。テスト数検査と同じ枠）', () => {
     // 「テスト数は機械検査・追補番号は手動」の間隙で生じるドリフトを封じる。1.0 後は状態行が
-    // 「1.0＋追補 N」へ変わるので、正規表現の「追補」部だけ読み替えて同じ網を使う
+    // 「1.0＋追補 N」へ変わるので、正規表現の「追補」部だけ読み替えて同じ網を使う。
+    // 1.1 以降（2026-10-21）: 状態行は「1.1（…）——1.0 は凍結・…・1.0 追補 N まで反映」になるが、「追補 N」の最初の出現は
+    // 1.0 の追補番号のままなので同じ網で読める。CHANGELOG の「## 1.1（…）」節は追補を名乗らないので最終追補番号の対象外（1.1 の面は次の検査）
     const latest = Math.max(...[...read('spec/CHANGELOG.md').matchAll(/^## (?:RC\d+|1\.0) 追補 (\d+)/gm)]
       .map(m => Number(m[1])));
     const entries: [string, RegExp][] = [
@@ -242,6 +262,28 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
       .map(([p, re]) => ({ p, n: read(p).match(re)?.[1] }))
       .filter(f => f.n !== String(latest));
     expect(stale, `状態行の追補番号が CHANGELOG 最終追補 ${latest} と不一致`).toEqual([]);
+  });
+
+  it('1.1 の状態行が 4 入口で同じ版・同じ件数・同じ語・同じ 1.0 追補番号を言い、語は impl の予約語集合と、版は CHANGELOG の 1.1 節と一致する（1.1.0 の準備・2026-10-21）', () => {
+    // 状態行の型（日英）。版の括弧は「準備中・1.1.0」→公開後「YYYY-MM-DD・1.1.0」と変わるので、中の版番号だけを読む
+    //   「ステータス: 1.1（…1.1.0…）——1.0 は凍結・追加拡張 N 件〈`a`・`b`／`c`〉・1.0 追補 M〈…〉まで反映」
+    //   "Version|Status: 1.1 (…1.1.0…): 1.0 is frozen; N additive extensions (`a`, `b`/`c`); 1.0 addenda through no. M (…) reflected"
+    const ja = /ステータス: 1\.1（[^）]*?(\d+\.\d+\.\d+)[^）]*）——1\.0 は凍結・追加拡張 (\d+) 件〈([^〉]+)〉・1\.0 追補 (\d+)/;
+    const en = /(?:Version|Status:) 1\.1 \([^)]*?(\d+\.\d+\.\d+)[^)]*\): 1\.0 is frozen; (\d+) additive extensions \(([^)]+)\); 1\.0 addenda through no\. (\d+)/;
+    const entries: [string, RegExp][] = [['spec/README.md', ja], ['README.ja.md', ja], ['README.md', en], ['en/spec/README.md', en]];
+    const words = (s: string) => [...s.matchAll(/`([^`]+)`/g)].map(x => x[1]).sort().join(',');
+    const found = entries.map(([p, re]) => {
+      const m = read(p).match(re);
+      expect(m, `${p}: 1.1 の状態行が型どおりでない`).not.toBeNull();
+      return { p, version: m![1], n: m![2], words: words(m![3]), addendum: m![4] };
+    });
+    for (const k of ['version', 'n', 'words', 'addendum'] as const) {
+      expect(new Set(found.map(f => f[k])).size, `1.1 の状態行の ${k} が入口間で不一致: ${found.map(f => `${f.p}=${f[k]}`).join('・')}`).toBe(1);
+    }
+    // 語は予約語集合（impl/src/eval.ts の WORDS_SINCE_1_1＝1.1 以降に追加した語）と同じ・版は CHANGELOG の「## 1.1（…版…）」節と同じ
+    const reserved = /WORDS_SINCE_1_1 = new Set\(\[([^\]]+)\]\)/.exec(read('impl/src/eval.ts'))?.[1] ?? '';
+    expect(found[0].words).toBe([...reserved.matchAll(/'([^']+)'/g)].map(x => x[1]).sort().join(','));
+    expect(found[0].version).toBe(/^## 1\.1（[^）]*?(\d+\.\d+\.\d+)[^）]*）/m.exec(read('spec/CHANGELOG.md'))?.[1]);
   });
 
   it('不可視文字（SOFT HYPHEN・ゼロ幅）が本文に混入していない（2026-07-13 レビュー指摘 I の再発防止）', () => {
@@ -451,6 +493,15 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
       const inDoc = new RegExp(`${w}\\s*=[^\\n]*label:`).test(gregDoc);
       expect(inKairos, `${w} の label: が gregorian.kairos に無い`).toBe(true);
       expect(inDoc, `${w} の label: が stdlib/gregorian.md §1 に無い`).toBe(true);
+    }
+    // 糖衣行（at／since／before＝ADR-51／55）は定義行そのものを照合する——境界（>= と <）の 1 字が .md で違えば割れる。en 側も同じ行
+    const gregDocEn = read('en/stdlib/gregorian.md');
+    for (const w of ['at', 'since', 'before']) {
+      const re = new RegExp(`^\\s*${w}\\([a-z]\\)\\s*=.*$`, 'm');
+      const inKairos = re.exec(greg)?.[0].trim();
+      expect(inKairos, `${w} の定義行が gregorian.kairos に無い`).toBeTruthy();
+      expect(re.exec(gregDoc)?.[0].trim(), `${w} の定義行が stdlib/gregorian.md §1 と一致しない`).toBe(inKairos);
+      expect(re.exec(gregDocEn)?.[0].trim(), `${w} の定義行が en/stdlib/gregorian.md §1 と一致しない`).toBe(inKairos);
     }
     const fiscal = read('impl/stdlib/fiscal.kairos');
     const fiscalDoc = read('stdlib/fiscal.md');

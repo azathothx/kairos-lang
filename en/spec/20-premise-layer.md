@@ -1,5 +1,5 @@
 ---
-source_sha: b23f3b2a01b1
+source_sha: 8083d8b6b690
 ---
 
 # Kairos Language Specification — 3. The Premise Layer
@@ -115,6 +115,14 @@ ambiguous and requires qualification (`Gregorian.month`). "Meaning is premise-re
 beyond values to names. Unique: bare name; ambiguous: qualify with the enclosing entity;
 unresolved: error.
 
+**Shadowing rule (a consumer binding with the same name as an in-scope public word)**: a bare name in
+the body resolves to the in-scope premise's public word (including words inherited along the base chain)
+before any consumer top-level binding. A consumer binding of the same name is silently hidden (no error,
+no warning — the 1.0 behaviour, kept in 1.1; the reference implementation adds a rename hint to its
+"not applicable" diagnostic). To use the intended value, rename the binding, or override the public word
+itself through a derived `with`. Words added in 1.1 or later are reserved; a binding of the same name is a
+static error (§4.8, ADR-55).
+
 ## 3.5 Value expressions and variables
 
 The premise layer has value expressions that are not time streams. The operators are chosen so as
@@ -123,7 +131,7 @@ not to collide with the combinators (`&`, `|`, `\`).
 | Kind | Symbols |
 |---|---|
 | Arithmetic | `+ - * /`, remainder `mod`, integer division `div` (words). `div` is **floor** division and `mod` the mathematical remainder (they disagree with trunc for negative dividends. ADR-31 revised, F63) |
-| Comparison | `< <= > >= == !=` |
+| Comparison | `< <= > >= == !=`. Ordering `< <= > >=` is **number with number, point with point** (ordering of points is the 1.1 additive extension = ADR-55); equality `== !=` is same type with same type. Mixing types is an error (§4.9 "Types in equality and ordering") |
 | Logic | `and`, `or`, `not` (words; the symbols `&`/<code>&#124;</code> are reserved for the combinators) |
 | Conditional | ternary `cond ? a : b` |
 | List | literal `[a, b, …]`, indexing `l[i]` (0-based), membership predicate `x in l` |

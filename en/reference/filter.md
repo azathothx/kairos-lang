@@ -1,5 +1,5 @@
 ---
-source_sha: 1d2ce77e41ef
+source_sha: 8ca4f543d5e8
 ---
 
 # `filter` — thin by predicate
@@ -70,4 +70,5 @@ everyDay |> filter(d => ordinalIn(day, month, d) == 11)
 ## Related
 
 [`roll`](roll.md) (nudges instead of thinning) · [`ordinalIn`](ordinalIn.md) ·
-[`cycle`](cycle.md) (the source of label predicates) · I8 · ADR-25/26.
+[`cycle`](cycle.md) (the source of label predicates) · [`since`](since.md) / [`before`](before.md) (the standard sugar
+that cuts at date-times = expands to filter) · I8 · ADR-25/26.

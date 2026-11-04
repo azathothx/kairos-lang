@@ -1,5 +1,5 @@
 ---
-source_sha: 6311478831e5
+source_sha: 498c795e2bfc
 ---
 
 # Kairos for Windows administrators — PowerShell and Task Scheduler, nothing else
@@ -19,8 +19,8 @@ On the Tokyo calendar that is early Wednesday morning, and in April and July it 
 - **Playground** (nothing to install): [https://kairos-lang.org/en/playground/](../playground/). "Pin to URL" shares the definition and range as a URL; "Add to calendar (.ics)" gives a calendar file. Nothing leaves the browser.
 - **CLI**: Node.js 20 or later, then `npm i -g kairos-lang`; the command is `kairos`. Without installing: `npx -y kairos-lang list …` (the first run downloads the package). Check: `kairos --version`.
 
-- **Standalone exe** (no Node.js): unzip `kairos-1.0.12-win-x64.zip` from [Release v1.0.12](https://github.com/azathothx/kairos-lang/releases/tag/v1.0.12)
-  and place `kairos.exe` (SHA256 in the `.sha256` file next to it). Built from the same source as npm `kairos-lang@1.0.12`. It is unsigned, so SmartScreen
+- **Standalone exe** (no Node.js): unzip `kairos-1.1.0-win-x64.zip` from [Release v1.1.0](https://github.com/azathothx/kairos-lang/releases/tag/v1.1.0)
+  and place `kairos.exe` (SHA256 in the `.sha256` file next to it). Built from the same source as npm `kairos-lang@1.1.0`. It is unsigned, so SmartScreen
   may warn once right after download ("More info" → "Run anyway"). Read `kairos` below as `.\kairos.exe` and everything else is the same.
 
 ## The first run — write a definition, ask with `list`

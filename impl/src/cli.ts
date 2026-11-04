@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Kairos CLI — サブコマンド: list（範囲の点列）・next（次の N 発火）
-// 使い方（kairos ＝ node src/cli.ts。配布名は 1.0 で npm bin / SEA に載せる）:
+// 使い方（kairos＝npm の kairos-lang の bin・単体 exe。開発は node src/cli.ts）:
 //   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--json|--ics|--tsv] <file.kairos>
 //   kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--json|--ics|--tsv] <file.kairos>
 // サブコマンド省略時（先頭引数がファイル）は list——旧形式の実行例を全て生かす後方互換。
@@ -342,7 +342,7 @@ export function renderTsv(rep: CliReport): string[] {
   return out;
 }
 
-const USAGE_JA = `使い方（kairos ＝ node src/cli.ts）:
+const USAGE_JA = `使い方（kairos＝npm の kairos-lang・単体 exe。開発は node src/cli.ts）:
   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json|--ics|--tsv] [--explain] [--lang en] <file.kairos>
       範囲 [from, to) の全発火・区間註釈・被覆サマリ（既定: 機械の tz の今日から 1 年）
   kairos next [-n 件数] [--from YYYY-MM-DD] [--horizon 年数] [--tz Zone] [--supply data.json] [--json|--ics|--tsv] [--explain] [--lang en] <file.kairos>
@@ -360,7 +360,7 @@ const USAGE_JA = `使い方（kairos ＝ node src/cli.ts）:
       被覆サマリ・註釈・警告は stderr（stdout は見出し行と点の行だけ）。--json／--ics と排他
 サブコマンド省略時は list・--version で実装版。終了コード: 0=成功・1=エラー・2=next が地平線内に要求件数未達／--ics で予定 0 件（点も註釈もない）`;
 
-const USAGE_EN = `Usage (kairos = node src/cli.ts):
+const USAGE_EN = `Usage (kairos = the npm kairos-lang CLI or the standalone exe; node src/cli.ts in development):
   kairos list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--tz Zone] [--supply data.json] [--json|--ics|--tsv] [--explain] [--lang en] <file.kairos>
       All firings in [from, to) plus interval annotations and the coverage summary
       (default: one year from today in the machine's time zone)

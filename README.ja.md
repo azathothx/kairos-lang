@@ -19,6 +19,8 @@ bizDay = everyDay \ ((everyDay |> filter(d => weekday(d) == Sat or weekday(d) ==
 monthEnd |> roll(Preceding, on: bizDay) |> shift(-3, unit: bizDay)   # 毎月末の 3 営業日前
 ```
 
+**試す**: [Playground](https://kairos-lang.org/playground/) · [カレンダー](https://kairos-lang.org/calendar/) · [1.1 の変更点](spec/CHANGELOG.md#v1-1)
+
 cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書けるが、「第 N 営業日」を式の中で簡潔に書けるものは
 無い。既存言語の本質的な限界は機能不足ではなく、**式が一枚岩で合成できない**こと——Kairos は「導いた日を基準に
 さらに別の定義を作る」**閉包性**を中核に据える（全式は時間ストリーム → 時間ストリーム）。祝日カスケードの導出・
@@ -31,14 +33,16 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 [spec §1.2](spec/00-intro.md)。実装系（発報層）との分業の全体像（消費ループ・決定性・missed-fire）は
 [spec §7.8](spec/90-examples.md)、「前回完了から N 営業日後」のような実行起点相対の正しい書き方
 （分解の仕方）は [spec §7.7](spec/90-examples.md)。発報層が満たすべき契約（再評価・at-least-once と冪等キー・
-運用信号の配線）は [spec 付録 A 発報層プロファイル](spec/60-firing-layer-profile.md)。
+運用信号の配線）は [spec 付録 A 発報層プロファイル](spec/60-firing-layer-profile.md)。`external` が解決する表を公開する側の契約
+（静的な束・被覆主張としての `covering:`・版としての `asof`・固定 URL・参照実装の CLI だけで走る受け入れ試験 4 本）は
+[spec 付録 B 供給側プロファイル](spec/61-supply-profile.md)。
 
 <p align="center"><img src="assets/figures/compare-composability.ja.svg" width="880"
   alt="合成が要である理由: cron は固定パターンまで・RRULE は繰り返し規則まで。Kairos は式が合成でき、結果は常にストリームとして次の定義へ流せる（閉包）。"></p>
 
-**ステータス: 1.0（2026-09-14 宣言・追補 29〈2026-10-26〉まで反映）**。意味論・演算子族・文法（EBNF）・字句は確定、命名も
-**全語確定**（最後の仮称 `shiftBoundary` は `rephase` に裁定済み＝2026-07-26）。表現力は既知スケジュール 20 要素のサンプル
-検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・880 テスト）で実証済み。
+**ステータス: 1.1（2026-11-04・1.1.0）——1.0 は凍結・追加拡張 2 件〈`labelOrdinal`・`since`／`before`〉・1.0 追補 29〈1.0.12〉まで反映**。意味論・演算子族・文法（EBNF）・字句は確定、命名は
+**1.0 の全語が確定**（最後の仮称 `shiftBoundary` は `rephase` に裁定済み＝2026-07-26）・**1.1 で `labelOrdinal`・`since`・`before` を追加**（[1.1 の記録](spec/CHANGELOG.md#v1-1)）。表現力は既知スケジュール 20 要素のサンプル
+検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・981 テスト）で実証済み。
 
 ## 構成
 
@@ -46,18 +50,26 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 |---|---|
 | [`spec/`](spec/) | **言語仕様**（レビュー可能なスナップショット。まずここ） |
 | [`recipes/`](recipes/) | **レシピ**——cron/Quartz/RRULE で「書けない」とされてきた要求の実用形（1 要求 1 ページ・Playground リンクつき） |
+| [`calendar/`](https://kairos-lang.org/calendar/) | **カレンダー**——暮らしの予定を穴埋めで決め、月めくりで見て、印刷するか .ics で取り込む（式は裏で組む・Playground と往復・サーバー送信なし） |
 | [`reference/`](reference/) | **記述語リファレンス**（演算子・窓生成語ごとの解説。例は実装で実行検証） |
 | [`skills/`](skills/kairos-authoring/SKILL.md) | **記述スキル**——要件から定義を書く手順（人にも AI にも）。要件の型と式の型・書いてはいけない形・診断の読み方・検算。例は実装で実行検証 |
 | [`stdlib/`](stdlib/) | 標準 premise の解説（`Gregorian`・`Fiscal`・`ISOWeek`・`Kyureki`——透明な標準ライブラリ。例は実行検証） |
 | [`impl/`](impl/) | リファレンス実装（TypeScript・実行時依存ゼロ）。言語の実装の 1 つであって言語そのものではない |
 | [`mcp/`](mcp/)（[日本語](mcp/README.ja.md)） | MCP サーバ `kairos-lang-mcp`——MCP クライアントから評価（list／next）・検証・リファレンス参照。tz は必須（英語） |
-| [`design/`](design/) | 設計記録（ADR-01〜53・ドメインモデル・構文ドラフト・表現力検証〈[「書けないスケジュール」の博物誌](design/40-examples/11-impossible-schedules.md) 含む〉・綻びログ） |
+| [`design/`](design/) | 設計記録（ADR-01〜55・ドメインモデル・構文ドラフト・表現力検証〈[「書けないスケジュール」の博物誌](design/40-examples/11-impossible-schedules.md) 含む〉・綻びログ） |
 | [`MAINTENANCE.md`](MAINTENANCE.md) | 保守の手引き——年 1 回の祝日表の更新・鮮度の検査・CI が赤のときの見分け・公開の仕組み（方針は [design/75-stewardship.md](design/75-stewardship.md)） |
 
 設計の履歴を遡るときは [`design/INDEX.md`](design/INDEX.md) から。
 
 Kairos 言語検定の教材（3 級 読解・2 級 作文・1 級 運用意味論の教本と、実装で実行検証したサンプル問題）は
 別サイト [exam.kairos-lang.org](https://exam.kairos-lang.org/)。
+
+## 言語と実装
+
+Kairos は仕様（[`spec/`](spec/)）です。npm の `kairos-lang` はその**リファレンス実装**で、言語の実装の 1 つであって言語そのものではありません。
+適合の条件は[付録 A](spec/60-firing-layer-profile.md) A.1（同じ可否・同じ点列・同じ診断の文言・[`reference/`](reference/) の doctest を正とする）。仕様に従う独立した評価器が
+供給側の本番で動いています（A.7）。言語が各実装に委ねる値（評価範囲の下限・実体化地平線・時間の分解能・tz データベース・点数の上限）は
+[`impl/README.md`](impl/README.md) の「実装定義のパラメータ」に一覧し、言語の制約ではありません（spec §1.4）。
 
 ## クイックスタート（リファレンス実装）
 
@@ -114,7 +126,7 @@ node src/cli.ts next -n 3 examples/payday.kairos   # 今日から次の 3 発火
 ## エラーはこう見える（直し方は括弧の中）
 
 診断は「語: 何が悪いか（直し方。根拠の所在）」の三部構成です。末尾の参照（I3・ADR-38・§3.3）は仕様書の番号で、そのまま引けます。
-参照実装の実物を 3 本（1.0.5 から同文・1.0.12 で確認）:
+参照実装の実物を 3 本（1.0.5 から同文・1.1.0 で確認）:
 
 - `roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言`
   `… |> roll(on: bizDay)` と規約をどこにも書かなかった形。直し方は `roll(Preceding, on: bizDay)`、または前文に一度 `@JP roll: Preceding`。
@@ -129,7 +141,10 @@ CLI はメッセージを印字して終了コード 1 で止まり、結果は�
 
 - **暦のモデル**: 先発グレゴリオ暦の理想化（閏年規則を全年代に適用・1582 年の改暦は扱わない）。他の暦法は premise 層でその上に組む
   （spec §3.6）。
-- **うるう秒は持たない**: 基底軸 chronos は一様。`23:59:60` は字句エラー（spec §5・ADR-33）。
+- **うるう秒は持たない**: 基底軸 chronos は一様。`23:59:60` は字句エラー（spec §5・ADR-33）。決定性のための言語の設計判断であって、
+  実装の限界ではない。
+- **ミリ秒未満の分解能と実時間制御は持たない**（高頻度取引・科学計測の類）: 軸は連続で、分解能は実装定義（参照実装は 1 ms。細かい字句は
+  黙って丸めず字句エラー）。時点を実時間で正確に打つのは実装系の責務（spec §7.8）。
 - **年は 4 桁**（0000〜9999）。`10000-01-01` は字句エラー。
 - **DST**: 市民時の幅（`1d`）は壁時計を保存するので市民日は 23〜25 時間になりうる。DST の隙間・重複に落ちる時刻リテラルは推測せず
   エラー（spec §3.6・§5・ADR-33／ADR-51）。市民日の幅は整数（`1.5d` はエラー。`36h` と書く）。

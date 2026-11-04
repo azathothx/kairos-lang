@@ -1,5 +1,5 @@
 ---
-source_sha: 2f36951872fe
+source_sha: 55ca7bab7d01
 ---
 
 # Kairos Language Specification — 1. Introduction
@@ -102,6 +102,28 @@ definitions; expressing business days, calendars, windows, and roll conventions.
 - Relativistic arbitration across multiple physical time axes (to preserve the uniqueness of the
   base).
 
+**Deliberately absent (design decisions)**:
+
+- **Leap seconds**. The base axis chronos is a uniform idealisation; `23:59:60` is a lexical error
+  (§5.5, ADR-33). This is a design decision made for determinism and for the simplicity of calendar
+  arithmetic, not an implementation convenience.
+- **Sub-millisecond resolution and real-time control** (high-frequency trading, scientific
+  instrumentation, and the like). The language's axis is continuous, but the resolution is
+  implementation-defined (§5.5). Placing the sequence of instants precisely in real time is the firing
+  layer's responsibility; the language stops at defining the sequence (§7.8).
+
+**Implementation-defined matters**: some values the language does not fix and each implementation
+declares — the floor of the evaluation range, the materialisation horizon, the time resolution, the
+version of the tz database, the cap on the number of points. They are not language constraints. The
+reference implementation's values are listed under "Implementation-defined parameters" in
+[`impl/README.md`](../../impl/README.md) (Japanese).
+
+**The language and its implementations**: Kairos is the specification (this document);
+[`impl/`](../../impl/) is one reference implementation of it. Conformance is defined in
+[Appendix A](60-firing-layer-profile.md) A.1 (verdict identity, matching the doctests' expected values,
+the diagnostic wording). An independent evaluator that follows the specification runs in production on
+the supply side (Appendix A, A.7).
+
 ## 1.5 Structure of this specification, and conventions
 
 1. Introduction (this chapter)
@@ -113,5 +135,5 @@ definitions; expressing business days, calendars, windows, and roll conventions.
 7. Representative examples
 
 **Conventions**: naming is final for every word — no placeholders remain (batch naming confirmation F51 and the `rephase` ruling of 2026-07-26; §5.4).
-The rationale for each design decision lives in the design records `20-adr/` (ADR-01 through 53) and
+The rationale for each design decision lives in the design records `20-adr/` (ADR-01 through 55) and
 `10-domain-model.md`; this specification presents only the folded conclusions.
