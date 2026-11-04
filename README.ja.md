@@ -53,6 +53,7 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 | [`calendar/`](https://kairos-lang.org/calendar/) | **カレンダー**——暮らしの予定を穴埋めで決め、月めくりで見て、印刷するか .ics で取り込む（式は裏で組む・Playground と往復・サーバー送信なし） |
 | [`reference/`](reference/) | **記述語リファレンス**（演算子・窓生成語ごとの解説。例は実装で実行検証） |
 | [`skills/`](skills/kairos-authoring/SKILL.md) | **記述スキル**——要件から定義を書く手順（人にも AI にも）。要件の型と式の型・書いてはいけない形・診断の読み方・検算。例は実装で実行検証 |
+| [`bench/`](bench/assist-premise-v4/README.md) | **AI 補助ベンチ v4**——要件を本体に写す AI 補助が、書かれていない前提を黙って補わず宣言するかを測る。問題 21 問・正答・採点規則・測定器を公開（正答は参照実装で検証） |
 | [`stdlib/`](stdlib/) | 標準 premise の解説（`Gregorian`・`Fiscal`・`ISOWeek`・`Kyureki`——透明な標準ライブラリ。例は実行検証） |
 | [`impl/`](impl/) | リファレンス実装（TypeScript・実行時依存ゼロ）。言語の実装の 1 つであって言語そのものではない |
 | [`mcp/`](mcp/)（[日本語](mcp/README.ja.md)） | MCP サーバ `kairos-lang-mcp`——MCP クライアントから評価（list／next）・検証・リファレンス参照。tz は必須（英語） |
