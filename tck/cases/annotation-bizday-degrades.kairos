@@ -1,0 +1,12 @@
+premise TSE2 {
+  calendar-system: Gregorian
+  tz: "Asia/Tokyo"
+  source: "test-calendar"
+  asof: 2026-01-05
+  satSun2 = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+  holidays = [2026-01-01, 2026-02-11] covering: 2026..2026
+  nonWorking = satSun2 | holidays
+}
+premise JP3 { calendar-system: Gregorian; calendar: TSE2; tz: "Asia/Tokyo"; wkst: Mon }
+@JP3
+bizDay

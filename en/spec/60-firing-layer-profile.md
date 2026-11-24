@@ -1,5 +1,5 @@
 ---
-source_sha: 8211faf150e3
+source_sha: c4fd6f83794f
 ---
 
 # Kairos Language Specification — Appendix A. Firing Layer Profile (the contract for conformant implementations)
@@ -230,6 +230,7 @@ The language side's trial measurements, and values recorded in the feedback repo
 - Two destinations (2026-09-07): one firing delivered to 2 destinations (claimed 2 / delivered 2). The delivery job ran 3 times that day; the remaining 2 re-executions were claimed 0 / delivered 0, and the delivery record stayed at 2 rows, one per destination.
 - Deviation from plan (all are differences of "the time delivery was reserved"; firing is earlier, completion of sending later): +0.728 s (about 0.7 s, 2026-07-23), +15.958 s (2026-08-07), +0.032 s (2026-08-23), +0.037 s (2026-09-07, the first of the two destinations).
 - Three timestamps (2026-10-23, the solar-term delivery, 1 destination): against the plan 07:00, firing +0.001 s, reservation of delivery +0.048 s, completion of sending +3.568 s (completion of sending includes the destination's response). The first sample in which the order firing ≤ reservation ≤ completion of sending was recorded in production. Runway 381 days, evaluation warnings 0, delivery record 1 row.
+- Three timestamps, second sample (2026-11-07, the solar-term delivery, 1 destination): against the plan 07:00, firing +0.006 s, reservation of delivery +0.057 s, completion of sending +1.807 s (completion of sending includes the destination's response). Same order. Almost all of the difference from the first sample lies in the interval from reservation to completion of sending (3.520 s → 1.750 s), whose breakdown was not measured. Runway 366 days, evaluation warnings 0, delivery record 1 row.
 - Limits: for the values before 2026-10-23, each value is the record of one firing per event (the time delivery was reserved) and does not include the destination's response time. For the deviations before 2026-10-23, the value is the time delivery was reserved, and the time of firing was not recorded. For 2026-07-23, the materialization and delivery-completion logs remain only in the supply side's feedback report (the delivery-record row remains in the supply side's database).
 
 ## A.8 Self-declaration of conformance (checklist)

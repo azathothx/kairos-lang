@@ -1,0 +1,4 @@
+premise JPX { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JPX
+ex = [2026-01-05] covering: ..
+everyDay \ ex

@@ -287,7 +287,7 @@ designed as a distinct premise, not a variant of `Fiscal`.
 
 ## 7. Scope (what Fiscal does not carry)
 
-- **Year-ends other than April** (December closing, February closing, the US federal type, and so
+- **Fiscal years not starting in April** (December closing, February closing, the US federal type, and so
   on) — the standard carries only the Japanese fiscal-year convention. For the rest, each
   organization writes a one-line derivation with a different `phase` (§6).
 - **Rendering fiscal-year labels** (stringifying to "令和 8 年度" (Reiwa 8), "FY26", and the like,

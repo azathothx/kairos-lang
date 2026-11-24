@@ -1,0 +1,5 @@
+premise JPX { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JPX
+sekki = [2026-02-04T05:02, 2026-05-05T20:49] covering: 2026..2026
+  labels: [立春, 立夏]
+(sekki | ([2027-02-04T05:00] covering: ..)) |> filter(s => sekki(s) == 立春)

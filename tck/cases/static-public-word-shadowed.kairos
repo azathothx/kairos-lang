@@ -1,0 +1,4 @@
+premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JP
+day = day cycle [On, Off] anchor: 2026-01-05
+everyDay |> filter(d => day(d) == On)

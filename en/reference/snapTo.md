@@ -65,7 +65,7 @@ newMoons |> snapTo(day)
   `edges: drop`), a point may belong to no window. The behavior is the three-way out-of-coverage
   fork (ADR-37): if the point is outside the window data's **effective coverage**, drop it and
   annotate the interval; outside the materialization horizon, a warning; **a gap inside the
-  coverage is a static error** ("snapTo: point outside windows" — a detector for corrupted data or
+  coverage is a static error** ("snapTo: 点が窓の外", i.e. "point outside windows" — a detector for corrupted data or
   a mixed-up expression; it never passes silently).
 - Label projections (`sekki(s)`) read **the original point** — after snapping, the point is no
   longer an element of the table and cannot be read. Write read-then-map, in that order (the

@@ -24,8 +24,8 @@ convention as the evaluation range `[from, to)`, windows and `isOpen`. `p` resol
 premise's `tz:` (ADR-33) — `since(2026-10-26)` is the first instant of 10/26 in that tz.
 
 The ordering between points `t >= p` was defined in 1.1 (spec §4.9 "Types in equality and ordering"). It is the total
-order of instants on chronos and **has no unit** — unlike the `epochOrdinal(hour, …)` comparison, which cut at the
-"floor of the hour" (pass 14:30 and 14:00 gets in), `since(…T14:30)` starts at 15:00.
+order of instants on chronos and **has no unit** — unlike the `epochOrdinal(hour, …)` comparison, which cuts at the
+"floor of the hour" (passing 14:30 lets 14:00 in), `since(…T14:30)` starts at 15:00.
 
 ## Examples
 
@@ -54,8 +54,8 @@ hourly |> since(2026-10-26T14:30) |> before(2026-10-26T18:00)
 
 ## Pitfalls
 
-- **Never embed "now" in the expression** — for cutting at the day level, the separation of the evaluation range
-  (`--from` / `--to`) comes first. Only the cut at an instant (a dated date-time) goes into the expression, and the date-time is
+- **Never embed "now" in the expression** — to cut at the day level, narrow the evaluation range
+  (`--from` / `--to`) instead. Only the cut at an instant (a dated date-time) goes into the expression, and the date-time is
   injected through an argument or by the caller (the same placement as `until:` of [`takeLast`](takeLast.md);
   ADR-52 decision 2).
 

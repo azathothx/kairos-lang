@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // SEA（Node Single Executable Application）ビルド試作: CLI を単一実行ファイルへ。
 // 手順（設計素描どおり）: esbuild で impl/src/cli.ts を単一 CJS へ束ね → Node 依存の
-// readFileSync 2 箇所（stdlib・package.json）をビルド時リテラルへ差し替え →
+// readFileSync 1 箇所（package.json の版）をビルド時リテラルへ差し替え（stdlib は 1.1.1 から生成モジュール stdlib-data.ts＝束に入る） →
 // sea-config → postject 注入。差し替えは build-playground.mjs と同じ規律——
 // パターンが合わなくなったら本スクリプトが失敗する（impl 側の変更に黙って追従しない）。
 // 検証まで一体: 生成した実行ファイルを実走し、参照実装（node src/cli.ts）と出力バイト一致を照合。
@@ -55,13 +55,10 @@ const patch = (name, re, replacement) => {
     throw new Error(`${name} の差し替えパターンが一致しない——impl 側の変更に追従が必要`);
   }
 };
-// (a) index.ts の stdlib 読み込み → ソース文字列のインライン（build-playground と同じ内容）
-const STDLIB_FILES = ['gregorian.kairos', 'fiscal.kairos', 'isoweek.kairos'];
-const stdlibSource = STDLIB_FILES
-  .map(f => readFileSync(join(IMPL, 'stdlib', f), 'utf8'))
-  .join('\n');
-patch('stdlib', /(?:const|var) stdlibSource = STDLIB_FILES[\s\S]*?join\(["']\\n["']\);/,
-  `var stdlibSource = ${JSON.stringify(stdlibSource)};`);
+// (a) stdlib は impl/src/stdlib-data.ts（生成モジュール・1.1.1）が束に入る＝差し替え不要。残っていたら Node 依存の混入
+if (/stdlib\/[a-z]+\.kairos/.test(js) && /readFileSync[^\n]*stdlib/.test(js)) {
+  throw new Error('stdlib を readFileSync で読む形が束に残っている——impl/src/index.ts の変更に追従が必要');
+}
 // (b) cli.ts の VERSION（package.json 読み） → リテラル
 const version = JSON.parse(readFileSync(join(IMPL, 'package.json'), 'utf8')).version;
 patch('VERSION', /(?:const|var) VERSION = JSON\.parse\([\s\S]*?\.version;/,

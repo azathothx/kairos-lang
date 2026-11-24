@@ -1,0 +1,4 @@
+premise JPX { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JPX
+dues = [2026-03-01, 2026-09-01] covering: 2026..2026, 2028..2028
+dues |> shift(90, unit: day)

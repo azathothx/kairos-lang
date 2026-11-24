@@ -1,0 +1,5 @@
+premise H { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon; source: "x"
+  h = external(kind: dates, labels: [a, b])
+}
+@H
+h

@@ -1,13 +1,16 @@
 // Kairos リファレンス実装（参照実装）— 公開 API
 import { STDLIB_SOURCE } from './stdlib-data.js';
 import { parse } from './parser.js';
-import { Runtime, Evaluator, KairosError } from './eval.js';
+import { Runtime, Evaluator, KairosError, DEFAULT_LIMITS } from './eval.js';
 import { getTz } from './tz.js';
 export { parse } from './parser.js';
 export { lex } from './lexer.js';
 export { KairosError, SupplyError, formatAnnotation } from './eval.js';
-// 標準 premise の読み込み順は依存順（派生は base の登録が先に要る）。readdir の辞書順は不可
-const STDLIB_FILES = ['gregorian.kairos', 'fiscal.kairos', 'isoweek.kairos'];
+export { DEFAULT_LIMITS } from './eval.js';
+export { STDLIB_SOURCE } from './stdlib-data.js';
+// 標準 premise は生成モジュール stdlib-data.ts（scripts/gen-stdlib-data.mjs が stdlib/*.kairos を依存順に埋め込む）から読む（1.1.1）。
+// 旧: 読み込み時に node:fs で読んでいた＝fs の無い環境（ブラウザの束・edge 実行環境）では import の時点で落ちた。配布物に Node 依存は残らない
+// （cli.ts の利用者ファイル読みを除く）。読み込み順の規律（派生は base の登録が先）は生成器が持つ
 const stdlibSource = STDLIB_SOURCE;
 /** Kairos プログラムを評価し、各本体式の時間ストリームを [from, to) で返す */
 export function run(source, opts) {
@@ -33,6 +36,19 @@ export function run(source, opts) {
         rt.resolver = opts.resolve; // external の解決子（ADR-46）
     rt.labels = opts.labels !== false; // 出口のラベル（1.0 追補 29）。false＝人間表示・next の探索窓では計算しない
     rt.explain = opts.explain === true; // 段ごとの記録（軽量 explain・1.0 追補 23）
+    if (opts.limits) { // 実体化の上限を下げる口（1.1.1・組み込みの口 (4)）: 既定より大きい値・非整数は使い方の誤り＝黙って丸めない
+        for (const k of ['gridWindows', 'stridePoints', 'strideRange']) {
+            const v = opts.limits[k];
+            if (v === undefined)
+                continue;
+            const max = DEFAULT_LIMITS[k];
+            if (typeof v !== 'number' || !Number.isInteger(v) || v < 1 || v > max) {
+                throw new KairosError(`limits.${k} は 1 以上 ${max.toLocaleString('en-US')}（2^${Math.log2(max)}）以下の整数`
+                    + `（既定より大きい値は受け付けない＝下げる口。参照実装の上限であって言語の上限ではない）: ${String(v)}`);
+            }
+            rt.limits[k] = v;
+        }
+    }
     const ev = new Evaluator(rt);
     const stdlib = parse(stdlibSource);
     const program = parse(source);
@@ -69,12 +85,19 @@ export function run(source, opts) {
         }
     });
     // 被覆サマリ（ADR-37 判断 7 (b)）: クリップしない静的な監視面。残走路＝評価 to から覆域終端まで
+    // 始端・終端（ms と表示形）と宣言値域は 1.1.1（組み込みの口 (3)）。表示形は結果の註釈と同じ ε 正規化（閉端→半開端の +1ms）
+    const disp = (ms) => rt.fmt(ms % 1000 === 1 ? ms - 1 : ms);
     const coverage = [...rt.coverage.values()].map(c => ({
         source: c.source,
         covering: c.covering,
         ...(c.asof ? { asof: c.asof } : {}),
         concluded: c.concluded,
         runwayDays: Number.isFinite(c.covEnd) ? Math.round((c.covEnd - rt.toMs) / 86_400_000) : null,
+        startMs: Number.isFinite(c.covStart) ? c.covStart : null,
+        endMs: Number.isFinite(c.covEnd) ? c.covEnd : null,
+        start: Number.isFinite(c.covStart) ? disp(c.covStart) : null,
+        end: Number.isFinite(c.covEnd) ? disp(c.covEnd) : null,
+        ...(c.domain ? { labelDomain: c.domain } : {}),
     }));
     return {
         results,

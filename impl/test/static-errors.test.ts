@@ -141,3 +141,101 @@ describe('序数射影の引数の数（2026-10-29・1.0 由来の宿題＝語�
     expect(() => run(PRELUDE + 'everyDay |> filter(d => epochOrdinal(month, d) > 3 and ordinalIn(day, month, d) > 1)\n', Y2026)).not.toThrow();
   });
 });
+
+describe('受理境界: covering の端は日付リテラルか 4 桁の年（§5.6 covering-edge・90-open 3-21 (1)）', () => {
+  const JP = 'premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }\n@JP\n';
+  const M = { from: '2026-01-01', to: '2026-02-01' };
+  const tbl = (cov: string) => run(JP + `h = [2026-01-05] covering: ${cov}\nh\n`, M);
+  const EDGE = /^構文エラー\(\d+:\d+\): covering の端は日付リテラルか 4 桁の年（値式は不可。§5\.6）/;
+  const stop: [string, string][] = [
+    ['2020+5..2025', '2020'],          // 旧: 値式として評価され「要素が covering の外」へ誤誘導
+    ['y..2026', 'y'],                  // 旧: 束縛名を評価して受理
+    ['2026..2026+1', '2026'],          // 後端の値式
+    ['(2026)..2026', '('],
+    ['_..2026', '_'],
+    ['2026..y', 'y'],                  // 旧: 開端の後ろの y が別の誤誘導へ
+  ];
+  for (const [cov, at] of stop) {
+    it(`covering: ${cov} は静的エラー（'${at}' の位置）`, () => {
+      expect(() => tbl(cov)).toThrow(EDGE);
+      expect(() => tbl(cov)).toThrow(`（'${at}' の位置）`);
+    });
+  }
+  it('covering: 2026-01..2026 は静的エラー＋日付リテラルへの誘導（旧: 2026 − 1＝2025 と黙って読まれて受理）', () => {
+    expect(() => tbl('2026-01..2026'))
+      .toThrow(/covering の端は日付リテラルか 4 桁の年（値式は不可。§5\.6）——2026-01 は日付リテラルではない（YYYY-MM-DD か YYYY）（'2026' の位置）$/);
+  });
+  it('束縛後置の covering: も同じ規則', () => {
+    expect(() => run(JP + 'h = everyDay |> filter(d => weekday(d) == Mon) covering: 2026-01..2026\nh\n', M)).toThrow(EDGE);
+  });
+  it('external の解決値 wire（parseCoveringText・ADR-46）も同じ規則——2026-01..2026 は契約違反', () => {
+    const H = 'premise H { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon; source: "x"\n  h = external(kind: dates)\n}\n@H\nh\n';
+    const sup = (covering: string) => ({ ...M, resolve: (() => ({ dates: ['2026-01-05'], covering, asof: '2026-01-01' })) as any });
+    expect(() => run(H, sup('2026-01..2026'))).toThrow(/^契約違反: covering が読めない——external H\.h: 構文エラー\(1:1\): covering の端は日付リテラルか 4 桁の年/);
+    expect(run(H, sup('2026..2026')).results[0].dates).toEqual(['2026-01-05']);
+  });
+  const keep: [string, string][] = [
+    ['2026..2026', '2026-01-01..2026-12-31'],
+    ['2026..2027', '2026-01-01..2027-12-31'],
+    ['2026-01-01..2026-12-31', '2026-01-01..2026-12-31'],
+    ['..2026', '..2026-12-31'],
+    ['2026..', '2026-01-01..'],
+    ['..', '..'],
+    ['2025..2025, 2026..2026', '2025-01-01..2025-12-31, 2026-01-01..2026-12-31'],
+    ['2026-01-05T00:00..2026', '2026-01-05..2026-12-31'],
+  ];
+  for (const [cov, desc] of keep) {
+    it(`covering: ${cov} は従来どおり通る（覆域 ${desc}）`, () => {
+      const r = tbl(cov);
+      expect(r.results[0].dates).toEqual(['2026-01-05']);
+      expect(r.coverage[0].covering).toBe(desc);
+    });
+  }
+  it('開端の直後の labels:・年の桁数の検査（評価側・F141）は従来どおり', () => {
+    expect(run(JP + 'h = [2026-01-05] covering: 2026.. labels: [A]\nh\n', M).results[0].dates).toEqual(['2026-01-05']);
+    expect(() => tbl('2026..10000')).toThrow(/^covering: 年は 4 桁の整数（0000\.\.9999）: 10000$/);
+  });
+});
+
+describe('受理境界: & が絡む結合子の混在は括弧必須（§4.5・§5.6・90-open 3-22 (1)）', () => {
+  const JP = 'premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }\n@JP\n'
+    + 'a = everyDay |> filter(d => weekday(d) == Mon or weekday(d) == Tue or weekday(d) == Wed)\n'
+    + 'b = everyDay |> filter(d => weekday(d) == Tue or weekday(d) == Wed or weekday(d) == Thu)\n'
+    + 'c = everyDay |> filter(d => weekday(d) == Wed or weekday(d) == Thu or weekday(d) == Fri)\n';
+  const M = { from: '2026-01-01', to: '2026-02-01' };
+  const dates = (e: string) => run(JP + e + '\n', M).results[0].dates;
+  const MIX = /^構文エラー\(\d+:\d+\): & が絡む混在は括弧で順序を明示する（§4\.5）/;
+  const stop: [string, string][] = [
+    ['a | b & c', '&'],                // 旧: (a | b) & c として受理
+    ['a & b | c', '|'],
+    ['a \\ b & c', '&'],
+    ['a & b \\ c', '\\'],
+    ['a | b | c & a', '&'],            // 3 項以上で & が 1 つ混ざる
+    ['a | b \\ c & a', '&'],
+    ['a |\n  b &\n  c', '&'],          // 行末結合子の継続（F91・ADR-44）でも同じ列
+    ['a |> within(month) |> first | b & c', '&'],
+  ];
+  for (const [e, at] of stop) {
+    it(`${JSON.stringify(e)} は静的エラー（'${at}' の位置）`, () => {
+      expect(() => dates(e)).toThrow(MIX);
+      expect(() => dates(e)).toThrow(`（'${at}' の位置）`);
+    });
+  }
+  const keep: [string, string][] = [
+    ['a | b | c', '((a | b) | c)'],
+    ['a & b & c', '((a & b) & c)'],
+    ['a \\ b \\ c', '((a \\ b) \\ c)'],
+    ['a | b \\ c', '((a | b) \\ c)'],   // & が絡まない混在は左結合のまま
+    ['(a | b) & c', '((a | b) & c)'],
+    ['a | (b & c)', '(a | (b & c))'],
+    ['a |\n  b |\n  c', '((a | b) | c)'],
+    ['a |> within(month) |> last & b', '((a |> within(month) |> last) & b)'],
+  ];
+  for (const [e, paren] of keep) {
+    it(`${JSON.stringify(e)} は従来どおり通る（${paren} と同じ列）`, () => {
+      const r = dates(e);
+      expect(r.length).toBeGreaterThan(0);
+      expect(r).toEqual(dates(paren));
+    });
+  }
+});

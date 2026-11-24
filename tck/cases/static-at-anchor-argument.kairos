@@ -1,0 +1,4 @@
+premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JP
+t = [2026-01-05, 2026-01-12, 2026-01-19, 2026-01-26, 2026-02-02] covering: 2026-01-01..2026-03-01
+t |> at(2026-01-20T07:00)

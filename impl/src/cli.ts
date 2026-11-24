@@ -14,7 +14,7 @@ import { basename } from 'node:path';
 import { run, formatAnnotation, KairosError, SupplyError } from './index.ts';
 import { toIcs, icsEventCount, uidKey, seriesUid } from './ics.ts';
 import type { RunResult, ExternalData, ExternalResolver } from './index.ts';
-import type { ResultAnnotation, CoverageEntry, StageTrace } from './eval.ts';
+import type { ResultAnnotation, CoverageEntry, StageTrace, ResultGrain } from './eval.ts';
 
 // 実装版（JSON 出力の版規律）。SEA 束ね時は build 側でリテラルへ差し替え（index.ts の stdlib と同型）
 const VERSION: string =
@@ -42,6 +42,8 @@ export interface CliReport {
     stages?: StageTrace[];             // --explain のときだけ: 段ごとの途中値と点数（軽量 explain・1.0 追補 23）
     labels?: (string | null)[];        // 本体式が参照するラベル付き束縛が 1 つのときだけ: 各点に射影 B(d) のラベル・無い点は null
                                        // （dates と同長・1.0 追補 29）。0 か 2 つ以上なら鍵ごと無い
+    grain: ResultGrain | null;         // 最後の段の整列（1.1.1）: civil {step, phase, off, tz}／elapsed {step, phase}／null＝主張なし
+                                       // （null は「時刻の点」の意味ではない＝整列は導出構造に付く十分条件。off 0 の civil が終日の目盛り）
   }[];
   coverage: CoverageEntry[];           // 被覆サマリ（ADR-37 判断 7 (b)。残走路は評価 to 起点）
   warnings: string[];
@@ -167,6 +169,7 @@ function toReport(command: 'list' | 'next', r: RunResult, o: CmdOpts & { to: str
       dates: res.dates, points: res.points, annotations: res.annotations,
       ...(res.stages ? { stages: res.stages } : {}),
       ...(res.labels ? { labels: res.labels } : {}),
+      grain: res.grain,
     })),
     coverage: r.coverage,
     warnings: r.warnings,

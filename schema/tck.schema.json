@@ -1,0 +1,398 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kairos-lang.org/schema/tck.schema.json",
+  "title": "Kairos TCK (technology compatibility kit) bundle and case",
+  "description": "The conformance bundle tck/kairos-tck.json produced by tck/build.mjs, or a single case taken from it. A case is one evaluator invocation (list or next) with every input made explicit (from, to, tz, supply) and the expected CliReport semantics baked from the reference implementation: points (epoch ms), dates, out-of-coverage annotations, labels, coverage summary and warnings on success, or error.kind and error.message on failure. The vocabulary is that of schema/cli-report.schema.json; version, command and the from/to echoes of the report are not repeated. Rationale: spec/60-firing-layer-profile.md A.1 (an evaluator of its own must return the same acceptance, the same points and the same diagnostics as the reference implementation).",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/bundle"
+    },
+    {
+      "$ref": "#/$defs/case"
+    }
+  ],
+  "$defs": {
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kairosLang",
+        "implSha",
+        "cases"
+      ],
+      "properties": {
+        "kairosLang": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "version of the reference implementation (impl/package.json) the expectations were baked with"
+        },
+        "implSha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12}$",
+          "description": "fingerprint of impl/src + impl/stdlib: the first 12 hex digits of sha256 over the seven source files and three stdlib files, the same formula as tools/build-playground.mjs"
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/case"
+          },
+          "description": "sorted by id; ids are unique"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "layer",
+        "origin",
+        "command",
+        "source",
+        "from",
+        "tz",
+        "expect"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(doctest|manifest)/\\S+$",
+          "description": "doctest/<dir>/<file>.md#<nn> (nn = 1-based index of the ```kairos block in the file) or manifest/<name> (tck/cases/<name>.kairos)"
+        },
+        "layer": {
+          "enum": [
+            "doctest",
+            "manifest"
+          ],
+          "description": "doctest: an executable example from reference/, stdlib/, design/40-examples/, recipes/ or skills/kairos-authoring/ (the same blocks impl/test/doctest.test.ts runs). manifest: a hand-written case moved from a witness in impl/test"
+        },
+        "origin": {
+          "type": "string",
+          "description": "where the case comes from: '<file> 実行例 N' for doctest, 'impl/test/<file>: <name of the it>' for manifest"
+        },
+        "command": {
+          "enum": [
+            "list",
+            "next"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "description": "the complete definition the evaluator receives (for doctest blocks that use @JP without defining it, the standard prelude of impl/test/helpers.ts is prepended)"
+        },
+        "from": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "start of the evaluation range [from, to) for list; the search origin for next"
+        },
+        "to": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "list only: exclusive end of the evaluation range"
+        },
+        "tz": {
+          "type": "string",
+          "minLength": 1,
+          "description": "the --tz the labels and range endpoints are read in; always explicit so no case depends on the machine's time zone"
+        },
+        "supply": {
+          "$ref": "#/$defs/supply"
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "next only: the -n value (0 is a usage-error case)"
+        },
+        "horizonYears": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "next only: the --horizon value (0 is a usage-error case)"
+        },
+        "expect": {
+          "$ref": "#/$defs/expect"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "command": {
+                "const": "list"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "to"
+            ],
+            "properties": {
+              "n": false,
+              "horizonYears": false
+            }
+          },
+          "else": {
+            "required": [
+              "n",
+              "horizonYears"
+            ],
+            "properties": {
+              "to": false
+            }
+          }
+        }
+      ]
+    },
+    "supply": {
+      "type": "object",
+      "description": "the static bundle passed as --supply (the form schema/supply.schema.json describes): keys are binding names or premise.binding",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[^\\s.]+(\\.[^\\s.]+)?$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "description": "one resolved value in the shape the CLI accepts (covering, asof, and dates or instants). The contents may violate the supply contract on purpose (a non-existent date, a non-integer instant, a label outside the declared domain): those cases expect error.kind supply from the evaluator",
+        "additionalProperties": false,
+        "required": [
+          "covering",
+          "asof"
+        ],
+        "properties": {
+          "dates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "instants": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "covering": {
+            "type": "string",
+            "minLength": 1
+          },
+          "asof": {
+            "type": "string",
+            "minLength": 1
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "dates"
+            ]
+          },
+          {
+            "required": [
+              "instants"
+            ]
+          }
+        ]
+      }
+    },
+    "expect": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/success"
+        },
+        {
+          "$ref": "#/$defs/failure"
+        }
+      ]
+    },
+    "success": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "results",
+        "coverage",
+        "warnings"
+      ],
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/result"
+          },
+          "description": "one entry per body expression, in document order (same as CliReport.results)"
+        },
+        "coverage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/coverageEntry"
+          },
+          "description": "the coverage summary; the runner compares it as a set (sorted by source and covering)"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "implementation warnings (horizon-clip, window-clip ...), in order; compared in the text stage"
+        },
+        "requested": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "next only: the number of firings asked for (-n); compared in the strict stage"
+        },
+        "found": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "next only: the number of firings actually found (< requested when the horizon ran out); strict"
+        },
+        "to": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "next only: the end of the search window the evaluator settled on (the day after the last firing); strict"
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "message"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "usage",
+                "supply",
+                "static"
+              ],
+              "description": "compared in the strict stage"
+            },
+            "message": {
+              "type": "string",
+              "description": "the diagnostic (Japanese is canonical); compared in the text stage"
+            }
+          }
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "points",
+        "dates",
+        "annotations",
+        "uid"
+      ],
+      "properties": {
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "epoch milliseconds, strictly ascending: the identity of each point (strict)"
+        },
+        "dates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\d{4,6}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?)?([+-]\\d{2}:\\d{2})?$"
+          },
+          "description": "civil labels of the points in tz, one-to-one with points (strict)"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/annotation"
+          },
+          "description": "out-of-coverage intervals clipped to the range (strict: fromMs, toMs, source, covering; text: asof)"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": "present exactly when the reference report has results[].labels (the expression names exactly one labelled binding); same length as dates (strict, including presence)"
+        },
+        "uid": {
+          "type": "string",
+          "pattern": "^kairos-[0-9a-f]{12}-series@kairos-lang\\.org$",
+          "description": "fingerprint of the expression (compared only with --check-uid)"
+        }
+      }
+    },
+    "annotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fromMs",
+        "toMs",
+        "source",
+        "covering"
+      ],
+      "properties": {
+        "fromMs": {
+          "type": "integer"
+        },
+        "toMs": {
+          "type": "integer"
+        },
+        "source": {
+          "type": "string"
+        },
+        "covering": {
+          "type": "string"
+        },
+        "asof": {
+          "type": "string"
+        }
+      }
+    },
+    "coverageEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "covering",
+        "concluded",
+        "runwayDays"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "covering": {
+          "type": "string"
+        },
+        "asof": {
+          "type": "string",
+          "description": "text stage: the appended '（宣言 asof … と不一致）' is wording"
+        },
+        "concluded": {
+          "type": "boolean"
+        },
+        "runwayDays": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

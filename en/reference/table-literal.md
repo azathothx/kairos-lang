@@ -41,7 +41,7 @@ year-limited special days.
   defines a point→label projection, and **the binding name is itself the projection name**
   (`sekki(d)`. ADR-30).
 - The range literal `a..b` is sugar expanding to an enumeration of consecutive days.
-- A premise containing a table is `source:` (provenance) declaration-required leaning; the edition
+- A premise containing a table should declare its provenance with `source:` (effectively required); the edition
   is carried by `asof:` (provenance governance).
 
 ## Examples

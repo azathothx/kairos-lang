@@ -57,7 +57,7 @@ the Japanese lunisolar calendar, and the 24 solar terms are all written with the
 
 Every diagnostic has three parts: `operator: what is wrong（how to fix it. where the rule lives）`. The text
 is Japanese (the canonical language); the trailing reference (I3, ADR-38, §3.3) is the spec's own numbering
-and can be looked up in the English mirror. Three real ones from the reference CLI (unchanged since 1.0.5; checked on 1.1.0):
+and can be looked up in the English mirror. Three real ones from the reference CLI (unchanged since 1.0.5; checked on 1.1.1):
 
 - `roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言` — "roll: a convention
   is required (I3) — write Following/Preceding as the positional argument, or declare roll: in the premise".
@@ -152,7 +152,8 @@ completeness claim, asof as a version id, fixed URLs, four acceptance tests that
 
 Kairos is a specification ([`spec/`](en/spec/)). `kairos-lang` on npm is its **reference implementation** — one
 implementation of the language, not the language. Conformance is defined in [appendix A](en/spec/60-firing-layer-profile.md)
-(A.1: the same verdicts, the same instants, the same diagnostic wording, and the doctests of [`reference/`](en/reference/) as the oracle); an independent
+(A.1: the same verdicts, the same instants, the same diagnostic wording, and the doctests of [`reference/`](en/reference/) as the oracle); the
+[technology compatibility kit](en/tck/README.md) checks it mechanically. An independent
 evaluator that follows the specification runs in production on the supply side (A.7). The parameters the language leaves to
 each implementation — the evaluation-range floor, the materialisation horizon, the time resolution, the tz database, the point
 cap — are listed in [`impl/README.md`](impl/README.md) and are not language constraints (spec §1.4).
@@ -232,7 +233,7 @@ calendar, cut by the National Astronomical Observatory of Japan's new-moon data.
 
 **Version 1.1 (2026-11-04, 1.1.0): 1.0 is frozen; 2 additive extensions (`labelOrdinal`, `since`/`before`); 1.0 addenda through no. 29 (1.0.12) reflected.** Semantics, the operator family, grammar (EBNF), and lexis are
 frozen; naming is final for every 1.0 word (the last placeholder `shiftBoundary` was settled as `rephase` on 2026-07-26), and 1.1 adds `labelOrdinal`, `since` and `before` ([record](spec/CHANGELOG.md#v1-1), Japanese). Expressiveness
-is validated against 20 well-known schedule families and by a reference implementation (981 tests),
+is validated against 20 well-known schedule families and by a reference implementation (1058 tests),
 including cross-checks against the official ephemeris of the National Astronomical Observatory of Japan.
 
 | Directory | Contents |
@@ -246,6 +247,7 @@ including cross-checks against the official ephemeris of the National Astronomic
 | [`stdlib/`](en/stdlib/) | Standard premises: `Gregorian`, `Fiscal`, `ISOWeek` ([日本語](stdlib/) — includes the Japanese-only `Kyureki`) |
 | [`impl/`](impl/) | Reference implementation (TypeScript, zero runtime deps — Japanese). One implementation of the language, not the language |
 | [`mcp/`](mcp/) | MCP server `kairos-lang-mcp` — evaluate (list/next), validate and look up the reference from an MCP client; `tz` is required (English) |
+| [`http/`](http/) | HTTP shell `kairos-lang-http` — a stateless, self-hosted evaluation API (list/next/validate) returning the CLI's `--json` report as is, with a Dockerfile; `tz` is required (English) |
 | [`design/`](design/) | Design records: 55 ADRs, domain model, expressiveness studies incl. the ["impossible schedules" catalog](en/design/40-examples/11-impossible-schedules.md) (Japanese; catalog mirrored in English) |
 | [`MAINTENANCE.md`](MAINTENANCE.md) | Maintenance guide — the yearly holiday-table update, the freshness check, what a red CI means, how releases are published (Japanese, with an English summary). Policy: [design/75-stewardship.md](design/75-stewardship.md) |
 

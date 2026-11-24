@@ -1,0 +1,6 @@
+premise JPX { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JPX
+h2026 = [2026-02-11] covering: 2026..2026
+h2027 = [2027-02-11] covering: 2027..2027
+nw = (h2026 | h2027) covering: 2026..2027
+nw

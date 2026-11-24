@@ -1,6 +1,6 @@
 {
   "name": "kairos-lang",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Kairos schedule definition language — 決めたら、いつでも。Write the rule once; list the dates. Reference implementation (CLI + evaluator, zero runtime dependencies)",
   "keywords": [
     "schedule",
@@ -52,6 +52,8 @@
     "test": "test"
   },
   "scripts": {
+    "gen": "node scripts/gen-stdlib-data.mjs",
+    "prebuild": "node scripts/gen-stdlib-data.mjs",
     "build": "tsc -p tsconfig.build.json",
     "prepack": "npm run build",
     "test": "vitest run",

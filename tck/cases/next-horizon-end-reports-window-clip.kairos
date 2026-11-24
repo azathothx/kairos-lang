@@ -1,0 +1,7 @@
+premise Cal { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon
+  nonWorking = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+}
+premise JP = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon }
+@JP
+edge = [2027-08-05] covering: 2027..2027
+edge |> shift(+1, unit: day)

@@ -1,0 +1,59 @@
+{
+  "name": "kairos-lang-http",
+  "version": "1.1.1",
+  "description": "Stateless HTTP shell for the Kairos schedule definition language — 決めたら、いつでも。Write the rule once; list the dates. Self-hosted evaluation API (list/next/validate) returning the reference implementation's report as is",
+  "keywords": [
+    "http",
+    "api",
+    "schedule",
+    "scheduling",
+    "calendar",
+    "business-days",
+    "holidays",
+    "kairos"
+  ],
+  "homepage": "https://kairos-lang.org/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azathothx/kairos-lang.git",
+    "directory": "http"
+  },
+  "bugs": {
+    "url": "https://github.com/azathothx/kairos-lang/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "azathothx",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "kairos-http": "dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "kairos-lang": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

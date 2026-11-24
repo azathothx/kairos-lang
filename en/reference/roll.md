@@ -86,8 +86,8 @@ month |> last |> roll(Preceding, on: (everyDay |> filter(d => weekday(d) == Fri)
   derivation. ADR-35).
 - **Beware short axes** — passing `on:` a window-instance reference (`on: year(2020)`-class,
   ADR-42) or a table with a short covering makes the axis bounded, and **points with no landing
-  point vanish without an annotation** (the rule-derived = coverage-complete side does not become
-  "drop and annotate" — the roll row of ADR-37 decision 4). To narrow to a specific period, `&`
+  point vanish without an annotation** (a rule-derived axis counts as fully covered, so the "drop and annotate" rule of ADR-37
+  decision 4 — its roll row — does not apply). To narrow to a specific period, `&`
   **after** the roll is the safe form.
 
 - **A point moved across the edge of the evaluation range is not in the output** — evaluated over

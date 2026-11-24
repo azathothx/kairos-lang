@@ -29,7 +29,7 @@ Key facts:
 - Scope: the language defines *sets of instants*; firing, retries, and execution management belong to
   the host runtime. "Every N hours since the last completion" decomposes into a pure next-fire
   computation from an injected instant, which is in scope.
-- Reference implementation: TypeScript with zero runtime dependencies; 981 tests including doctests
+- Reference implementation: TypeScript with zero runtime dependencies; 1058 tests including doctests
   over the documentation and cross-checks against the official ephemeris of the National Astronomical
   Observatory of Japan (NAOJ).
 - Language vs implementation: Kairos is a specification; kairos-lang is its reference implementation,
@@ -47,7 +47,8 @@ Key facts:
 - Repository: https://github.com/azathothx/kairos-lang
 - Machine-readable contract (1.0.6): JSON Schema (draft 2020-12) for the CLI's `--json` output including its
   error form at https://kairos-lang.org/schema/cli-report.schema.json, and for `--supply` input at
-  https://kairos-lang.org/schema/supply.schema.json. Points (epoch ms) are the identity; dates are
+  https://kairos-lang.org/schema/supply.schema.json, and for the conformance bundle (TCK, /tck/) at
+  https://kairos-lang.org/schema/tck.schema.json. Points (epoch ms) are the identity; dates are
   one-to-one civil labels. `--explain` prints per-stage point counts (results[].stages).
 - Identity key (1.0.9): `--json` results[].uid is the expression's fingerprint (FNV-1a 64 over its index, source text and tz;
   12 hex digits), identical to the UID of its recurring VEVENT in `--ics-series`; one-event-per-point UIDs replace
@@ -109,7 +110,7 @@ dates on any machine (the reference CLI prints them with `kairos list` / `kairos
   machine's zone unless you pass `--tz`.)
 - Misuse is an error, not a wrong date. The message names the operator, says what is wrong and,
   in parentheses, how to fix it. Diagnostics are in Japanese (the canonical language); two real
-  ones from the reference CLI (unchanged since 1.0.2; checked on 1.1.0), with a gloss:
+  ones from the reference CLI (unchanged since 1.0.2; checked on 1.1.1), with a gloss:
   - `shift: 点が軸上にない（先に roll で有効点へ寄せる）` — "shift: the point is not on the
     axis (roll it onto a valid point first)". Raised by `monthEnd |> shift(-3, unit: bizDay)`
     when a month-end falls on a non-business day; the fix is the canonical form above.
@@ -123,7 +124,7 @@ dates on any machine (the reference CLI prints them with `kairos list` / `kairos
 
 Every diagnostic has three parts: `operator: what is wrong（how to fix it. where the rule lives）`.
 The text is Japanese; the reference at the end (I3, ADR-38, §3.3) is the spec's own numbering, so
-the rule can be looked up in the English mirror. Three real ones from the reference CLI (unchanged since 1.0.5; checked on 1.1.0):
+the rule can be looked up in the English mirror. Three real ones from the reference CLI (unchanged since 1.0.5; checked on 1.1.1):
 
 - `roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言` — "roll: a
   convention is required (I3) — write Following/Preceding as the positional argument, or declare

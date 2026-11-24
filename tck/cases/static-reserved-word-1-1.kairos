@@ -1,0 +1,4 @@
+premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JP
+since = 1
+everyDay

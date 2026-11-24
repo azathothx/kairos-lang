@@ -1,0 +1,6 @@
+premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JP
+a = [2026-01-05, 2026-01-20] covering: 2026..2026 labels: [x, y]
+b = [2026-02-05] covering: 2026..2026 labels: [z]
+a | b
+a

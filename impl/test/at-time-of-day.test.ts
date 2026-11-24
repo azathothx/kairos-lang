@@ -147,7 +147,7 @@ marks |> at(1)`, { from: '2026-01-01', to: '2026-04-01' });
     ['形 4: premise P = Gregorian with {…}（供給側の現行の前文の形）', `premise P = Gregorian with { ${TZ} }\n@P\n`],
     ['形 5: premise P = Gregorian with { calendar-system: Gregorian }', `premise P = Gregorian with { calendar-system: Gregorian; ${TZ} }\n@P\n`],
     ['形 6: premise P = P0 with（P0 = Gregorian with）', `premise P0 = Gregorian with { ${TZ} }\npremise P = P0 with { wkst: Mon }\n@P\n`],
-    ['形 7: @Gregorian', `@Gregorian\n`],
+    ['形 7: @Gregorian（軽量形の後置 tz:＝1.1.1 から tz: 未宣言は先に止まる）', `@Gregorian ${TZ}\n`],
     ['形 8: premise P = Gregorian with { calendar-system: P }（自己参照・1.0.12 でも掛かっていた）', `premise P = Gregorian with { calendar-system: P; ${TZ} }\n@P\n`],
   ];
   const R = { from: '2026-01-01', to: '2026-01-06' };

@@ -1,11 +1,22 @@
 # CI マトリクス: 「Windows でも動く」を主張でなく機械検査にする（2026-08-06 新設）。
 # テストは Linux/Windows の 2 レーンで全数実行（doctest・文書整合検査・Playground 同期
 # ゲート込み）。単一バイナリ配布（Node SEA）に先行する移植性の網。
+#
+# OS の行列はリポジトリで変える（2026-11-20）: 公開リポジトリ azathothx/kairos-lang は全 OS（標準ランナーは無料）。
+# それ以外（非公開の正本・fork）は ubuntu だけ——非公開リポジトリの実行は月ごとの枠を使い、Windows と macOS は分単価が高い。
+# Windows・macOS の検査は、公開同期の後・タグを打つ前に公開リポジトリの CI で走る。非公開側で全 OS を確かめたいとき
+# （公開の前日など）は、Actions → CI → Run workflow で full にチェックして手動実行する。
 name: CI
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "全 OS で走らせる（公開リポジトリは常に全 OS）"
+        type: boolean
+        default: true
 permissions:
   contents: read
 jobs:
@@ -13,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: ${{ fromJSON((github.repository == 'azathothx/kairos-lang' || inputs.full) && '["ubuntu-latest","windows-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -41,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: ${{ fromJSON((github.repository == 'azathothx/kairos-lang' || inputs.full) && '["ubuntu-latest","macos-latest","windows-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -84,3 +95,26 @@ jobs:
       - run: node dist/bin.js --version
       - run: npm run typecheck
       - run: npx vitest run --testTimeout=90000
+
+  # kairos-lang-http（http/）の検査: mcp ジョブと同じ型（lock から入れて build → --version の実走 → typecheck → vitest）。
+  # 当て先は同居する ../impl/src。tz は必須なので実行機の TZ に依らない＝TZ=UTC でも同じく緑であることを 2 周目で見る。
+  http:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: http
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: http/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: node dist/bin.js --version
+      - run: npm run typecheck
+      - run: npx vitest run --testTimeout=90000
+      - run: npx vitest run --testTimeout=90000
+        env:
+          TZ: UTC

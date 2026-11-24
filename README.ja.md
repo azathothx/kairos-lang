@@ -42,7 +42,7 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 
 **ステータス: 1.1（2026-11-04・1.1.0）——1.0 は凍結・追加拡張 2 件〈`labelOrdinal`・`since`／`before`〉・1.0 追補 29〈1.0.12〉まで反映**。意味論・演算子族・文法（EBNF）・字句は確定、命名は
 **1.0 の全語が確定**（最後の仮称 `shiftBoundary` は `rephase` に裁定済み＝2026-07-26）・**1.1 で `labelOrdinal`・`since`・`before` を追加**（[1.1 の記録](spec/CHANGELOG.md#v1-1)）。表現力は既知スケジュール 20 要素のサンプル
-検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・981 テスト）で実証済み。
+検証と、リファレンス実装での実行検証（国立天文台 暦要項の実データ照合を含む・1058 テスト）で実証済み。
 
 ## 構成
 
@@ -57,6 +57,7 @@ cron や iCalendar RRULE は「月末 N 日前（暦日）」までは書ける�
 | [`stdlib/`](stdlib/) | 標準 premise の解説（`Gregorian`・`Fiscal`・`ISOWeek`・`Kyureki`——透明な標準ライブラリ。例は実行検証） |
 | [`impl/`](impl/) | リファレンス実装（TypeScript・実行時依存ゼロ）。言語の実装の 1 つであって言語そのものではない |
 | [`mcp/`](mcp/)（[日本語](mcp/README.ja.md)） | MCP サーバ `kairos-lang-mcp`——MCP クライアントから評価（list／next）・検証・リファレンス参照。tz は必須（英語） |
+| [`http/`](http/)（[日本語](http/README.ja.md)） | HTTP の殻 `kairos-lang-http`——セルフホスト用の無状態の評価 API（list／next／validate）。CLI の `--json` の報告をそのまま返す・Dockerfile つき。tz は必須（英語） |
 | [`design/`](design/) | 設計記録（ADR-01〜55・ドメインモデル・構文ドラフト・表現力検証〈[「書けないスケジュール」の博物誌](design/40-examples/11-impossible-schedules.md) 含む〉・綻びログ） |
 | [`MAINTENANCE.md`](MAINTENANCE.md) | 保守の手引き——年 1 回の祝日表の更新・鮮度の検査・CI が赤のときの見分け・公開の仕組み（方針は [design/75-stewardship.md](design/75-stewardship.md)） |
 
@@ -68,7 +69,8 @@ Kairos 言語検定の教材（3 級 読解・2 級 作文・1 級 運用意味�
 ## 言語と実装
 
 Kairos は仕様（[`spec/`](spec/)）です。npm の `kairos-lang` はその**リファレンス実装**で、言語の実装の 1 つであって言語そのものではありません。
-適合の条件は[付録 A](spec/60-firing-layer-profile.md) A.1（同じ可否・同じ点列・同じ診断の文言・[`reference/`](reference/) の doctest を正とする）。仕様に従う独立した評価器が
+適合の条件は[付録 A](spec/60-firing-layer-profile.md) A.1（同じ可否・同じ点列・同じ診断の文言・[`reference/`](reference/) の doctest を正とする）。
+適合は[適合試験一式（TCK）](tck/README.md)で機械検査できます。仕様に従う独立した評価器が
 供給側の本番で動いています（A.7）。言語が各実装に委ねる値（評価範囲の下限・実体化地平線・時間の分解能・tz データベース・点数の上限）は
 [`impl/README.md`](impl/README.md) の「実装定義のパラメータ」に一覧し、言語の制約ではありません（spec §1.4）。
 
@@ -127,7 +129,7 @@ node src/cli.ts next -n 3 examples/payday.kairos   # 今日から次の 3 発火
 ## エラーはこう見える（直し方は括弧の中）
 
 診断は「語: 何が悪いか（直し方。根拠の所在）」の三部構成です。末尾の参照（I3・ADR-38・§3.3）は仕様書の番号で、そのまま引けます。
-参照実装の実物を 3 本（1.0.5 から同文・1.1.0 で確認）:
+参照実装の実物を 3 本（1.0.5 から同文・1.1.1 で確認）:
 
 - `roll は規約が必要（I3）——位置引数で Following/Preceding を書くか前文で roll: を宣言`
   `… |> roll(on: bizDay)` と規約をどこにも書かなかった形。直し方は `roll(Preceding, on: bizDay)`、または前文に一度 `@JP roll: Preceding`。

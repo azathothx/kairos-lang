@@ -106,8 +106,7 @@ bizOpen
   reserved names (a manual binding is a static error).
 - **The consistency check is data-relative** (ADR-41 decision 2): over the joint effective
   coverage ∩ materialization range, adjacent markers must alternate in kind (an isolated
-  close/open at an edge is legal as a notch). **For a simultaneous open/close both points must
-  exist**, and their order is unique from context (close→open = continuous operation / open→close
+  close/open at an edge is legal as a notch). **At a simultaneous open/close both points exist**, and their order is unique from context (close→open = continuous operation / open→close
   = zero width) — the handling of simultaneous firing belongs to the firing layer. **Align the
   heads of the pair** (supply etiquette = F92): make both `grid` (from the epoch), or give both
   `strideBy` the **same day** in `from:`. With one side `strideBy(from: 2026…)` and the other

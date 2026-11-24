@@ -1,0 +1,121 @@
+# npm と GHCR への公開＝kairos-lang-http: publish-mcp.yml と同じ型（trusted publishing・environment「npm」の承認で止まる・キャッシュなし）。
+# 違い＝(1) 版の照合は タグ＝http の version＝impl の version＝lock の kairos-lang＝package.json の依存の下限（server.json は無い）
+# (2) 同じ版のイメージを GHCR（ghcr.io/azathothx/kairos-lang-http:<kairos-lang の版>）へ出す。イメージは **npm publish の前に**組んで
+# /healthz と /v1/list を 1 回ずつ叩き、push だけを npm の後にする＝「npm には出たのにイメージが無い」で止まる形を塞ぐ（2026-10-31 所見 13）。
+name: Publish http
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '公開するタグ（例: v1.1.0）'
+        required: true
+        type: string
+      ref:
+        description: 'checkout する ref（省略＝タグ。impl の公開後に http の lock を更新した回だけ main）'
+        required: false
+        type: string
+permissions:
+  id-token: write   # OIDC（npm への名乗り）
+  contents: read
+  packages: write   # GHCR
+concurrency:
+  group: publish-http
+  cancel-in-progress: false   # 公開は途中で止めない・重なったら順番に
+env:
+  TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  REF: ${{ github.event_name == 'workflow_dispatch' && (inputs.ref || inputs.tag) || github.ref }}
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/kairos-lang-http
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: http
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.REF }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: 版の照合（タグ＝http の version＝impl の version＝lock の kairos-lang＝依存の下限）と、同じ版の kairos-lang が npm に出ていること
+        id: check
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::タグの形が v1.x.y でない: $TAG"; exit 1; }
+          VERSION="${TAG#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          IMPL="$(node -p "require('../impl/package.json').version")"
+          [ "$PKG" = "$VERSION" ] || { echo "::error::http/package.json は $PKG・タグは $TAG"; exit 1; }
+          [ "$IMPL" = "$VERSION" ] || { echo "::error::impl/package.json は $IMPL・http は $PKG（両方同じ版にする）"; exit 1; }
+          LOCKED="$(node -p "require('./package-lock.json').packages['node_modules/kairos-lang'].version")"
+          [ "$LOCKED" = "$VERSION" ] || { echo "::error::package-lock.json の kairos-lang は $LOCKED・タグは $TAG（lock を同じ版に更新してから。イメージは lock の版を入れる）"; exit 1; }
+          # 依存の範囲の下限も同じ版（^1.0.12 のままだと npm 利用者や手元のイメージが古い評価器を解決し得る＝2026-10-31 所見 3）
+          RANGE="$(node -p "require('./package.json').dependencies['kairos-lang']")"
+          [ "$RANGE" = "^${VERSION}" ] || { echo "::error::package.json の kairos-lang は $RANGE・タグは $TAG（^${VERSION} にする）"; exit 1; }
+          seen="$(npm view "kairos-lang@${VERSION}" version 2>/dev/null || true)"
+          [ "$seen" = "$VERSION" ] || { echo "::error::kairos-lang@${VERSION} が npm にまだ無い。Publish impl を先に完走させてから承認する"; exit 1; }
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "IMAGE=ghcr.io/azathothx/kairos-lang-http:${VERSION}" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: npm が 11.5.1 以上であること（満たさなければ上げる）
+        run: |
+          node --version && npm --version
+          node -e "const [a,b,c]=process.argv[1].split('.').map(Number); process.exit(a>11||a===11&&(b>5||b===5&&c>=1)?0:1)" "$(npm --version)" || npm i -g npm@latest
+      - run: npm ci
+      - run: npm run build
+      - run: node dist/bin.js --version
+      - run: npm run typecheck
+      - run: npx vitest run --testTimeout=90000
+      - name: 配布物の中身（prepack→build を含む）
+        run: npm pack --dry-run
+      - name: イメージを組む（npm publish の前）
+        run: |
+          set -euo pipefail
+          docker build \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.version=${VERSION}" \
+            --label "org.opencontainers.image.licenses=Apache-2.0" \
+            -t "$IMAGE" .
+      - name: イメージの実走（/healthz・/v1/version・/v1/list・PORT を変えた HEALTHCHECK）
+        run: |
+          set -euo pipefail
+          docker run -d --name kh -p 8080:8080 "$IMAGE"
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/healthz && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8080/v1/version | tee version.json
+          node -e "const v=require('./version.json'); if(v.kairosLang!==process.env.VERSION||v.shell!==process.env.VERSION){process.exit(1)}"
+          curl -fsS http://127.0.0.1:8080/v1/list -H 'Content-Type: application/json' \
+            -d '{"source":"premise P { calendar-system: Gregorian; tz: \"Asia/Tokyo\"; wkst: Mon }\n@P\neveryDay |> within(month) |> last\n","from":"2026-01-01","to":"2026-04-01","tz":"Asia/Tokyo"}' > list.json
+          node -e "const r=require('./list.json'); if(r.results[0].dates.join(' ')!=='2026-01-31 2026-02-28 2026-03-31'){console.error(JSON.stringify(r).slice(0,300));process.exit(1)}; console.log('ok', r.version)"
+          docker rm -f kh
+          docker run -d --name kh2 -e PORT=3000 "$IMAGE"
+          for i in $(seq 1 30); do [ "$(docker inspect --format '{{.State.Health.Status}}' kh2)" = healthy ] && break; sleep 1; done
+          [ "$(docker inspect --format '{{.State.Health.Status}}' kh2)" = healthy ] || { docker logs kh2; exit 1; }
+          docker rm -f kh2
+      - run: npm publish
+      - name: 公開後の実測（版・shasum・来歴）
+        run: |
+          set -euo pipefail
+          # staged publishing: publish 直後は数分レジストリに見えないことがある。30 秒おきに最長 10 分待つ。
+          for i in $(seq 1 20); do
+            seen="$(npm view "kairos-lang-http@${VERSION}" version 2>/dev/null || true)"
+            if [ "$seen" = "$VERSION" ]; then
+              npm view "kairos-lang-http@${VERSION}" version dist.shasum dist.attestations
+              { echo "## kairos-lang-http@${VERSION}"; echo '```'; npm view "kairos-lang-http@${VERSION}" dist.shasum dist.attestations; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::warning::kairos-lang-http@${VERSION} がレジストリにまだ見えない。手元で npm view kairos-lang-http@${VERSION} dist.attestations を確かめる"
+      - name: GHCR へ push（npm の後・組んで実走したイメージ）
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE"
+          { echo "## ${IMAGE}"; echo '```'; docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

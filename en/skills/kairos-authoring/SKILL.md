@@ -1,7 +1,7 @@
 ---
 name: kairos-authoring
 description: How to write a Kairos (schedule definition language) definition from a requirement in plain language. Requirement patterns and their expression patterns, forms to avoid and their fixes, how to read diagnostics, verification. Target: reference implementation 1.1.0 (with the 1.0.12 forms where they differ).
-source_sha: 6922f053ddf6
+source_sha: b6321432e366
 ---
 
 # Writing Kairos — from a requirement to a definition (target: reference implementation 1.1.0)
@@ -46,7 +46,7 @@ payday |> roll(Preceding, on: bizDay)
 
 - A **body expression** is one line per expression. Stages are chained with `|>`. Combinators are `|` (union), `&` (intersection), `\` (difference). Stage chaining binds tighter than combinators, so show the intent with parentheses.
 - **The evaluation range stays outside the definition.** "From April this year", "until next week" are not written into the definition; ask with `list --from --to`. A definition is a rule that holds at any time.
-- **Times of day** are `at(Thh:mm)`. All-day: no `at`.
+- **Times of day** are `at(Thh:mm)`. All-day: no `at`. A time given in another time zone is written as is, with that zone declared in the premise's `tz:` (do not convert it to Tokyo time; the `tz` takes care of daylight-saving switches. If you do convert, split the time at the switch dates).
 - **Never embed "now"** in an expression. The caller passes today's date as `--from`.
 
 ## 2. Requirement patterns and expression patterns
@@ -193,6 +193,8 @@ mon = everyDay |> filter(d => weekday(d) == Mon)
 (mon |> at(T09:00)) | (mon |> at(T15:00))
 #=> 2026-01-05T09:00 2026-01-05T15:00 2026-01-12T09:00 2026-01-12T15:00 2026-01-19T09:00 2026-01-19T15:00
 ```
+
+- A time in another zone (say 9:00 in New York) is written under that zone's premise, `premise NY { calendar-system: Gregorian; tz: "America/New_York"; wkst: Mon }`, as `at(T09:00)`. A single `at` converted to Tokyo time drifts by an hour for about half the year wherever daylight saving applies.
 
 ### 2-12. N occurrences in total (`take`; exclusion comes before counting, so cancelled sessions are made up)
 
@@ -365,7 +367,7 @@ $ kairos list --from 2026-01-01 --to 2026-07-01 payday.kairos
 - A **`⚠ 範囲外`** ("out of coverage") line is an interval computed outside a table. Do not trust the points in it.
 - Compare the dates with the requirement. Look especially at days that fall on holidays, at month-ends and at the turn of the year.
 - Only the next occurrence: `kairos next -n 1`. For a program: `--json` (points, annotations, coverage); for a spreadsheet: `--tsv`; for a calendar: `--ics`.
-- The evaluation time zone is `--tz`. If the premise has `tz:`, evaluation uses that.
+- The evaluation time zone is the premise's `tz:` (using dates or windows without it is a static error). `--tz` sets the time zone of the evaluation range's endpoints and of the printed labels.
 
 ## 6. Vocabulary (short table)
 

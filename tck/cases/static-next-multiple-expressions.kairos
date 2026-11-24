@@ -1,0 +1,4 @@
+premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JP
+everyDay |> within(month) |> nth(1)
+everyDay |> within(month) |> nth(15)

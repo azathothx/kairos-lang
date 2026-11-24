@@ -133,6 +133,7 @@ describe('§7.6 年の十二支（干支）', () => {
   it('午年の元日は 2026, 2038', () => {
     const dates = evalDates(`
 premise JPEto = Gregorian with {
+  tz: "Asia/Tokyo"
   yearBranch = year cycle [子, 丑, 寅, 卯, 辰, 巳, 午, 未, 申, 酉, 戌, 亥] anchor: 2020-01-01
 }
 @JPEto

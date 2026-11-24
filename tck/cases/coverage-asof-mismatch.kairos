@@ -1,0 +1,5 @@
+premise Pin { calendar-system: Gregorian; tz: "Asia/Tokyo"; source: "db"; asof: 2026-07-01
+  h = external(kind: dates)
+}
+@Pin
+h

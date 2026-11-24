@@ -1,0 +1,5 @@
+premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JP
+x = y
+y = x
+x

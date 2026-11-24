@@ -70,4 +70,4 @@ everyDay |> filter(d => epochOrdinal(month, d) mod 12 == 0) |> within(month) |> 
 
 [`ordinalIn`](ordinalIn.md) · [`span`](span.md) (the supplier of the same ordinal coordinate) ·
 [`since`](since.md) / [`before`](before.md) (cutting a point set) ·
-the epoch `epoch:` (ADR-31) · ADR-27/30.
+the epoch `epoch:` (ADR-31) · ADR-27/30/55.

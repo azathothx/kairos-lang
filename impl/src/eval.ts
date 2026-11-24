@@ -16,7 +16,8 @@
 //   （結合実効被覆域∩実体化範囲の局所交互・端の切り欠き・同時刻対の文脈順序）・実体相対の
 //   bizOpen/bizClose/isOpen（証人三分岐・実体キーのメモ化）。時刻付き anchor/from: の日内
 //   オフセットは壁時計ラベル読み（ADR-31 改訂 2＝F87 の修正）。
-// - 未実装: Modified ロール・everyInstant の一般合成・前文 tz: の写像評価。詳細は README。
+// - 未実装: Modified ロール・everyInstant の一般合成。詳細は README。
+// - 前文 tz: は写像を要する評価の利用時に発火し、未宣言は誘導つき静的エラー（§3.6・ADR-33 判断 8。1.1.0 までは実行既定 tz に黙って落としていた＝90-open 3-23 (3)）。
 
 import type { Expr, Stage, Arg, Statement, Program, PremiseBlock, Member, Param, ListElem, CoveringRange } from './ast.ts';
 import type { DateVal, WidthVal } from './lexer.ts';
@@ -25,6 +26,9 @@ import { getTz, Tz, utcOfCivil } from './tz.ts';
 import { parseCoveringText, MEMBER_KEYS } from './parser.ts';
 
 /** 統治されたエラー。文言は長さ上限で切る（clipMessage——利用者の値を写す診断が 1 MB になっていた。三巡目） */
+/** 前文メンバーのキー（§3.3 の表）——本体で裸名として参照され未解決のとき、宣言の誘導に使う */
+const PREMISE_MEMBER_KEYS = new Set(['calendar-system', 'calendar', 'axis', 'roll', 'wkst', 'tz', 'source', 'granularity', 'asof', 'epoch']);
+
 export class KairosError extends Error {
   constructor(msg: string) { super(clipMessage(msg)); }
 }
@@ -35,23 +39,32 @@ export class SupplyError extends KairosError {}
 
 const DAY_MS = 86_400_000;
 /** 実体化する窓・点の数の上限（参照実装の制限・言語の上限ではない）。配列の上限（2^32−1）を下回っていても
- *  ヒープが先に尽きるとプロセスごと落ち、診断にできない（還流 2026-10-26 緊急便 §2＝grid 1s で OOM・F147）。grid と strideBy は
- *  紀元（または from:）から計算範囲の端まで実体化するので、見積もりがこれを越える幅は実体化の前に誘導つき静的エラーで止める。
+ *  ヒープが先に尽きるとプロセスごと落ち、診断にできない（還流 2026-10-26 緊急便 §2＝grid 1s で OOM・F147）。grid の窓列と strideBy の
+ *  経過時間幅の点列は実体化しない（紀元または from: からの算術）——全列挙が要る形だけ、個数がこれを越えるとき誘導つき静的エラーで止める。
  *  grid の全列挙（窓列を点列に読む・split・span の全窓）は窓の上限 2^24 で統一＝点列に読んだ先でも窓が付いて回る（2^24〜2^27 の点列が
- *  選択子で崩れていた＝2026-10-29 所見 7）。strideBy の点列は 2^26＝V8 の packed double 配列が push で RangeError になる長さの下
- *  （上限は V8 の版で違う＝Node 24 は 2^27 ちょうどで投げ、Node 22／20 は容量の伸び〈1.5 倍〉が先に越えて 112,813,858 で投げる。
- *  2^27 は Node 22 で 1.29 億点の見積もりが素通りし素の RangeError を漏らした＝2026-10-31 殻のセキュリティレビュー所見 5。
- *  engines は >=20 なので最も低い版で守れる値にした。strideBy(1s) は 1 日の評価範囲でも to+400 日まで約 3,460 万点〈cli.test の
- *  86,400 点の例〉で約 280 MB＝通る）。範囲に応じた実体化（序数の算術化）は 90-open 3-19 */
+ *  選択子で崩れていた＝2026-10-29 所見 7）。strideBy の点列の全列挙（述語 filter・snapTo・shift・roll・結合子・segmentBy のマーカー・
+ *  窓インスタンス参照）は 2^26＝V8 の packed double 配列が push で RangeError になる長さの下（Node 24 は 2^27 ちょうどで投げ、Node 22／20 は容量の伸び〈1.5 倍〉が先に越えて 112,813,858 で投げる＝2026-10-31 殻のセキュリティレビュー所見 5・engines >=20 の最も低い版で守れる値。これより上げない）。
+ *  範囲に応じた実体化（点列直読み・選択子・take／takeLast・stride・filter(on:)）は範囲内の点数に比例し、この上限に掛かるのは
+ *  範囲内の点数そのものが越えるときだけ（90-open 3-19） */
 const GRID_WINDOWS_MAX = 2 ** 24;    // 約 1,677 万窓（grid の全列挙の上限＝窓列も units も）
-const STRIDE_POINTS_MAX = 2 ** 26;   // 約 6,710 万点（strideBy の点の全列挙の上限）
+const STRIDE_POINTS_MAX = 2 ** 26;   // 約 6,710 万点（strideBy の点の全列挙の上限＝旧の構築時の事前判定と同じ）
+/** strideBy の範囲内の切り出し（出口・take／takeLast＝出力になる点）の上限。2^26 の内側でも出力の点ごとの値（日付文字列）が既定ヒープ
+ *  （約 2 GB）を尽くす帯があり、実測では約 600 万点でプロセスごと落ちる（2026-10-30 機械レビュー所見 1）。その手前の 2 の冪＝約 419 万点で
+ *  誘導つき静的エラーにする（grid の 2^24 は全列挙の上限で、出力の帯はこの PR の範囲外＝90-open 3-19 の註）。言語の上限ではない */
+const STRIDE_RANGE_MAX = 2 ** 22;    // 約 419 万点（strideBy の範囲内の切り出しの上限）
+/** 上限値の表示（診断文）: 既定値（2^24・2^26・2^22）には出自の「（2^n）」を添える＝文言は従来どおり。RunOptions.limits で下げた値は実値だけ（1.1.1） */
+const limitDesc = (n: number) => `${n.toLocaleString('en-US')}`
+  + (n === GRID_WINDOWS_MAX || n === STRIDE_POINTS_MAX || n === STRIDE_RANGE_MAX ? `（2^${Math.log2(n)}）` : '');
 
-/** 経過時間幅グリッドの窓列・単位点列は実体化しない（90-open 3-19 の根本・1.1.0・言語不変）: 紀元（t0）からの算術で
- *  添字⇄時刻を引く配列もどき。長さと添字アクセスは O(1)・添字の意味は従来の実体化（紀元起点の通し序数）と同一なので
+/** 経過時間幅グリッドの窓列・単位点列と strideBy（経過時間幅）の点列は実体化しない（90-open 3-19 の根本・1.1.0／1.1.1・言語不変）:
+ *  起点（t0）からの算術で添字⇄時刻を引く配列もどき。長さと添字アクセスは O(1)・添字の意味は従来の実体化（起点からの通し序数）と同一なので
  *  span・ラベル・epochOrdinal・shift(unit:) の読みは不変。全列挙（反復子・map/filter/slice・toSorted 等＝at 以外の関数値のキー）だけは
  *  個数の上限で止める（「点が多すぎて実体化できない」）——within → 選択子・ordinalIn・snapTo・split は添字の算術なので上限に掛からない。
- *  添字の全走査（for 文・JSON.stringify）は上限に掛からない＝消費側に残さない（2026-10-29 所見 5・6・14・90-open 3-19） */
-interface Arith { t0: number; step: number; n: number }
+ *  添字の全走査（for 文・JSON.stringify）は上限に掛からない＝消費側に残さない（2026-10-29 所見 5・6・14・90-open 3-19）。
+ *  limit／tooMany は列の出自（grid＝2^24・strideBy＝2^26）の門。est は診断に出す個数（stride で派生した列は元の strideBy の個数＝文言不変） */
+interface Arith { t0: number; step: number; n: number; limit: number; tooMany: (n: number) => never; est?: number;
+                  /** 範囲内の切り出し（ptSlice）の上限と診断（strideBy だけ。無ければ limit だけで止める） */
+                  sliceLimit?: number; tooManySlice?: (n: number) => never }
 const ARITH = Symbol('arith');
 function arithOf(a: unknown[]): Arith | undefined { return (a as unknown as Record<symbol, Arith | undefined>)[ARITH]; }
 /** 算術グリッドの末端（最後の窓の end） */
@@ -73,7 +86,7 @@ function arithIntersect(a: Arith, lo: number, hi: number): [number, number] | un
   const last = Math.min(a.n - 1, Math.ceil((hi - a.t0) / a.step) - 1);
   return last >= first ? [first, last] : undefined;
 }
-function lazyArray<T>(a: Arith, elem: (i: number) => T, limit: number, tooMany: (n: number) => never): T[] {
+function lazyArray<T>(a: Arith, elem: (i: number) => T): T[] {
   return new Proxy([] as T[], {
     get(target, key, recv) {
       if (key === 'length') return a.n;
@@ -85,7 +98,7 @@ function lazyArray<T>(a: Arith, elem: (i: number) => T, limit: number, tooMany: 
       const v = Reflect.get(target, key, recv);
       // 配列の既定メソッド（総称＝length と添字で動く）は at 以外すべて全列挙＝手書きの拒否リストでなく関数値のキーで判定
       // （ES2023 の toSorted／toReversed／with なども漏れない。2026-10-29 所見 14）
-      if (typeof v === 'function' && key !== 'at' && a.n > limit) tooMany(a.n);
+      if (typeof v === 'function' && key !== 'at' && a.n > a.limit) a.tooMany(a.est ?? a.n);
       return v;
     },
     has(target, key) {
@@ -95,14 +108,30 @@ function lazyArray<T>(a: Arith, elem: (i: number) => T, limit: number, tooMany: 
   });
 }
 /** 枠窓が算術グリッドのとき、選択子が回すべき窓の添字＝点を含む窓（昇順・重複なし）。pts は昇順なので直前値との比較で重複を除く
- *  （Set は 2^24 要素で生の RangeError＝2026-10-29 所見 2）。註釈区間に交差する窓は列挙しない＝選択子が区間ごとに O(1) で拡幅する（所見 4） */
-function relevantWindowIdx(a: Arith, pts: number[], tooMany: (n: number) => never): number[] {
+ *  （Set は 2^24 要素で生の RangeError＝2026-10-29 所見 2）。註釈区間に交差する窓は列挙しない＝選択子が区間ごとに O(1) で拡幅する（所見 4）。
+ *  点列も算術列（strideBy）なら、点の数と点の張る窓の数の少ない方を回す（どちらも 1 歩 O(1)・点は実体化しない。90-open 3-19） */
+function relevantWindowIdx(a: Arith, pts: number[], tooMany: (n: number) => never, limit: number): number[] {
   const out: number[] = [];
+  const pa = arithOf(pts);
+  if (pa) {
+    if (pa.n === 0) return out;
+    const span = arithIntersect(a, pa.t0, pa.t0 + (pa.n - 1) * pa.step + 1);   // 点の張る閉区間に交差する窓
+    if (!span) return out;
+    if (span[1] - span[0] + 1 <= pa.n) {
+      for (let i = span[0]; i <= span[1]; i++) {   // 窓ごと: 窓 [s, e) に点があるか＝s 以上の最初の点の添字 < e 以上の最初の点の添字
+        const s = a.t0 + i * a.step;
+        if (arithLowerBound(pa, s) >= arithLowerBound(pa, s + a.step)) continue;
+        if (out.length >= limit) tooMany(out.length + 1);
+        out.push(i);
+      }
+      return out;
+    }
+  }
   let prev = -1;
-  for (const p of pts) {
-    const i = arithIndexOf(a, p);
+  for (let k = 0, len = pts.length; k < len; k++) {   // 添字で回す＝遅延配列の全列挙の門（反復子）に掛けない
+    const i = arithIndexOf(a, pts[k]);
     if (i < 0 || i === prev) continue;
-    if (out.length >= GRID_WINDOWS_MAX) tooMany(out.length + 1);
+    if (out.length >= limit) tooMany(out.length + 1);
     out.push(i); prev = i;
   }
   return out;
@@ -164,6 +193,21 @@ export class OutOfCoverageSignal extends KairosError {
   }
 }
 
+/** 実体化地平線の失敗（ADR-37 判断 8）: 述語の参照（cycle 射影・ordinalIn・epochOrdinal・coincides・ラベル射影）が
+ *  計算範囲（to+400 日）の先、または実体化下限（紀元）より前の点を引いた。窓が無いのは言語の地平線ではなく参照実装の
+ *  計算範囲なので、ストリーム文脈（filter の述語）はその点を落として `horizon-clip` 警告（snapTo／shift の三分岐①と
+ *  同じ経路）、純値文脈はそのまま明示エラー。1.0.5 の F144（市民日への snapTo は地平線の先の点も残す）で、残した点が
+ *  後段の weekday 等で「cycle: 点が対象窓の外」の硬エラーになっていた退行の直し（2026-11-08・F161） */
+export class HorizonClipSignal extends KairosError {
+  op: string;
+  ms: number;
+  constructor(op: string, ms: number, msg: string) {
+    super(msg);
+    this.op = op;
+    this.ms = ms;
+  }
+}
+
 /** 整列（ADR-36）: 「全点が原子グリッド G＝（幅・正規化位相・tz 名）の目盛り点上にある」という
  *  静的主張。null は「なし」。位相は幅を法として正規化（civil＝市民日序数 mod 日数幅＋日内オフセット・
  *  elapsed＝anchor/紀元の chronos ms mod 幅）——既定整列と等価な anchor: は同一 G になり、
@@ -191,6 +235,19 @@ const gridDesc = (a: GridTag | null | undefined) =>
   isVacuous(a) ? '空虚適合（空テーブル）'
     : a ? `${a.kind === 'civil' ? `市民日 ${a.step}d` : `経過 ${a.step}ms`} 位相 ${a.phase}`
     + `${a.off ? ` 日内 +${a.off}ms` : ''}${a.tz ? ` tz "${a.tz}"` : ''}` : 'なし';
+
+/** 結果の出口の整列（1.1.1・組み込みの口 (2)）: 最後の段の整列タグ G（上の GridTag）を結果に添える形。静的主張（十分条件）＝
+ *  「全点が G の目盛り上にある」。null は「主張なし」であって「時刻の点」ではない（整列は導出構造に付く保守近似＝同じ外延でも
+ *  式の形で null になり得る・ADR-36 判断 1）。空虚適合（空テーブル）は点が無いので null に畳む。phase の基準は civil＝紀元
+ *  （1970-01-01・tz の市民日）からの市民日序数 mod step・elapsed＝紀元 ms mod step。off は civil の日内オフセット ms（0＝終日の目盛り） */
+export type ResultGrain =
+  | { kind: 'civil'; step: number; phase: number; off: number; tz: string }
+  | { kind: 'elapsed'; step: number; phase: number };
+function resultGrain(g: GridTag | null | undefined): ResultGrain | null {
+  if (!g || g.kind === 'vacuous') return null;
+  return g.kind === 'civil' ? { kind: 'civil', step: g.step, phase: g.phase, off: g.off, tz: g.tz }
+    : { kind: 'elapsed', step: g.step, phase: g.phase };
+}
 
 export type V =
   | number | boolean | string | V[]
@@ -290,11 +347,19 @@ interface TzCheck { win: GridTag | null | undefined; ctx: string }
 export interface RunOptions {
   from: string;                       // YYYY-MM-DD
   to: string;                         // YYYY-MM-DD（排他）
-  tz?: string;                        // 既定 Asia/Tokyo（前文 tz: があれば優先）
+  tz?: string;                        // 実行既定 tz（既定 Asia/Tokyo）＝評価範囲の端点と表示。写像の tz は前文 tz:（未宣言は静的エラー・1.1.1）
   resolve?: ExternalResolver;         // 外部供給宣言 external の解決子（ADR-46。無ければ解決時に供給エラー）
   labels?: boolean;                   // false＝結果の出口のラベル（results[].labels）を計算しない（人間表示・next の探索窓。既定 true・1.0 追補 29）
   explain?: boolean;                  // 本体式の段ごとの途中値と点数を results[].stages に残す（軽量 explain・1.0 追補 23）
+  limits?: RunLimits;                 // 実体化の上限を既定より下げる口（1.1.1・組み込みの口 (4)）。既定より大きい値は受け付けない
 }
+
+/** 実体化の上限（参照実装の処理系の値＝言語の上限ではない）。RunOptions.limits で既定より**小さい**値に下げられる（メモリの小さい
+ *  実行環境向け・1.1.1）。既定: grid の全列挙 2^24 窓・strideBy の全列挙 2^26 点・strideBy の出口（評価範囲内の切り出し）2^22 点 */
+export interface RunLimits { gridWindows?: number; stridePoints?: number; strideRange?: number }
+export const DEFAULT_LIMITS: Readonly<Required<RunLimits>> = Object.freeze({
+  gridWindows: GRID_WINDOWS_MAX, stridePoints: STRIDE_POINTS_MAX, strideRange: STRIDE_RANGE_MAX,
+});
 
 /** explain の 1 段（SQL の実行計画の 1 行に相当）: その段の後の点数（評価範囲内）・先頭と末尾の点・交差する窓数・註釈数 */
 export interface StageTrace {
@@ -343,6 +408,11 @@ export interface CoverageEntry {
   asof?: string;
   concluded: boolean;                  // 完結主張（開端 covering）の有無——黙らせた事実の可観測化
   runwayDays: number | null;           // 評価 to から覆域終端までの残走路（日）。開端＝null
+  startMs: number | null;              // 覆域の始端（epoch ms・開端は null）。区間リストは最小の始端（1.1.1・組み込みの口 (3)）
+  endMs: number | null;                // 覆域の終端（排他・epoch ms・開端は null）＝runwayDays の起点。区間リストは最大の終端
+  start: string | null;                // 始端・終端の表示形（実行 tz）
+  end: string | null;
+  labelDomain?: string[];              // external の labels: 宣言（宣言順・ADR-46 判断 4）があるときだけ。並行ラベル列は値域ではない
 }
 
 export interface RunResult {
@@ -350,6 +420,8 @@ export interface RunResult {
     source: string; line: number; points: number[]; dates: string[]; annotations: ResultAnnotation[]; stages?: StageTrace[];
     /** 結果の出口のラベル（1.0 追補 29）: 本体式が参照するラベル付き束縛がちょうど 1 つのときだけ。dates と同長・ラベルの無い点は null */
     labels?: (string | null)[];
+    /** 最後の段の整列（1.1.1）: civil／elapsed／null＝主張なし（ResultGrain の註） */
+    grain: ResultGrain | null;
   }[];
   coverage: CoverageEntry[];           // results と同格（註釈を捨てる短絡アクセスを既定にしない）
   warnings: string[];
@@ -368,13 +440,15 @@ export class Runtime {
   explain = false;
   /** 結果の出口のラベルを計算する（RunOptions.labels。false＝人間表示・next の探索窓では計算しない） */
   labels = true;
+  /** 実体化の上限（RunOptions.limits で既定より下げる。index.ts が検査して入れる） */
+  limits: Required<RunLimits> = { ...DEFAULT_LIMITS };
   /** external の解決子（ADR-46。RunOptions.resolve から） */
   resolver?: ExternalResolver;
   /** 被覆サマリの収集（ADR-37 判断 7 (b)）: 評価が参照した各データ源・被覆主張 */
-  coverage = new Map<string, { source: string; covering: string; asof?: string; concluded: boolean; covEnd: number }>();
+  coverage = new Map<string, { source: string; covering: string; asof?: string; concluded: boolean; covStart: number; covEnd: number; domain?: string[] }>();
   vocab = new Set<string>(['Following', 'Preceding', 'Modified', 'latest',
     'clip', 'drop', 'error', 'keep']);
-  tzName: string;                     // 実行既定 tz（CLI/API 引数。前文 tz: が在圏で上書きする）
+  tzName: string;                     // 実行既定 tz（CLI/API 引数）＝評価範囲の端点と表示だけ。写像の tz は在圏の前文 tz:（tzNameOf）
   tz: Tz;                             // 実行既定 tz の幾何（表示・from/to 解決）
   epoch: number;                      // 1970-01-01T00:00（実行既定 tz）の UTC ms＝実体化の下限
   computeEnd: number;
@@ -491,7 +565,20 @@ function ivIndexOf(iv: Iv[], ms: number): number {
   return ans >= 0 && ms < iv[ans].end ? ans : -1;
 }
 
+// ---- 点列の補助。点列は昇順の number[] で、strideBy（経過時間幅）の点列は算術の遅延配列（arithOf が立つ）でもある（90-open 3-19）。
+// 遅延配列は length と添字だけで引く（関数値のキー＝全列挙の門に掛けない）。全列挙が要る消費側は ptPlain で明示的に実体化する（門はそこ） ----
+
+/** 算術点列（t0 + i·step・i ∈ [0, n)）での ms の添字（点でなければ -1） */
+function arithPointIndex(a: Arith, ms: number): number {
+  const d = ms - a.t0;
+  if (d < 0 || d % a.step !== 0) return -1;
+  const i = d / a.step;
+  return i < a.n ? i : -1;
+}
+
 function ptIndexOf(pts: number[], ms: number): number {
+  const a = arithOf(pts);
+  if (a) return arithPointIndex(a, ms);
   let lo = 0, hi = pts.length - 1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
@@ -503,6 +590,8 @@ function ptIndexOf(pts: number[], ms: number): number {
 
 /** ソート済み点列で ms より大きい最初の添字（なければ length） */
 function ptUpperBound(pts: number[], ms: number): number {
+  const a = arithOf(pts);
+  if (a) return Math.min(a.n, Math.max(0, Math.floor((ms - a.t0) / a.step) + 1));
   let lo = 0, hi = pts.length;
   while (lo < hi) {
     const mid = (lo + hi) >> 1;
@@ -511,8 +600,58 @@ function ptUpperBound(pts: number[], ms: number): number {
   return lo;
 }
 
-/** ソート済み点列の集合演算 */
+/** ソート済み点列で ms 以上の最初の添字（なければ length）＝findIndex(p => p >= ms) の二分探索形（-1 でなく length） */
+function ptLowerBound(pts: number[], ms: number): number {
+  const a = arithOf(pts);
+  if (a) return arithLowerBound(a, ms);
+  let lo = 0, hi = pts.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (pts[mid] < ms) lo = mid + 1; else hi = mid;
+  }
+  return lo;
+}
+
+/** 点列に ms があるか */
+function ptHas(pts: number[], ms: number): boolean { return ptIndexOf(pts, ms) >= 0; }
+
+/** 算術点列の添字 [lo, hi) を配列にする（門は呼び手） */
+function arithSlice(a: Arith, lo: number, hi: number): number[] {
+  const out = new Array<number>(hi - lo);
+  for (let i = lo; i < hi; i++) out[i - lo] = a.t0 + i * a.step;
+  return out;
+}
+
+/** 添字 [lo, hi) の切り出し（実体化＝出口・take／takeLast＝出力になる点）。算術点列は個数が全列挙の門（limit）か、出力の門（sliceLimit＝
+ *  strideBy の 2^22）を越えると診断。旧版が to+400 日の見積もりで止めていた入力（0.01s × 1 日＝範囲内 864 万点）がヒープ枯渇で落ちる帯を塞ぐ */
+function ptSlice(pts: number[], lo: number, hi: number): number[] {
+  const a = arithOf(pts);
+  if (!a) return pts.slice(lo, hi);
+  lo = Math.max(0, lo); hi = Math.min(a.n, hi);
+  if (hi <= lo) return [];
+  if (hi - lo > a.limit) a.tooMany(a.est ?? a.n);
+  if (a.sliceLimit !== undefined && hi - lo > a.sliceLimit) a.tooManySlice!(hi - lo);
+  return arithSlice(a, lo, hi);
+}
+
+/** 全列挙の実体化（述語 filter・snapTo・shift・roll・結合子・segmentBy のマーカー・窓インスタンス参照）。算術点列は全列挙の門（limit＝
+ *  従来の strideBy の構築時の上限と同じ診断）だけで止まる＝出力の門は掛けない（全列挙の先で点が減る形を旧どおり通す）。普通の配列はそのまま返す */
+function ptPlain(pts: number[]): number[] {
+  const a = arithOf(pts);
+  if (!a) return pts;
+  if (a.n > a.limit) a.tooMany(a.est ?? a.n);
+  return arithSlice(a, 0, a.n);
+}
+
+/** [lo, hi) に入る点（評価範囲への切り取り）。算術点列は添字の区間で切り出す＝範囲外の点は作らない */
+function ptRange(pts: number[], lo: number, hi: number): number[] {
+  if (arithOf(pts)) return ptSlice(pts, ptLowerBound(pts, lo), ptLowerBound(pts, hi));
+  return pts.filter(p => p >= lo && p < hi);
+}
+
+/** ソート済み点列の集合演算（算術点列は和は実体化・積と差は相手側を回して所属を引く＝同じ集合・同じ順） */
 function ptUnion(a: number[], b: number[]): number[] {
+  a = ptPlain(a); b = ptPlain(b);
   const out: number[] = []; let i = 0, j = 0;
   while (i < a.length || j < b.length) {
     if (j >= b.length || (i < a.length && a[i] < b[j])) out.push(a[i++]);
@@ -522,6 +661,19 @@ function ptUnion(a: number[], b: number[]): number[] {
   return out;
 }
 function ptInter(a: number[], b: number[]): number[] {
+  const aa = arithOf(a), ba = arithOf(b);
+  if (aa || ba) {
+    // 少ない方（算術どうしなら個数の少ない方）を回し、相手への所属を引く。同値の連続（重複）は 1 回
+    const [small, big] = !aa ? [a, b] : !ba ? [b, a] : aa.n <= ba.n ? [a, b] : [b, a];
+    const out: number[] = []; let prev = NaN;
+    const src = ptPlain(small);
+    for (let k = 0; k < src.length; k++) {
+      const p = src[k];
+      if (p !== prev && ptHas(big, p)) out.push(p);
+      prev = p;
+    }
+    return out;
+  }
   const out: number[] = []; let i = 0, j = 0;
   while (i < a.length && j < b.length) {
     if (a[i] < b[j]) i++; else if (b[j] < a[i]) j++;
@@ -530,6 +682,8 @@ function ptInter(a: number[], b: number[]): number[] {
   return out;
 }
 function ptDiff(a: number[], b: number[]): number[] {
+  a = ptPlain(a);
+  if (arithOf(b)) return a.filter(p => !ptHas(b, p));
   const out: number[] = []; let i = 0, j = 0;
   while (i < a.length) {
     while (j < b.length && b[j] < a[i]) j++;
@@ -845,7 +999,7 @@ export class Evaluator {
             }
             const s = this.toStream(v);
             if (this.rt.explain && !stages) stages = [this.traceStage(exprLabel(st.expr), s)];
-            const trimmed = s.pts.filter(p => p >= this.rt.fromMs && p < this.rt.toMs);
+            const trimmed = ptRange(s.pts, this.rt.fromMs, this.rt.toMs);   // 算術点列は範囲内だけを切り出す（3-19）
             // 区間註釈は評価範囲 [from, to) にクリップして結果と同格に返す（表面で一度だけ＝ADR-37 判断 8）。
             // 表示形は閉端→半開端変換の ε（+1ms。輸送の依存像で生じる）を正規化する——正規化しないと
             // 真夜中の端が「2026-01-02T00:00」と印字され日付裸の端と不統一になる。fromMs/toMs は正確なまま
@@ -858,6 +1012,7 @@ export class Evaluator {
             // 結果の出口のラベル（1.0 追補 29・90-open 2-7）: 値層は不変——点列が決まった後に、出口だけが射影を読む
             const labels = this.rt.labels ? this.resultLabels(st.expr, cur, trimmed) : undefined;
             results.push({ source: '', line: st.line ?? 0, points: trimmed, dates: trimmed.map(p => this.rt.fmt(p)), annotations,
+                           grain: resultGrain(s.align),   // 最後の段の整列（1.1.1・組み込みの口 (2)）
                            ...(stages ? { stages } : {}), ...(labels ? { labels } : {}) });
             break;
           }
@@ -1189,6 +1344,11 @@ export class Evaluator {
     }
     // 標準語彙（day・month・weekday…）は calendar-system が持ち込む——宣言が無い・名前が premise でないときは
     // 「未解決の名前: day」とだけ出て原因を指さなかった（境界チェックリスト 軽微 12）
+    // 前文メンバー名そのもの（wkst 等）が未解決＝宣言が無い: calendar-system の誘導ではなく、そのメンバーの宣言を指す（1.1.1・90-open 3-23 (3) の同型）
+    if (PREMISE_MEMBER_KEYS.has(name) && !env.members.has(name)) {
+      this.err(`未解決の名前: ${name}（premise 相対解決 §3.4）——在圏の前文に ${name}: の宣言が無い（危険メンバーは黙って既定に落とさない。§3.3`
+        + `${name === 'wkst' ? '。例 wkst: Mon' : ''}）`);
+    }
     const csM = env.members.get('calendar-system');
     const csName = csM === undefined ? null : typeof csM === 'string' ? csM : csM.t === 'name' ? csM.name : '';
     const csHint = csName === null
@@ -1539,14 +1699,17 @@ export class Evaluator {
   }
 
   /** 被覆サマリへの登録（ADR-37 判断 7 (b)）: 評価が参照した各データ源・被覆主張 */
-  private registerCoverage(source: string, covDesc: string, covIv: Iv[], concluded: boolean, asof?: string) {
+  private registerCoverage(source: string, covDesc: string, covIv: Iv[], concluded: boolean, asof?: string, domain?: string[]) {
     const key = `${source}#${covDesc}#${asof ?? ''}`;
     if (this.rt.coverage.has(key)) return;
-    // 区間リストは昇順（resolveCovering が検査）だが、合成覆域も通るので最大を畳み込みで取る——
-    // Math.max(...) のスプレッドは区間 13 万個で RangeError（統治外）になった（境界チェックリスト三巡目・F136）
+    // 区間リストは昇順（resolveCovering が検査）だが、合成覆域も通るので最大・最小を畳み込みで取る——
+    // Math.max(...) のスプレッドは区間 13 万個で RangeError（統治外）になった（境界チェックリスト三巡目・F136）。
+    // 始端と宣言値域は 1.1.1（組み込みの口 (3)）＝供給源の継ぎ目を利用側が判定するための監視面
     let covEnd = covIv.length ? -Infinity : Infinity;
-    for (const x of covIv) if (x.end > covEnd) covEnd = x.end;
-    this.rt.coverage.set(key, { source, covering: covDesc, ...(asof ? { asof } : {}), concluded, covEnd });
+    let covStart = covIv.length ? Infinity : -Infinity;
+    for (const x of covIv) { if (x.end > covEnd) covEnd = x.end; if (x.start < covStart) covStart = x.start; }
+    this.rt.coverage.set(key, { source, covering: covDesc, ...(asof ? { asof } : {}), concluded, covStart, covEnd,
+                                ...(domain ? { domain: domain.slice() } : {}) });
   }
 
   /** テーブルの範囲外註釈＝覆域の補集合（ADR-37 判断 1: 値は列が決め、註釈は covering が決める） */
@@ -1630,6 +1793,19 @@ export class Evaluator {
         `範囲外（out-of-coverage）: 参照点 ${this.rt.fmt(ms)} は ${a.source} の実効被覆域の外`
         + `（covering ${a.covering}${a.asof ? `, asof ${a.asof}` : ''}——判定は外部・ADR-37）`, hit);
     }
+    this.horizonOrErr(ms, hardMsg);
+  }
+
+  /** 分類器の第 3 分岐（ADR-37 判断 8）: 覆域内の失敗でも、点が実体化地平線（計算範囲 to+400 日）の先か
+   *  実体化下限（紀元）より前なら「窓が無い」のは参照実装の計算範囲のせい——地平線シグナル（filter の共通経路が
+   *  落として horizon-clip 警告）。それ以外は従来どおり硬エラー（取り違え＝ADR-16 の統治のまま）。F161 */
+  private horizonOrErr(ms: number, hardMsg: string, opName?: string): never {
+    if (ms >= this.rt.computeEnd || ms < this.rt.epoch) {
+      const op = opName ?? hardMsg.split(/[:：]/)[0];
+      throw new HorizonClipSignal(op, ms,
+        `${op}: 点 ${this.rt.fmt(ms)} は計算範囲 to+400日 の実体化地平線の先`
+        + '——参照実装の計算範囲であって言語の地平線ではない（ADR-37 判断 8）');
+    }
     this.err(hardMsg);
   }
 
@@ -1640,9 +1816,16 @@ export class Evaluator {
     return { k: 'stream', pts: dw.units.slice(), wins: [], align: dw.grain, ann: [], endless: true };
   }
 
-  /** 在圏 tz 名（ADR-36 判断 6: リテラル文字列の等値）。未宣言は実行既定 tz へフォールバック */
+  /** 在圏 tz 名（ADR-36 判断 6: リテラル文字列の等値）。未宣言は誘導つき静的エラー（§3.3「前文でも段でも解決できない危険メンバーは静的エラー」・
+   *  §3.6「写像を要する評価が在圏で tz: を解決できなければエラー」・ADR-33 判断 8＝利用時に発火）。1.1.0 までは実行既定 tz（rt.tzName）へ黙って
+   *  落としていて、`@Gregorian` の裸の利用や `premise P { calendar-system: Gregorian }` が CLI／API の既定 tz で評価されていた（90-open 3-23 (3)・
+   *  検定の模擬受験 2026-10-31＝仕様を読んだ受験者は静的エラーと答えた）。実行既定 tz の役目は評価範囲の端点と表示だけ（rt.tz） */
   private tzNameOf(env: Env): string {
-    return this.memberStr(env.members, 'tz') || this.rt.tzName;
+    const tz = this.memberStr(env.members, 'tz');
+    if (tz) return tz;
+    // 誘導文に premise 名は出さない——定義の評価中は env.premise が定義の所有者（Gregorian）になり、利用側の名（@P）と食い違う
+    this.err('tz: が未宣言（在圏の前文にも基底の連鎖にも tz: が無い）——市民座標への写像（日付リテラルの錨・市民時幅の grid・snapTo(day)・at・市民日グリッド・紀元）には tz: が要る。'
+      + '前文の束に tz: "Asia/Tokyo" のように宣言するか、軽量形の後置（例 @Gregorian tz: "Asia/Tokyo"）で与える（危険メンバーは黙って既定に落とさない。§3.3／§3.6・ADR-33）');
   }
 
   /** 在圏 tz の幾何（ADR-33 射影パラメータモデル）——タグの tz 名と実グリッドはここで一致する */
@@ -1852,8 +2035,9 @@ export class Evaluator {
       const bizDays = new Set(ptDiff(every.pts, nwS.pts));   // C の営業日＝C.everyDay \ C.nonWorking
       const dayAnn = annUnion(every.ann, nwS.ann);
       const markerAnn = annUnion(opensS.ann, closesS.ann);
+      const opens = ptPlain(opensS.pts), closes = ptPlain(closesS.pts);   // セッション断片の構築は全走査（strideBy 由来なら門で止まる）
       // 整合性検査（判断 2）: 初回使用時・データ相対の層
-      this.checkAlternation(ent, opensS.pts, closesS.pts, markerAnn);
+      this.checkAlternation(ent, opens, closes, markerAnn);
       // セッション断片の構築: 開場マーカーごとの半開区間 [open, close)。同時刻の open/close は
       // 両点保持——順序は文脈で一意（直前が open 状態なら close→open＝連続営業・closed 状態なら
       // open→close＝幅 0 セッション＝空）。落ちた断片（開場日が非営業日）も isOpen の偽の材料に保持
@@ -1871,9 +2055,9 @@ export class Evaluator {
         }
       };
       let i = 0, j = 0;
-      while (i < opensS.pts.length || j < closesS.pts.length) {
-        const to = i < opensS.pts.length ? opensS.pts[i] : Infinity;
-        const tc = j < closesS.pts.length ? closesS.pts[j] : Infinity;
+      while (i < opens.length || j < closes.length) {
+        const to = i < opens.length ? opens[i] : Infinity;
+        const tc = j < closes.length ? closes[j] : Infinity;
         if (to === tc) {
           // 同時刻対: 開場中なら close→open（断片を切って即開く＝連続営業）・閉場中なら幅 0
           if (since >= 0) { push(to); closeSet.add(to); since = to; sinceDay = entTz.floorToDay(to); }
@@ -1888,7 +2072,7 @@ export class Evaluator {
       }
       if (since >= 0) push(this.rt.computeEnd);   // 尾の孤立 open（切り欠き）＝実体化端まで開く
       // bizOpen＝営業日の開場点（判断 3。帰属は開場日固定——実体 tz の市民日で読む）
-      const bizOpens = opensS.pts.filter(o => bizDays.has(entTz.floorToDay(o)));
+      const bizOpens = opens.filter(o => bizDays.has(entTz.floorToDay(o)));
       // bizClose＝bizOpen セッションの併合区間の和の右端（接する断片は融合・実体化端の仮端は除く）
       const bizCloses = mergeIv(segIv.filter((_, k) => segKept[k]))
         .map(x => x.end).filter(e2 => closeSet.has(e2));
@@ -1897,7 +2081,7 @@ export class Evaluator {
         open: { k: 'stream', pts: bizOpens, wins: [], align: null, ann, endless: opensS.endless },
         close: { k: 'stream', pts: bizCloses, wins: [], align: null, ann, endless: closesS.endless },
         segIv, segDayStart, segKept,
-        markers: ptUnion(opensS.pts, closesS.pts), markerAnn, dayAnn,
+        markers: ptUnion(opens, closes), markerAnn, dayAnn,
       };
       this.fineCache.set(key, fine);
       return fine;
@@ -2488,7 +2672,7 @@ export class Evaluator {
         this.checkTzMembership(this.predicateAlign, callee.grain, 'cycle 射影', true);   // ADR-40（weekday 等）
         const ms = this.point(args[0]);
         const idx = ivIndexOf(callee.iv, ms);
-        if (idx < 0) this.err('cycle: 点が対象窓の外');
+        if (idx < 0) this.horizonOrErr(ms, 'cycle: 点が対象窓の外', calleeName);   // 地平線の先は横に落とす（F161）・覆域内の外は硬エラー
         const L = callee.labels.length;
         return callee.labels[(((idx - callee.anchor) % L) + L) % L];
       }
@@ -2499,7 +2683,7 @@ export class Evaluator {
         }
         if (!callee.labels) this.err('ラベル列（labels:）のないテーブルは射影できない');
         this.registerCoverage(callee.src ?? '(無名テーブル)', callee.covDesc, callee.covIv,
-          callee.concluded, callee.asof);
+          callee.concluded, callee.asof, callee.domain);
         const ms = this.point(args[0]);
         const i = ptIndexOf(callee.pts, ms);
         if (i < 0) this.outOrErr(ms, this.tableAnn(callee), 'テーブル射影: 点が列にない');
@@ -2612,7 +2796,7 @@ export class Evaluator {
     // 要素点列（判断 2）: 窓列・点列ともソート済み＝スイープで窓所属だけ拾う
     const elemPts: number[] = [];
     let wi = 0;
-    for (const p of inputPts) {
+    for (const p of ptPlain(inputPts)) {   // 窓所属の掃引＝全列挙（算術点列は門で止まる）
       while (wi < iv.length && p >= iv[wi].end) wi++;
       if (wi >= iv.length) break;
       if (p >= iv[wi].start) elemPts.push(p);
@@ -2675,7 +2859,7 @@ export class Evaluator {
     const prevAlign = this.predicateAlign;
     this.predicateAlign = stream.align;
     try {
-      for (const p of stream.pts) {
+      for (const p of ptPlain(stream.pts)) {   // 述語は点ごと＝全列挙（算術点列は門で止まる＝従来の strideBy の構築時と同じ診断）
         try {
           if (test(p)) kept.push(p);
         } catch (err) {
@@ -2686,6 +2870,11 @@ export class Evaluator {
               extra = [...extra, ...err.entries.map(a => ({ ...a, from: w.start, to: w.end }))];
             }
             ann = annUnion(ann, extra);
+          } else if (err instanceof HorizonClipSignal && err.ms === p) {
+            // 地平線の先の点（F144 で残した市民日・テーブル由来の点）を述語が参照できない＝その点を落として警告（判断 8）。
+            // 失敗点が流れてきた点そのものでないとき（述語の中の定数の参照）は落とす点が無い＝明示エラーのまま
+            this.rt.warnings.push(`horizon-clip: filter ${this.rt.fmt(p)}`
+              + `（${err.op} は計算範囲 to+400日 の実体化地平線の先の点を参照できない——言語の地平線ではない。ADR-37 判断 8）`);
           } else throw err;
         }
       }
@@ -2785,17 +2974,17 @@ export class Evaluator {
         // 全列挙が要る操作（窓列を点列に読む・split・span の全窓）だけ上限（2^24）で止める（F137・F147）。units も窓の上限＝点列に
         // 読んだ先でも窓が付いて回る（2^24〜2^27 の点列は選択子で崩れていた。2026-10-29 所見 7）
         const n = Math.max(0, Math.ceil((this.rt.computeEnd - t0) / step));
-        const a: Arith = { t0, step, n };
-        const iv = lazyArray<Iv>(a, i => ({ start: t0 + i * step, end: t0 + (i + 1) * step }), GRID_WINDOWS_MAX,
-                                 k => this.tooManyPoints('grid', k, GRID_WINDOWS_MAX, 24));
-        const units = lazyArray<number>(a, i => t0 + i * step, GRID_WINDOWS_MAX, k => this.tooManyPoints('grid', k, GRID_WINDOWS_MAX, 24));
+        const L = this.rt.limits.gridWindows;   // 既定 2^24（RunOptions.limits で下げられる・1.1.1）
+        const a: Arith = { t0, step, n, limit: L, tooMany: k => this.tooManyPoints('grid', k, L) };
+        const iv = lazyArray<Iv>(a, i => ({ start: t0 + i * step, end: t0 + (i + 1) * step }));
+        const units = lazyArray<number>(a, i => t0 + i * step);
         const grain: GridTag = { kind: 'elapsed', step, phase: mod(t0, step), off: 0, tz: '' };
         return { k: 'windows', iv, units, labelFn, grain };
       }
       case 'span': {
         const units = this.windowsOf(operand);
         const ua = arithOf(units.iv);
-        if (ua && ua.n > GRID_WINDOWS_MAX) this.tooManyPoints('span', ua.n, GRID_WINDOWS_MAX, 24);   // 全窓を回す＝列挙の上限
+        if (ua && ua.n > this.rt.limits.gridWindows) this.tooManyPoints('span', ua.n, this.rt.limits.gridWindows);   // 全窓を回す＝列挙の上限
         const f = this.evalExpr(e.arg, env);
         const phase = e.named.phase ? this.num(this.evalExpr(e.named.phase, env)) : 0;
         if (!Number.isInteger(phase) || phase < 0) this.err(`span: phase は 0 以上の整数（${phase} は不可。負位相は周期を法として正規化して書く。F65／F129）`);
@@ -2974,10 +3163,16 @@ export class Evaluator {
   private traceStage(label: string, s: StreamV): StageTrace {
     const lo = this.rt.fromMs, hi = this.rt.toMs;
     let count = 0, first = -1, last = -1;
-    for (const p of s.pts) {
-      if (p < lo || p >= hi) continue;
-      if (first < 0) first = p;
-      last = p; count++;
+    if (arithOf(s.pts)) {   // 算術点列は添字の区間で数える（実体化しない）
+      const i0 = ptLowerBound(s.pts, lo), i1 = ptLowerBound(s.pts, hi);
+      count = i1 - i0;
+      if (count > 0) { first = s.pts[i0]; last = s.pts[i1 - 1]; }
+    } else {
+      for (const p of s.pts) {
+        if (p < lo || p >= hi) continue;
+        if (first < 0) first = p;
+        last = p; count++;
+      }
     }
     const top = s.wins.length > 0 ? s.wins[s.wins.length - 1] : undefined;
     const windows = top ? countIvIn(top.iv, lo, hi) : undefined;
@@ -3027,8 +3222,10 @@ export class Evaluator {
         const edgesV = this.sym(this.evalExpr(edges, env));
         const emptiesV = this.sym(this.evalExpr(empties, env));
         const markerS = this.toStream(this.evalExpr(positional[0] ?? this.err('segmentBy にマーカーが必要'), env));
-        const markers = markerS.pts;
+        const markers = ptPlain(markerS.pts);   // マーカーは全窓を張る＝全列挙（算術点列は門で止まる）
         if (markers.length < 1) this.err('segmentBy: マーカーが空');
+        let inPlain: number[] | undefined;      // 入力の点の全走査（edges: error・empties: の判定・edges: drop）は要るときだけ実体化
+        const inPts = () => (inPlain ??= ptPlain(stream.pts));
         // マーカーの実効被覆域（ADR-37 判断 4）: 覆域は「範囲内に他のマーカーは無い」を保証する——
         // edges:/empties: の発火判定は覆域の端であって列の端ではない
         const cov = complementIv(markerS.ann.map(a => ({ start: a.from, end: a.to })));
@@ -3108,7 +3305,7 @@ export class Evaluator {
         if (edgesV === 'error') {
           const headCov = covOf(markers[0]);
           const headStart = Math.max(headCov ? headCov.start : markers[0], this.rt.epoch);
-          const outside = stream.pts.some(p => p >= headStart && p < markers[0]);
+          const outside = inPts().some(p => p >= headStart && p < markers[0]);
           if (outside) this.err('segmentBy(edges: error): 窓の外に点がある');
         }
         let windows = iv;
@@ -3120,7 +3317,7 @@ export class Evaluator {
           // スイープで各窓の要素数を数える（点・窓ともソート済み）
           const nonEmpty = new Set<number>();
           let wi = 0;
-          for (const p of stream.pts) {
+          for (const p of inPts()) {
             while (wi < windows.length && p >= windows[wi].end) wi++;
             if (wi >= windows.length) break;
             if (p >= windows[wi].start) nonEmpty.add(wi);
@@ -3130,13 +3327,21 @@ export class Evaluator {
           // 「空窓」ではなく「未実体化」。日付テーブルのマーカーが計算範囲の先まで延びる形（期の開始日・朔日の表）や、
           // 1970 年より前に始まる表（元号）を評価すると「空窓がある」の偽エラーになっていた（三巡目・F145）。
           // 紀元は tz 相対なので頭側は 1 日の余裕を取る。テーブル由来の入力は全点を持つので従来どおり全窓を判定
-          const judged = (x: Iv) => !stream.endless
-            || (x.start >= this.rt.epoch + DAY_MS && x.end <= this.rt.computeEnd);
+          // ——ただし有限の入力でも、生成子と交わった形（everyDay & st・st |> roll(…)）は実体化範囲の外に点を持てない。
+          // F144 でマーカー（表 |> snapTo(day)）が地平線の先まで延びると、その先の窓が「空窓がある」の偽エラーになっていた
+          // （2026-11-08・F162）。入力自身が地平線の先（下限より前）に点を持つときだけ、その側の窓を判定する
+          const inAll = inPts();
+          const inMax = inAll.length ? inAll[inAll.length - 1] : -Infinity;
+          const inMin = inAll.length ? inAll[0] : Infinity;
+          const judged = (x: Iv) => stream.endless
+            ? (x.start >= this.rt.epoch + DAY_MS && x.end <= this.rt.computeEnd)
+            : !((x.start >= this.rt.computeEnd && inMax < this.rt.computeEnd)
+                || (x.end <= this.rt.epoch + DAY_MS && inMin >= this.rt.epoch + DAY_MS));
           if (emptiesV === 'error' && empties_.some(i => judged(windows[i]))) this.err('segmentBy(empties: error): 空窓がある');
           if (emptiesV === 'drop') windows = windows.filter((_, i) => nonEmpty.has(i));
         }
         const pts = edgesV === 'drop'
-          ? stream.pts.filter(p => p >= markers[0] && p < defEnd)
+          ? inPts().filter(p => p >= markers[0] && p < defEnd)
           : stream.pts;
         // 窓の切れ目＝マーカー点なので、この窓列の grain はマーカーの整列（snapTo の主張に使う）。
         // 窓列の註釈＝マーカー覆域の補集合（判断 4）——分類器（判断 6）の基準になる実効被覆域。
@@ -3181,7 +3386,7 @@ export class Evaluator {
         const out: number[] = [];
         let pi = 0;
         const arith = arithOf(iv);
-        const order = arith ? relevantWindowIdx(arith, stream.pts, k => this.tooManyWindows(`選択子 ${stage.name}`, k)) : null;
+        const order = arith ? relevantWindowIdx(arith, stream.pts, k => this.tooManyWindows(`選択子 ${stage.name}`, k), this.rt.limits.gridWindows) : null;
         if (arith) {
           // 註釈区間に交差する窓への拡幅は区間ごとに O(1)（交差する窓の和＝1 区間。経過幅グリッドは openEnd を持たないので readsEnd は常に偽）
           // ——窓を列挙して積むと、利用者が書いていない先頭註釈 × 細かい幅で紀元からの窓数を「from: を近づける」と誤って診断していた（2026-10-29 所見 4）
@@ -3191,25 +3396,31 @@ export class Evaluator {
           }
         }
         const total = order ? order.length : iv.length;
+        const pts = stream.pts, pa = arithOf(pts);
         for (let k = 0; k < total; k++) {
           const w = order ? iv[order[k]] : iv[k];
-          const inWin: number[] = [];
-          while (pi < stream.pts.length && stream.pts[pi] < w.start) pi++;
-          let pj = pi;
-          while (pj < stream.pts.length && stream.pts[pj] < w.end) inWin.push(stream.pts[pj++]);
-          pi = pj;
+          // 窓内の点＝添字の区間 [lo, hi)。点列が算術列（strideBy）なら下界の算術で O(1)・さもなくば従来の単調な掃引（窓は昇順）
+          let lo: number, hi: number;
+          if (pa) { lo = arithLowerBound(pa, w.start); hi = arithLowerBound(pa, w.end); }
+          else {
+            while (pi < pts.length && pts[pi] < w.start) pi++;
+            let pj = pi;
+            while (pj < pts.length && pts[pj] < w.end) pj++;
+            lo = pi; hi = pj; pi = pj;
+          }
+          const cnt = hi - lo;
           // 覆域端で閉じた最終窓（終端未確定・ADR-37 改訂 6）: 終端を読む段——last・既知部分に要素の足りない nth・既知部分が
           // 空の first/nth——は、窓の終端に始まる註釈区間にも交差するものとして窓全域へ拡幅する。始端・所属を読む first と
           // 足りている nth は従来どおり（註釈なし）。点集合は変わらない（註釈の追加のみ＝過小近似の是正）
           const readsEnd = w.openEnd === true
-            && (stage.name === 'last' || inWin.length === 0 || (stage.name === 'nth' && n > inWin.length));
+            && (stage.name === 'last' || cnt === 0 || (stage.name === 'nth' && n > cnt));
           for (const a of combined) {
             if ((readsEnd ? a.from <= w.end : a.from < w.end) && w.start < a.to) widened.push({ ...a, from: w.start, to: w.end });
           }
-          if (inWin.length === 0) continue;    // 空は正当な値（I15/ADR-15）
-          if (stage.name === 'first') out.push(inWin[0]);
-          else if (stage.name === 'last') out.push(inWin[inWin.length - 1]);
-          else if (n >= 1 && n <= inWin.length) out.push(inWin[n - 1]);
+          if (cnt === 0) continue;    // 空は正当な値（I15/ADR-15）
+          if (stage.name === 'first') out.push(pts[lo]);
+          else if (stage.name === 'last') out.push(pts[hi - 1]);
+          else if (n >= 1 && n <= cnt) out.push(pts[lo + n - 1]);
         }
         return { k: 'stream', pts: out, wins: stream.wins.slice(0, level), align: stream.align,
                  ann: annUnion(combined, widened), endless: stream.endless };  // 対象窓と内側を消費
@@ -3220,8 +3431,10 @@ export class Evaluator {
           // on: 明示、または前文 axis: の畳み込み（どちらも軸＝等値所属。ADR-35 の読み替えも通す）
           const axisS = this.toStream(this.evalAxis(onE ?? this.axisMember(env, 'filter'), env));
           this.checkAlign(stream.align, axisS.align, 'filter(on:)');
-          const set = new Set(axisS.pts);
-          return { ...stream, pts: stream.pts.filter(p => set.has(p)),
+          // 等値所属＝入力と軸の積（同じ集合・同じ順）。算術点列（strideBy）が絡めば ptInter が少ない方を回す（3-19）
+          const pts = arithOf(stream.pts) || arithOf(axisS.pts) ? ptInter(stream.pts, axisS.pts)
+            : (set => stream.pts.filter(p => set.has(p)))(new Set(axisS.pts));
+          return { ...stream, pts,
                    ann: annUnion(stream.ann, axisS.ann),     // 等値所属は軸の覆域に依存（判断 4）
                    endless: stream.endless && axisS.endless };   // 積と同型（軸が有限なら出力も有限）
         }
@@ -3238,7 +3451,7 @@ export class Evaluator {
         if (conv === 'Modified') this.err('Modified は参照実装では未実装');
         if (conv !== 'Following' && conv !== 'Preceding') this.err(`未知のロール規約: ${conv}`);
         const pts: number[] = [];
-        for (const p of stream.pts) {
+        for (const p of ptPlain(stream.pts)) {   // 点ごとの写像＝全列挙（算術点列は門で止まる）。軸は添字と二分探索だけで引く
           if (ptIndexOf(axis, p) >= 0) { pts.push(p); continue; }   // 有効点は動かない
           if (conv === 'Following') {
             const i = ptUpperBound(axis, p);
@@ -3274,7 +3487,7 @@ export class Evaluator {
           // 窓単位: 属する窓の添字を n 動かし、窓内オフセットを保存（区間所属＝整列検査なし。ADR-36）。
           // 出力整列は「入力整列＝単位窓の要素グリッド」なら保存、さもなくば なし
           align = gridEq(stream.align, unitV.grain) ? stream.align : null;
-          for (const p of stream.pts) {
+          for (const p of ptPlain(stream.pts)) {   // 点ごとの写像＝全列挙（算術点列は門で止まる）
             const i = ivIndexOf(unitV.iv, p);
             if (i < 0) {
               if (p >= this.rt.computeEnd || p < this.rt.epoch) {   // ①実体化地平線（判断 8）
@@ -3308,7 +3521,7 @@ export class Evaluator {
           align = axisS.align;
           const axis = axisS.pts;
           let extra: Ann[] = [];
-          for (const p of stream.pts) {
+          for (const p of ptPlain(stream.pts)) {   // 点ごとの写像＝全列挙。軸（strideBy でも可）は添字と二分探索だけで引く
             const i = ptIndexOf(axis, p);
             if (i < 0) {
               const hit = annAt(axisS.ann, p);
@@ -3345,7 +3558,7 @@ export class Evaluator {
         // 「ラベル列の長さ ≠ 窓数」の偽エラーになっていた（spec §4.2 の「覆域基準＝評価範囲非依存」に実装を合わせる。
         // 90-open の実装宿題・境界チェックリスト三巡目 2026-09-30・F144）。地平線の先へ出るのはテーブル由来の点だけ
         const dayGrid = this.civilDayGridOf(wV, w);
-        for (const p of stream.pts) {
+        for (const p of ptPlain(stream.pts)) {   // 点ごとの写像＝全列挙（算術点列は門で止まる）
           const i = ivIndexOf(w, p);
           if (i >= 0) { this.windowClip('snapTo', p, w[i].start); pts.push(w[i].start); continue; }
           if (dayGrid && p >= this.rt.computeEnd) { pts.push(dayGrid.floorToDay(p)); continue; }
@@ -3434,6 +3647,15 @@ export class Evaluator {
         const tails = stream.ann.filter(a => a.to > anchor)
           .map(a => ({ ...a, from: Math.max(a.from, anchor), to: Infinity }));
         const ann = annUnion(stream.ann, tails);
+        const pa = arithOf(stream.pts);
+        if (pa) {
+          // 算術点列の n 歩おきは算術点列（起点＝from: 以後の最初の点・幅 n 倍）＝実体化しない。門と診断の個数は元の strideBy のまま
+          const start = arithLowerBound(pa, anchor);
+          if (start >= pa.n) return { ...stream, pts: [], ann };
+          const d: Arith = { t0: pa.t0 + start * pa.step, step: pa.step * n, n: Math.ceil((pa.n - start) / n),
+                             limit: pa.limit, tooMany: pa.tooMany, est: pa.est ?? pa.n };
+          return { ...stream, pts: lazyArray<number>(d, i => d.t0 + i * d.step), ann };
+        }
         const start = stream.pts.findIndex(p => p >= anchor);
         if (start < 0) return { ...stream, pts: [], ann };
         return { ...stream, pts: stream.pts.slice(start).filter((_, i) => i % n === 0), ann };
@@ -3450,8 +3672,9 @@ export class Evaluator {
         }
         const fromE = named('from') ?? this.err('take: from: が必須（起点の明示。ADR-31・§4.7）');
         const anchor = this.point(this.evalExpr(fromE, env));
-        const start = stream.pts.findIndex(p => p >= anchor);
-        const pts = start < 0 ? [] : stream.pts.slice(start, start + n);
+        // from: 以後の最初の点＝下界（二分探索・算術点列は O(1)）。n 点だけを切り出す＝算術点列でも範囲に比例（3-19）
+        const start = ptLowerBound(stream.pts, anchor);
+        const pts = start >= stream.pts.length ? [] : ptSlice(stream.pts, start, start + n);
         // 輸送行（ADR-49）: 数えに交差した註釈は交差点から先すべて（stride 行の同型）。
         // take 固有の縮小——第 n 点が交差より前に確定したら、確定後に始まる註釈は輸送しない
         // （出力は入力の先頭 n 点にしか依存しない＝n 到達後は正当な空・ADR-37 判断 2）
@@ -3481,7 +3704,7 @@ export class Evaluator {
             + '（計算範囲 to+400日 の実体化地平線——実体化済みの末尾から数える。言語の地平線ではない。ADR-37 判断 8）');
         }
         const end = ptUpperBound(stream.pts, until);
-        const pts = stream.pts.slice(Math.max(0, end - n), end);
+        const pts = ptSlice(stream.pts, Math.max(0, end - n), end);   // 末尾 n 点だけを切り出す（算術点列でも範囲に比例・3-19）
         // 実装地平線ガード②（F107 同族）: 生成子由来で n 個に満たない＝実体化下限で切れている
         // （テーブル由来の n 未満は正当——covering の頭は註釈の経路が受け持つ）
         // 入力そのものが空（述語が一度も真にならない等）のときは地平線の話ではない——警告しない（軽微 15）
@@ -3522,7 +3745,7 @@ export class Evaluator {
           anchor = this.point(fromV);
         }
         const mod = (a: number, b: number) => ((a % b) + b) % b;
-        const pts: number[] = [];
+        let pts: number[] = [];
         let align: GridTag;
         if (wV.w.kind === 'civil') {
           // 市民時幅は市民日で歩進＝壁時計保存（DST の日は 23/25h。ADR-11/12）。
@@ -3541,12 +3764,18 @@ export class Evaluator {
                     tz: this.tzNameOf(env) };
         } else {
           const step = wV.w.ms;
-          // 点数の見積もりが上限（2^26＝どの対応 Node でも V8 の packed double 配列が push で RangeError にならない長さ）を越える幅は
-          // 実体化の前に誘導つき静的エラー（F137・F147・F159）。1.0.x は配列の上限（2^32−1）だけを事前判定し push の RangeError を
-          // 拾っていたが、事前判定の後は到達不能（ヒープ枯渇は致命エラーで catch できない）＝外した（2026-10-29 所見 15）。言語の上限ではない
-          const est = (this.rt.computeEnd - anchor) / step;
-          if (est > STRIDE_POINTS_MAX) this.tooManyPoints('strideBy', est, STRIDE_POINTS_MAX, 26);
-          for (let t = anchor; t < this.rt.computeEnd; t += step) pts.push(t);
+          // 経過時間幅の点列は実体化しない（90-open 3-19・1.1.1・言語不変）: 起点 anchor からの算術 anchor + k·step（k ∈ [0, n)・
+          // n は計算範囲の端 to+400 日まで）で引く遅延配列。消費側は範囲内の点だけを添字の区間で切り出す（点列直読み・選択子・
+          // take／takeLast・stride・filter(on:)）＝メモリと時間は範囲内の点数に比例し、紀元や from: から範囲の手前までの点は作らない。
+          // 全列挙が要る形（述語 filter・snapTo・shift・roll・結合子・segmentBy のマーカー・窓インスタンス参照）だけは個数の上限
+          // （2^26＝どの対応 Node でも V8 の packed double 配列が push で RangeError にならない長さ）で誘導つき静的エラー（F137・F147・F159）＝従来の構築時の
+          // 事前判定と同じ文言（個数は to+400 日までの見積もり）。言語の上限ではない
+          const n = Math.max(0, Math.ceil((this.rt.computeEnd - anchor) / step));
+          const LP = this.rt.limits.stridePoints, LR = this.rt.limits.strideRange;   // 既定 2^26・2^22（RunOptions.limits で下げられる・1.1.1）
+          const a: Arith = { t0: anchor, step, n, limit: LP,
+                             tooMany: k => this.tooManyPoints('strideBy', k, LP),
+                             sliceLimit: LR, tooManySlice: k => this.tooManyInRange('strideBy', k, LR) };
+          pts = lazyArray<number>(a, i => anchor + i * step);
           align = { kind: 'elapsed', step, phase: mod(anchor, step), off: 0, tz: '' };
         }
         // ADR-36: strideBy の出力は定義上 anchor 付きグリッドの目盛りそのもの。
@@ -3610,15 +3839,22 @@ export class Evaluator {
     }
   }
 
-  /** 実体化の見積もりが上限を越えたときの診断（F137・F147）。上限値は処理系のもの——言語の上限ではない */
-  private tooManyPoints(op: string, estimate: number, limit: number, pow: number): never {
+  /** 実体化の見積もりが上限を越えたときの診断（F137・F147）。上限値は処理系のもの——言語の上限ではない。
+   *  strideBy は全列挙（門）か範囲内の切り出しの個数が上限を越えたときに出す。個数は to+400 日までの見積もり（≥ 実体化しようとした個数） */
+  private tooManyPoints(op: string, estimate: number, limit: number): never {
     this.err(`${op}: 点が多すぎて実体化できない（紀元または from: から計算範囲の端 to+400 日まで約 ${Math.ceil(estimate).toLocaleString('en-US')} 個`
-      + `——参照実装の実体化の上限 ${limit.toLocaleString('en-US')}（2^${pow}）。幅を粗くするか、from: と評価範囲を近づける。言語の上限ではない）`);
+      + `——参照実装の実体化の上限 ${limitDesc(limit)}。幅を粗くするか、from: と評価範囲を近づける。言語の上限ではない）`);
+  }
+  /** 範囲内の切り出し（出口・take／takeLast）の点数が上限を越えたときの診断（2026-10-30 機械レビュー所見 1・2）。個数は実際に切り出す点数＝
+   *  評価範囲内の点なので、誘導は「評価範囲を狭める」（from: を近づけても減らない）。上限値は処理系のもの——言語の上限ではない */
+  private tooManyInRange(op: string, count: number, limit: number): never {
+    this.err(`${op}: 評価範囲内の点が多すぎて実体化できない（約 ${Math.ceil(count).toLocaleString('en-US')} 個`
+      + `——参照実装の出力の上限 ${limitDesc(limit)}。幅を粗くするか、評価範囲を狭める。言語の上限ではない）`);
   }
   /** 選択子が回す窓（点の属する窓）の数が上限を越えたときの診断（2026-10-29 所見 2・4＝註釈由来の窓は数えないので紀元からの個数ではない） */
   private tooManyWindows(op: string, n: number): never {
     this.err(`${op}: 点の属する窓が多すぎて実体化できない（約 ${n.toLocaleString('en-US')} 個——参照実装の実体化の上限 `
-      + `${GRID_WINDOWS_MAX.toLocaleString('en-US')}（2^24）。幅を粗くするか、評価範囲を狭める。言語の上限ではない）`);
+      + `${limitDesc(this.rt.limits.gridWindows)}。幅を粗くするか、評価範囲を狭める。言語の上限ではない）`);
   }
 
   /** 前文メンバー roll:（spec §3.3＝ロール規約の畳み込み・1.0.2 で実装）: 規約の位置引数が無いときの既定 */
@@ -3646,7 +3882,7 @@ export class Evaluator {
       }
       if (v.k === 'table') {
         // 覆域の補集合＝範囲外註釈（ADR-37 判断 1）。参照は被覆サマリにも記録（判断 7 (b)）
-        this.registerCoverage(v.src ?? '(無名テーブル)', v.covDesc, v.covIv, v.concluded, v.asof);
+        this.registerCoverage(v.src ?? '(無名テーブル)', v.covDesc, v.covIv, v.concluded, v.asof, v.domain);
         return { k: 'stream', pts: v.pts.slice(), wins: [], align: v.align, ann: this.tableAnn(v),
                  endless: false };
       }
@@ -3714,7 +3950,7 @@ export class Evaluator {
             + '序数を詰める。keep/error へ。ADR-48）');
         }
       }
-      return { k: 'windows', iv: top.iv, units: v.pts.slice(), labelFn: top.labelFn, grain: top.grain ?? null };
+      return { k: 'windows', iv: top.iv, units: ptPlain(v.pts).slice(), labelFn: top.labelFn, grain: top.grain ?? null };
     }
     this.err(`窓（パーティション）ではない: ${kindOf(v)}${isObj(v) && v.k === 'cycle'
       ? '（cycle は並列ラベル束——分割対象の窓列ではない。ADR-48）' : ''}`);

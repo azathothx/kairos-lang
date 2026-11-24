@@ -200,9 +200,18 @@ premise Koyomi { calendar-system: Kyureki; tz: "Asia/Tokyo"; wkst: Mon }
     }
     // 窓列そのものを点列に読む形（全列挙）は窓の上限 2^24 で止まる＝約 18 億点（units も窓の上限＝2026-10-29 機械レビュー所見 7・F149）
     expect(() => run(P + 'x = chronos grid 1s\nx\n', R)).toThrow(/^grid: 点が多すぎて実体化できない（.*実体化の上限 16,777,216（2\^24）/);
-    // strideBy の点列は実体化する＝上限 2^26（約 6.4 億点は止まり、10 秒刻み〈約 346 万点〉は通る。1 秒刻み〈3,460 万点・約 1 GB〉は
-    // 負荷時に手元の 30 s を超えた〈所見 11〉ので証人は 10 秒刻み＝上限未満で通ることの証人は変わらない。2^27→2^26 は F159）
-    expect(() => run(JP + 'everyInstant |> strideBy(0.1s, from: 2026-01-01)\n', R)).toThrow(/^strideBy: 点が多すぎて実体化できない（.*実体化の上限 67,108,864（2\^26）/);
+    // strideBy の点列も実体化しない（1.1.1・3-19 の残り）: 範囲に応じた切り出し＝1 秒刻みでも 1 日の評価範囲なら 86,400 点を 1 秒未満で返し、
+    // to+400 日までの約 3,460 万点は作らない（1.1.0 は上限 2^26 の内側で全点を実体化＝約 2.6 秒・1.2 GB）。0.1 秒刻み（to+400 日まで約 6.4 億点＝
+    // 1.1.0 は上限で止めていた形）も選択子・take は範囲に比例して軽い。全列挙が要る形（述語 filter）だけが同じ上限・同じ文言で止まる
+    const t1 = Date.now();
+    expect(run(JP + 'everyInstant |> strideBy(1s, from: 2026-10-26)\n', { from: '2026-10-26', to: '2026-10-27' }).results[0].points).toHaveLength(86_400);
+    expect(Date.now() - t1).toBeLessThan(1000);
+    const t2 = Date.now();
+    expect(evalDates(JP + 'everyInstant |> strideBy(0.1s, from: 2026-01-01) |> within(day) |> first\n', R)).toHaveLength(45);
+    expect(evalDates(JP + 'everyInstant |> strideBy(0.1s, from: 2026-01-01) |> take(2, from: 2026-10-26T12:00)\n', R))
+      .toEqual(['2026-10-26T12:00', '2026-10-26T12:00:00.100']);
+    expect(Date.now() - t2).toBeLessThan(1000);
+    expect(() => run(JP + 'everyInstant |> strideBy(0.1s, from: 2026-01-01) |> filter(t => true)\n', R)).toThrow(/^strideBy: 点が多すぎて実体化できない（.*約 641,952,000 個.*実体化の上限 67,108,864（2\^26）/);
     expect(evalDates(JP + 'everyInstant |> strideBy(10s, from: 2026-10-26) |> take(3, from: 2026-10-26)\n', { from: '2026-10-26', to: '2026-10-27' }))
       .toEqual(['2026-10-26', '2026-10-26T00:00:10', '2026-10-26T00:00:20']);
   });
@@ -306,6 +315,53 @@ premise Koyomi { calendar-system: Kyureki; tz: "Asia/Tokyo"; wkst: Mon }
       .toThrow(/^segmentBy\(empties: error\): 空窓がある/);
   });
 
+  it('F161 計算範囲の先の点を述語が参照する形は horizon-clip で落ちる（旧 1.0.5〜1.1.0: F144 で残した点が weekday 等で「cycle: 点が対象窓の外」＝1.0.4 で評価できた定義がエラー。利用側からの報告 2026-11-07）', () => {
+    const T = 't = [2026-11-16T07:27, 2028-06-15T07:27] covering: 2026..2028';
+    const R = { from: '2026-11-05', to: '2026-12-20' };   // computeEnd＝2028-01-24・2028-06-15 はその先
+    const a = run(U(T) + 't |> snapTo(day) |> filter(d => weekday(d) == Mon)\n', R);
+    expect(a.results[0].dates).toEqual(['2026-11-16']);
+    expect(a.warnings).toEqual([expect.stringMatching(/^horizon-clip: filter 2028-06-15（weekday は計算範囲 to\+400日 の実体化地平線の先の点を参照できない——言語の地平線ではない。ADR-37 判断 8）$/)]);
+    // snapTo を通さない形（F144 より前から同じ硬エラーだった形）も同じ経路＝1 点＋警告 1 件
+    const b = run(U(T) + 't |> filter(d => weekday(d) == Mon)\n', R);
+    expect(b.results[0].dates).toEqual(['2026-11-16T07:27']);
+    expect(b.warnings).toEqual([expect.stringMatching(/^horizon-clip: filter 2028-06-15T07:27（weekday は/)]);
+    // 射影一族（ordinalIn・epochOrdinal・coincides）も同じ分類器（outOrErr の第 3 分岐）
+    for (const [pred, op] of [['ordinalIn(day, month, d) == 16', 'ordinalIn'], ['epochOrdinal(month, d) > 0', 'epochOrdinal'],
+                              ['coincides(t, month, d)', 'coincides']] as const) {
+      const r = run(U(T) + `t |> snapTo(day) |> filter(d => ${pred})\n`, R);
+      expect(r.results[0].dates).toEqual(['2026-11-16']);
+      expect(r.warnings).toEqual([expect.stringMatching(new RegExp(`^horizon-clip: filter 2028-06-15（${op} は計算範囲`))]);
+    }
+    // 窓がデータ由来で地平線の先まで張られている射影（segmentBy の labels:）は参照できる＝警告なし（F144 の動機そのもの）
+    const TERM = 'starts = [2026-04-01, 2026-10-01, 2027-04-01, 2027-10-01, 2028-04-01, 2028-10-01, 2029-04-01] covering: 2026-04-01..2029-09-30\n'
+      + '  term = day |> segmentBy(starts, edges: drop, empties: error, labels: [1, 2, 3, 4, 5, 6, 7])';
+    const c = run(U(T + '\n  ' + TERM) + 't |> snapTo(day) |> filter(d => term(d) == 2)\n', R);
+    expect(c.results[0].dates).toEqual(['2026-11-16']);
+    expect(c.warnings).toEqual([]);
+    // 述語の中の定数の参照（流れてきた点ではない）は落とす点が無い＝明示エラーのまま。文言は地平線を言う（旧: 「cycle: 点が対象窓の外」）
+    expect(() => run(U(T) + 'everyDay |> filter(d => weekday(d) == weekday(2029-06-15))\n', R))
+      .toThrow(/^weekday: 点 2029-06-15 は計算範囲 to\+400日 の実体化地平線の先——参照実装の計算範囲であって言語の地平線ではない（ADR-37 判断 8）$/);
+    // 実体化下限（紀元）より前も同じ側路（snapTo／shift の三分岐①と同じ）
+    const E = 'e = [1868-10-23, 2026-01-05] covering: 1868-10-23..';
+    const d = run(U(E) + 'e |> filter(d => weekday(d) == Mon)\n', { from: '2026-01-01', to: '2026-02-01' });
+    expect(d.results[0].dates).toEqual(['2026-01-05']);
+    expect(d.warnings).toEqual([expect.stringMatching(/^horizon-clip: filter 1868-10-23（weekday は/)]);
+  });
+
+  it('F162 有限の入力（everyDay & 表）の segmentBy(empties: error) は、地平線の先まで延びたマーカー（表 |> snapTo(day)）の窓を判定しない（旧: F144 の後は「空窓がある」の偽エラー）', () => {
+    const D = 'm = [2026-01-15T09:00, 2026-07-15T09:00, 2027-01-15T09:00, 2027-07-15T09:00, 2028-07-15T09:00, 2029-01-15T09:00] covering: 2026..2029\n'
+      + '  h = [2026-02-01, 2026-08-01, 2027-02-01, 2027-08-01, 2028-08-01] covering: 2026..2028\n'
+      + '  hd = everyDay & h\n'
+      + '  w = hd |> segmentBy(m |> snapTo(day), edges: drop, empties: error)';
+    const R = { from: '2026-01-01', to: '2026-03-01' };   // computeEnd＝2027-04-05・[2027-07-15, 2028-07-15) はその先＝everyDay が無い
+    expect(evalDates(U(D) + 'w |> first\n', R)).toEqual(['2026-02-01']);
+    // 実体化範囲の内側の空窓は従来どおり止まる（2026-08-01 を抜くと [2026-07-15, 2027-01-15) が空）
+    expect(() => run(U(D.replace('2026-08-01, ', '')) + 'w |> first\n', R)).toThrow(/^segmentBy\(empties: error\): 空窓がある/);
+    // 入力自身が地平線の先に点を持つ（表だけの入力）なら、その先の窓も従来どおり判定する
+    const D2 = D.replace('hd = everyDay & h', 'hd = h').replace('2027-08-01, ', '');
+    expect(() => run(U(D2) + 'w |> first\n', R)).toThrow(/^segmentBy\(empties: error\): 空窓がある/);
+  });
+
   it('F146 Playground の「URL に固定」は大きな定義でも落ちない（旧: 130 KB 前後で fromCharCode のスプレッドが RangeError）', async () => {
     // b64e は core.js の export（2026-10-30 に module 直下へ＝/calendar/ と共有）。DOM を触らないので直接呼べる
     const { b64e, b64d } = await import(new URL('../../playground/core.js', import.meta.url).href) as
@@ -402,13 +458,16 @@ describe('境界チェックリスト 四巡目: 2026-10-29 の機械レビュ�
   const H = P + 'hour = chronos grid 3600s\n';
 
   it('F148 実体化地平線（to+400 日）より先の時点は算術グリッドでも「窓の外」——最後の窓に黙って丸めない（所見 1＝1.0 で止まっていた形が無言の捏造点になっていた）', () => {
-    expect(() => run(H + 'everyDay |> filter(d => epochOrdinal(hour, 2030-01-01) >= 0)\n', M)).toThrow(/^epochOrdinal: 点が窓の外/);
+    // 述語の中の定数の参照（流れてきた点ではない）＝落とす点が無いので止まる。文言は 1.1.1（F161）から地平線を言う（旧: 「点が窓の外」）
+    expect(() => run(H + 'everyDay |> filter(d => epochOrdinal(hour, 2030-01-01) >= 0)\n', M))
+      .toThrow(/^epochOrdinal: 点 2030-01-01 は計算範囲 to\+400日 の実体化地平線の先/);
     const r = run(H + '[2030-06-01T10:30] covering: 2026-01-01..2031-01-01 |> snapTo(hour) |> shift(-10000, unit: hour)\n', M);
     expect(r.results[0].dates).toEqual([]);   // 旧: 2026-01-15T07:00 を捏造し警告なし
     expect(r.warnings.some(w => w.startsWith('horizon-clip: snapTo 2030-06-01T10:30'))).toBe(true);
     // 境界＝計算範囲の端（to+400 日＝2027-03-08T00:00）ちょうどは外・その 1 時間前は最後の窓
     expect(evalDates(H + 'everyDay |> filter(d => epochOrdinal(hour, 2027-03-07T23:00) >= 0)\n', M)).toHaveLength(31);
-    expect(() => run(H + 'everyDay |> filter(d => epochOrdinal(hour, 2027-03-08T00:00) >= 0)\n', M)).toThrow(/^epochOrdinal: 点が窓の外/);
+    expect(() => run(H + 'everyDay |> filter(d => epochOrdinal(hour, 2027-03-08T00:00) >= 0)\n', M))
+      .toThrow(/^epochOrdinal: 点 2027-03-08 は計算範囲 to\+400日 の実体化地平線の先/);
   });
 
   it('F149 2^24〜2^27 の窓列を点列に読む形も上限の文言で止まる——units の上限が 2^27 で素通りし、選択子の Set が 2^24 で生の RangeError を漏らしていた（所見 2・7）', () => {
@@ -417,7 +476,7 @@ describe('境界チェックリスト 四巡目: 2026-10-29 の機械レビュ�
       expect(() => run(P + `chronos grid ${w} |> first\n`, R1)).toThrow(/^grid: 点が多すぎて実体化できない（.*実体化の上限 16,777,216（2\^24）/);
     }
     expect(evalDates(P + 'chronos grid 43200s |> first\n', R1)).toEqual(['2026-01-01', '2026-01-01T12:00']);
-    // 点の属する窓が 2^24 を越える形（strideBy の点列は 2^27 まで通る）は選択子の診断＝紀元からの個数ではなく点の属する窓の数を言う
+    // 点の属する窓が 2^24 を越える形（strideBy の点列の全列挙は 2^26 まで通る）は選択子の診断＝紀元からの個数ではなく点の属する窓の数を言う
     expect(() => run(P + 'everyInstant |> strideBy(2s, from: 2026-01-01) |> within(chronos grid 2s) |> first\n', R1))
       .toThrow(/^選択子 first: 点の属する窓が多すぎて実体化できない（約 16,777,217 個——参照実装の実体化の上限 16,777,216（2\^24）/);
   });
@@ -463,10 +522,10 @@ describe('境界チェックリスト 四巡目: 2026-10-29 の機械レビュ�
   });
 
   it('F154 標準糖衣の名指し検査は登録時に捕捉した stdlib の定義で判定——利用側の premise Gregorian {…} 再定義で利用者の定義に掛かり、@Fiscal 配下で本物の定義に掛からなくなっていた（所見 8）', () => {
-    const G = 'premise Gregorian { day = chronos grid 1d; month = chronos grid 1d; at(a) = s => s }\n';
+    const G = 'premise Gregorian { tz: "Asia/Tokyo"; day = chronos grid 1d; month = chronos grid 1d; at(a) = s => s }\n';   // tz: は 1.1.1 から未宣言で先に止まるため
     expect(evalDates(G + '@Gregorian\nx = [2026-01-15]\nx |> within(day) |> at(T09:00)\n', M)).toEqual(['2026-01-15']);   // 旧: 利用者の at に ADR-51 の検査が掛かった
-    expect(() => run(G + '@Fiscal\neveryDay |> at(2026-01-03T07:00)\n', { from: '2026-01-01', to: '2026-01-05' })).toThrow(/^at: 引数は単独時刻リテラル/);   // 旧: exit 0 で 01-03 以降だけ
-    expect(() => run(G + '@Fiscal\neveryDay |> within(month) |> at(T07:00)\n', M)).toThrow(/^at: 窓付き入力は取らない/);
+    expect(() => run(G + '@Fiscal tz: "Asia/Tokyo"\neveryDay |> at(2026-01-03T07:00)\n', { from: '2026-01-01', to: '2026-01-05' })).toThrow(/^at: 引数は単独時刻リテラル/);   // 旧: exit 0 で 01-03 以降だけ
+    expect(() => run(G + '@Fiscal tz: "Asia/Tokyo"\neveryDay |> within(month) |> at(T07:00)\n', M)).toThrow(/^at: 窓付き入力は取らない/);
   });
 
   it('F155 呼び出し形 at(…)(s) も段の形と同じ検査——日付つきの錨と窓付き入力が素通りして点を黙って落としていた（所見 9・main からの持ち越し）', () => {
@@ -522,12 +581,70 @@ describe('境界チェックリスト 六巡目: 2026-10-31 の殻（http／mcp�
   });
 
   it('F159 strideBy の点の上限は 2^26——2^27 は Node 22／20 の V8 で push の容量の伸びが先に越え、1.29 億点の見積もりが素の RangeError を漏らしていた（所見 5）', () => {
-    // 見積もり約 1.29 億（2023-01-01 から to+400 日まで 1 秒刻み）＝旧上限 2^27 の内側・新上限 2^26 の外側。実体化の前に止まるので速い
+    // 見積もり約 1.29 億（2023-01-01 から to+400 日まで 1 秒刻み）＝旧上限 2^27 の内側・新上限 2^26 の外側。1.1.1 の算術化後は見積もりの門は全列挙を強いる形（述語 filter）だけに掛かる。実体化の前に止まるので速い
     const t0 = Date.now();
-    expect(() => run(JP + 'everyInstant |> strideBy(1s, from: 2023-01-01)\n', R))
+    expect(() => run(JP + 'everyInstant |> strideBy(1s, from: 2023-01-01) |> filter(t => true)\n', R))
       .toThrow(/^strideBy: 点が多すぎて実体化できない（紀元または from: から計算範囲の端 to\+400 日まで約 129,\d{3},\d{3} 個——参照実装の実体化の上限 67,108,864（2\^26）/);
     expect(Date.now() - t0).toBeLessThan(2000);
     // 上限の内側は通る（10 秒刻み・約 346 万点）
     expect(evalDates(JP + 'everyInstant |> strideBy(10s, from: 2026-01-01) |> take(2, from: 2026-01-01)\n', R)).toEqual(['2026-01-01', '2026-01-01T00:00:10']);
+  });
+});
+
+describe('境界チェックリスト 六巡目: strideBy の点列を範囲に応じた算術に（90-open 3-19 の残り・1.1.1）（F160）', () => {
+  const IMPL = fileURLToPath(new URL('..', import.meta.url));
+  const JPD = 'premise JP { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }\n@JP\n';
+  const R = { from: '2026-01-01', to: '2026-01-10' };
+
+  it('F160 strideBy(1s) の 1 日はヒープ 96 MB の子プロセスで通る（メモリは範囲内の点数に比例。旧: to+400 日まで 3,460 万点を実体化＝約 1.2 GB で落ちる）', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'kairos-f160-'));
+    const file = join(dir, 's.kairos');
+    writeFileSync(file, JPD + 'everyInstant |> strideBy(1s, from: 2026-01-01)\n');
+    const r = spawnSync(process.execPath,
+      ['--max-old-space-size=96', 'src/cli.ts', 'list', '--from', '2026-01-01', '--to', '2026-01-02', '--tz', 'Asia/Tokyo', '--json', file],
+      { cwd: IMPL, encoding: 'utf8', env: { ...process.env, TZ: 'Asia/Tokyo' }, maxBuffer: 64 * 1024 * 1024 });
+    rmSync(dir, { recursive: true, force: true });
+    expect(r.status).toBe(0);
+    expect(JSON.parse(r.stdout).results[0].points.length).toBe(86_400);
+  });
+
+  it('F160 算術点列の消費側は点の集合・註釈・警告が実体化版と同じ——take／takeLast・stride・選択子・shift(unit:)・snapTo・結合子・coincides・segmentBy・from: が範囲の前後', () => {
+    const st = (from: string, w = '1h') => JPD + `st = everyInstant |> strideBy(${w}, from: ${from})\n`;
+    // from: が範囲より前（1970 から）・範囲より後・半開の端（to の点は含まない）
+    expect(evalDates(st('1970-01-01T00:30', '36h') + 'st\n', { from: '2026-01-01', to: '2026-01-04' })).toEqual(['2026-01-01T00:30', '2026-01-02T12:30']);
+    expect(evalDates(st('2026-01-10') + 'st\n', R)).toEqual([]);
+    expect(evalDates(st('2026-01-01', '12h') + 'st\n', { from: '2026-01-01', to: '2026-01-02' })).toEqual(['2026-01-01', '2026-01-01T12:00']);
+    // take は from: 以後の n 点（範囲の前の点も数える）・takeLast は until: 以前の n 点（until: を含む）・stride は n 歩おき
+    expect(evalDates(st('2025-12-31T22:00') + 'st |> take(4, from: 2025-12-31T23:00)\n', R)).toEqual(['2026-01-01', '2026-01-01T01:00', '2026-01-01T02:00']);
+    expect(evalDates(st('2025-12-31T22:00') + 'st |> takeLast(3, until: 2026-01-01T01:00)\n', R)).toEqual(['2026-01-01', '2026-01-01T01:00']);
+    expect(evalDates(st('2025-12-31T22:00') + 'st |> stride(7, from: 2026-01-01T00:30)\n', { from: '2026-01-01', to: '2026-01-02' })).toEqual(['2026-01-01T01:00', '2026-01-01T08:00', '2026-01-01T15:00', '2026-01-01T22:00']);
+    expect(evalDates(st('2025-12-31T22:00') + 'st |> stride(7, from: 2026-01-01T00:30) |> take(2, from: 2026-01-01T09:00)\n', R)).toEqual(['2026-01-01T15:00', '2026-01-01T22:00']);
+    // 選択子（窓は市民日・算術グリッド）・nth の足りない窓は空
+    expect(evalDates(st('2025-12-31T22:00') + 'st |> within(day) |> last\n', { from: '2026-01-01', to: '2026-01-03' })).toEqual(['2026-01-01T23:00', '2026-01-02T23:00']);
+    expect(evalDates(st('2026-01-01T00:20', '50m') + 'g = chronos grid 3600s\nst |> within(g) |> nth(2) |> take(1, from: 2026-01-01)\n', R)).toEqual(['2026-01-01T02:50']);
+    // 写像の段（shift・snapTo）と結合子・coincides・segmentBy は全列挙で同じ値
+    expect(evalDates(st('2025-12-31T22:00') + 'g = chronos grid 3600s\nst |> shift(2, unit: g) |> take(2, from: 2026-01-01)\n', R)).toEqual(['2026-01-01', '2026-01-01T01:00']);
+    expect(evalDates(st('2025-12-31T22:00') + 'st |> snapTo(day)\n', { from: '2026-01-01', to: '2026-01-03' })).toEqual(['2026-01-01', '2026-01-02']);
+    expect(evalDates(st('2026-01-01T06:00', '36h') + 'everyDay | st\n', { from: '2026-01-01', to: '2026-01-04' })).toEqual(['2026-01-01', '2026-01-01T06:00', '2026-01-02', '2026-01-02T18:00', '2026-01-03']);
+    expect(evalDates(st('2026-01-01T06:00', '36h') + 'everyDay |> filter(d => coincides(st, day, d))\n', { from: '2026-01-01', to: '2026-01-05' })).toEqual(['2026-01-01', '2026-01-02', '2026-01-04']);
+    expect(evalDates(st('2026-01-01T06:00', '36h') + 'everyDay |> segmentBy(st, edges: drop, empties: keep) |> first\n', { from: '2026-01-01', to: '2026-01-05' })).toEqual(['2026-01-02', '2026-01-03']);
+    // 出力の門（2026-10-30 機械レビュー所見 1）: 旧版が to+400 日の見積もり（2^26 超）で止めていた 0.01s × 1 日（範囲内 864 万点）は、範囲内の切り出しの
+    // 上限 2^22 で同じく静的エラー＝ヒープ枯渇（既定ヒープで約 600 万点）で落ちない。文言の誘導は「評価範囲を狭める」（所見 2）。選択子・take は従来どおり軽い
+    expect(() => run(JPD + 'everyInstant |> strideBy(0.01s, from: 2026-01-01)\n', { from: '2026-01-01', to: '2026-01-02' }))
+      .toThrow(/^strideBy: 評価範囲内の点が多すぎて実体化できない（約 8,640,000 個——参照実装の出力の上限 4,194,304（2\^22）。幅を粗くするか、評価範囲を狭める/);
+    expect(evalDates(JPD + 'everyInstant |> strideBy(0.01s, from: 2026-01-01) |> within(day) |> first\n', { from: '2026-01-01', to: '2026-01-03' })).toEqual(['2026-01-01', '2026-01-02']);
+    expect(() => run(JPD + 'everyInstant |> strideBy(0.01s, from: 2026-01-01) |> filter(t => true)\n', { from: '2026-01-01', to: '2026-01-02' }))
+      .toThrow(/^strideBy: 点が多すぎて実体化できない（.*約 3,464,640,000 個.*2\^26/);   // 全列挙の門は旧どおり
+    // 枠窓も点列も算術列のとき窓ごとに点の有無を引く枝（relevantWindowIdx）: 先頭窓に点がある形で first／last（所見 3＝先頭窓を落とす変異が緑だった穴）
+    expect(evalDates(st('2026-01-01T00:03', '7m') + 'g = chronos grid 3600s\nst |> within(g) |> first\n', { from: '2026-01-01', to: '2026-01-02' }).slice(0, 3))
+      .toEqual(['2026-01-01T00:03', '2026-01-01T01:06', '2026-01-01T02:02']);
+    expect(evalDates(st('2026-01-01T00:03', '7m') + 'g = chronos grid 3600s\nst |> within(g) |> last\n', { from: '2026-01-01', to: '2026-01-02' }).slice(0, 3))
+      .toEqual(['2026-01-01T00:59', '2026-01-01T01:55', '2026-01-01T02:58']);
+    // explain の算術の枝（traceStage）: from: が範囲の前から始まる strideBy 段の count・first・last（所見 4＝last を 1 歩手前にする変異が緑だった穴）
+    expect(run(st('2025-12-30T00:03', '7h') + 'st\n', { from: '2026-01-01', to: '2026-01-03', explain: true }).results[0].stages)
+      .toEqual([{ stage: 'st', count: 7, first: '2026-01-01T01:03', last: '2026-01-02T19:03', annotations: 0 }]);
+    // 地平線（to+400 日）の先の until: は従来どおり horizon-clip の警告
+    const r = run(st('2026-01-01') + 'st |> takeLast(2, until: 2027-06-01)\n', R);
+    expect(r.warnings).toEqual(['horizon-clip: takeLast until 2027-06-01（計算範囲 to+400日 の実体化地平線——実体化済みの末尾から数える。言語の地平線ではない。ADR-37 判断 8）']);
   });
 });

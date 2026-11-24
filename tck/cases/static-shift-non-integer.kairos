@@ -1,0 +1,6 @@
+premise Cal { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon
+  nonWorking = everyDay |> filter(d => weekday(d) == Sat or weekday(d) == Sun)
+}
+premise JP = Gregorian with { calendar: Cal; tz: "Asia/Tokyo"; wkst: Mon }
+@JP
+everyDay |> within(month) |> nth(1) |> shift(1.5, unit: month)

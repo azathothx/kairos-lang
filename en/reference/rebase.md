@@ -83,13 +83,13 @@ as `T14:00`; 1/12 is Tokyo's Coming-of-Age Day and drops out of the intersection
 - **`shift`/`roll` go before rebase** — window words such as `unit: day` after a rebase resolve in
   the in-scope premise and therefore disagree with the to tz's grid (the norm of ADR-40
   decision 7).
-- `to:` is a **string literal** naming a tz (a premise name is not allowed — using a premise to
-  name nothing but a tz is a mix-up face of "what was it aligned to". ADR-40 decision 5). Versions
+- `to:` is a **string literal** naming a tz (a premise name is not allowed — using a premise just to
+  name a tz blurs what the stream was actually aligned to; ADR-40 decision 5). Versions
   and gap rules follow the in-scope evaluation context.
 - rebase makes cross-tz alignment routine — the receiving exempt family (`within`, `ordinalIn`,
   selectors, cycle/value projections) carries the **tz-name check** (ADR-36 revision 2), so flowing
-  on **without** rebase becomes a static error in the form of "bundling with a one-day label slip,
-  weekday reading" (the error guides toward rebase).
+  on **without** rebase becomes a static error warning that bundling, ordinal and weekday reads would slip by one
+  day (the error guides toward rebase).
 
 ## Related
 

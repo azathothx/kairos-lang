@@ -302,3 +302,34 @@ Derived.h
     expect(dates).toEqual(['2026-01-05']);
   });
 });
+
+describe('tz: の発火点＝未宣言は誘導つき静的エラー（§3.3／§3.6・ADR-33 判断 8＝90-open 3-23 (3)・1.1.1）', () => {
+  // 1.1.0 までの参照実装は tz: の無い前文（@Gregorian の裸の利用・calendar-system: だけの premise）を実行既定 tz で黙って評価していた。
+  // 検定の模擬受験（2026-10-31）で、仕様を読んだ受験者が「静的エラー」と答えて正答（点列）と割れた＝実装を仕様に寄せる。
+  const R = { from: '2026-01-01', to: '2026-02-01' };
+  it('裸の @Gregorian で市民日グリッドを使う形は tz: 未宣言で止まる（1.1.0 までは実行既定 tz で黙って評価）', () => {
+    expect(() => run('@Gregorian\neveryDay |> within(month) |> first\n', R))
+      .toThrow(/^tz: が未宣言（在圏の前文にも基底の連鎖にも tz: が無い）——市民座標への写像/);
+  });
+  it('calendar-system: だけの premise で at(T09:00) も止まる（誘導文は束の宣言と軽量形の後置を言う）', () => {
+    expect(() => run('premise P { calendar-system: Gregorian }\n@P\neveryDay |> at(T09:00) |> take(2, from: 2026-01-01)\n', R))
+      .toThrow(/^tz: が未宣言（在圏の前文にも基底の連鎖にも tz: が無い）——市民座標への写像（日付リテラルの錨・市民時幅の grid・snapTo\(day\)・at・市民日グリッド・紀元）には tz: が要る。前文の束に tz: "Asia\/Tokyo" のように宣言するか、軽量形の後置（例 @Gregorian tz: "Asia\/Tokyo"）で与える（危険メンバーは黙って既定に落とさない。§3\.3／§3\.6・ADR-33）$/);
+  });
+  it('裸の @ISOWeek・@Fiscal も同じ（検定 L3-021／L3-022 の 1.1.0 までの形）', () => {
+    expect(() => run('@ISOWeek\neveryDay |> filter(d => isoWeekNo(d) == 1)\n', { from: '2025-12-25', to: '2026-01-10' })).toThrow(/^tz: が未宣言（在圏の前文にも/);
+    expect(() => run('@Fiscal\neveryDay |> within(year) |> first\n', { from: '2026-01-01', to: '2028-01-01' })).toThrow(/^tz: が未宣言（在圏の前文にも/);
+  });
+  it('軽量形の後置 tz: で通り、点列は 1.1.0 の実行既定 tz（Asia/Tokyo）で評価していたときと同じ', () => {
+    expect(evalDates('@ISOWeek tz: "Asia/Tokyo"\neveryDay |> filter(d => isoWeekNo(d) == 1)\n', { from: '2025-12-25', to: '2026-01-10', tz: 'Asia/Tokyo' }))
+      .toEqual(['2025-12-29', '2025-12-30', '2025-12-31', '2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04']);
+    expect(evalDates('@Fiscal tz: "Asia/Tokyo"\neveryDay |> within(year) |> first\n', { from: '2026-01-01', to: '2028-01-01', tz: 'Asia/Tokyo' }))
+      .toEqual(['2026-04-01', '2027-04-01']);
+  });
+  it('派生 with の tz: は基底の連鎖として解決される（宣言は内側固定）', () => {
+    expect(evalDates('premise P = Gregorian with { tz: "UTC" }\n@P\neveryDay |> within(month) |> first\n', { ...R, tz: 'UTC' })).toEqual(['2026-01-01']);
+  });
+  it('wkst 未宣言の誘導文は wkst: の宣言を指す（1.1.0 までは calendar-system: の宣言が無いと誤って案内していた）', () => {
+    expect(() => run('@Gregorian tz: "Asia/Tokyo"\neveryDay |> within(week) |> first\n', R))
+      .toThrow(/^未解決の名前: wkst（premise 相対解決 §3\.4）——在圏の前文に wkst: の宣言が無い（危険メンバーは黙って既定に落とさない。§3\.3。例 wkst: Mon）$/);
+  });
+});

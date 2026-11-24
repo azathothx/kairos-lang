@@ -81,7 +81,7 @@ To land on a date, add [`snapTo(day)`](snapTo.md) downstream.
   an annotation appears even where no points fire — "no points came out" and "the absence is
   trustworthy" are different claims, and the transported annotation carries the latter.
 
-- **An out-of-coverage annotation can start on the table's last day**: in the bundled example `jp-holidays.kairos` (table covering 2026..2026) it starts on 12-31 — the translated image of
+- **An out-of-coverage annotation can start on the table's last day**: in the bundled example `jp-holidays.kairos` (table covering 2026..2026) the upper out-of-coverage annotation, which would otherwise start on 2027-01-01, starts on 2026-12-31 — the transported image of
   `shift(-1, unit: day)` and the dependency image of `roll(Following)` each widen it one day backwards, and the union `|` keeps it (the raw table and `shift(+1)` start on 01-01; ADR-37 decision 4, spec §4.10).
 
 - **A point moved across the edge of the evaluation range is not in the output** — evaluated over

@@ -73,8 +73,8 @@ everyDay \ satSun
 - Excluding from a timed schedule "the points falling on holiday **days**" cannot be written as an
   equality difference — write it with the window-membership predicate
   [`coincides`](coincides.md) (`|> filter(t => not coincides(holidays, day, t))`; settled by
-  F68 = ADR-38). The division of labor: "for the same **point**, a combinator 〈conform a
-  misalignment with snapTo〉; for the same **membership** (day), coincides" — for exception days
+  F68 = ADR-38). The division of labor: to match the same **point**, use a combinator (fixing any
+  misalignment with snapTo first); to match the same **membership** (the same day), use coincides — for exception days
   between day-aligned streams the combinator remains canonical, and rewriting to coincides is a
   regression. Cross-tz composition of "the **same date**" (TSE × NYSE joint business days) is the
   third branch — re-anchor by date-label correspondence with [`rebase`](rebase.md), then `&`

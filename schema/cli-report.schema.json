@@ -170,6 +170,72 @@
             ]
           },
           "description": "1.0.12 (addendum 29), optional: present only when the body expression's own text names exactly one labelled binding (an external or table literal with labels:, a cycle, or a segmentBy with labels:); bindings reached indirectly through another binding's right-hand side or a value function are not counted. Then one entry per point, same length and order as dates: the label that binding's projection B(d) gives the point — the label of the point's row in the table, or of the window the point falls in — or null when the projection does not apply (the point is not in the table, e.g. after shift, or is outside the windows or out of coverage). Absent when the expression refers to no labelled binding or to two or more. Labels are the declared words as written (not affected by --lang). The same values fill the label column of --tsv and the SUMMARY of each point's event in --ics"
+        },
+        "grain": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "step",
+                "phase",
+                "off",
+                "tz"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "civil"
+                },
+                "step": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "width in civil days"
+                },
+                "phase": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "civil-day ordinal since 1970-01-01 (in tz) modulo step"
+                },
+                "off": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "offset within the day in ms (0 = the all-day grid)"
+                },
+                "tz": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "step",
+                "phase"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "elapsed"
+                },
+                "step": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "width in ms"
+                },
+                "phase": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "epoch ms modulo step"
+                }
+              }
+            }
+          ],
+          "description": "1.1.1, optional: the alignment of the last stage (ADR-36's atomic grid G) — a static claim that every point lies on the grid. civil: the points sit on civil-day ticks of tz every `step` days at offset `off` ms into the day (off 0 = all-day); elapsed: the points sit on an elapsed-time grid of `step` ms. null means no claim (alignment follows the shape of the expression, so the same set of instants can come out null) — it does NOT mean 'timed points'; fall back to reading dates. An empty table (vacuous alignment) is reported as null"
         }
       }
     },
@@ -247,6 +313,41 @@
             "null"
           ],
           "description": "days from `to` to the end of the coverage (negative when already past); null when concluded"
+        },
+        "startMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "1.1.1, optional: start of the coverage in epoch ms (the smallest start when covering is an interval list); null when open at the start"
+        },
+        "endMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "1.1.1, optional: exclusive end of the coverage in epoch ms (the largest end) — the origin of runwayDays; null when open-ended"
+        },
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "1.1.1, optional: startMs as a civil label in the run tz (same form as dates)"
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "1.1.1, optional: endMs as a civil label in the run tz"
+        },
+        "labelDomain": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "1.1.1, optional: present only for an external with a labels: declaration — the declared label domain in declaration order (ADR-46 judgment 4; the source of labelOrdinal's domain). A table literal's parallel labels: column is not a domain and is not reported"
         }
       }
     },

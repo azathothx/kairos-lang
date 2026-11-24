@@ -27,6 +27,8 @@ const CURRENT_DOCS = [
   ...mdFiles('en/recipes/'),
   ...mdFiles('skills/kairos-authoring/'), // 記述スキル（AI と人の手引き・2026-10-26）
   ...mdFiles('en/skills/kairos-authoring/'), // 記述スキルの英語ミラー
+  'tck/README.md', // 適合試験一式（TCK）の説明書（2026-10-30 機械レビュー所見 2＝網の外だった）
+  ...mdFiles('en/tck/'),
   'assets/logo/README.md', // ロゴ・アイコンの解説（/assets/ に公開＝2026-09-18 指摘: 表セルの \| が公開面に露出・網の外だった）
 ];
 
@@ -159,10 +161,11 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
   it('対話痕跡の役割語が文書に残っていない（公式体裁への正規化・2026-07-12）', () => {
     // 裁定・判断の主体は「設計者」、機械検証は「N 観点レビュー」（凡例は design/README）。
     // 「ユーザー」単独は言語の利用者の意（ユーザー定義 等）で正当——複合語だけを検査する。
-    const banned = /ユーザー(裁定|判断|確認|指示|指摘|提案|要望|決定|協働|レビュー|の洞察|の直観|の読み)|エージェント|チャット|AskUserQuestion|SendMessage|Claude(?! (Fable|Opus|Sonnet|Haiku)\b| models\b| の ?(\d+ |各)?モデル)/;
+    const banned = /ユーザー(裁定|判断|確認|指示|指摘|提案|要望|決定|協働|レビュー|の洞察|の直観|の読み)|(?<!当方のサブ)エージェント|チャット|AskUserQuestion|SendMessage|Claude(?! (Fable|Opus|Sonnet|Haiku)\b| models\b| の ?(\d+ |各)?モデル)/;
     // 「Claude」はモデル名（Claude Fable 5.1 等＝外部ベンチの対象モデル・収蔵 27）としての出現は役割語でないため除外（2026-09-10）。
     // 「Claude の 4 モデル」「Claude の各モデル」（モデル群の呼称＝供給側ベンチページの文言・収蔵 32 の逐語複写と回答節）も同じ理由で除外（2026-10-05）
     // 「five Claude models」（英語の差し替え案の逐語複写）も同じ理由で除外（2026-10-07）
+    // 「当方のサブエージェント（model opus）」（差出側が測定の器を述べる文＝収蔵 46 の逐語複写）も役割語でないため除外（2026-11-23）。前に「当方の」が付かない形は従来どおり赤
     // 規約自体を説明する行は対象外
     const legend = /役割語|正規化|対話痕跡/;
     const designDocs = readdirSync(new URL('design/', root), { recursive: true })
@@ -342,7 +345,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     const stale: string[] = [];
     for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'),
                      ...mdFiles('en/design/40-examples/'), ...mdFiles('en/recipes/'),
-                     ...mdFiles('en/skills/kairos-authoring/')]) {
+                     ...mdFiles('en/skills/kairos-authoring/'), ...mdFiles('en/tck/')]) {
       const m = /^---\n[\s\S]*?source_sha: ([0-9a-f]{12})[\s\S]*?\n---\n/.exec(read(p));
       if (!m) continue;   // ハッシュ宣言のないページ（README 等）は対象外
       const ja = p.replace('en/', '');
@@ -366,7 +369,7 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
     const stale: string[] = [];
     for (const p of [...mdFiles('en/spec/'), ...mdFiles('en/reference/'), ...mdFiles('en/stdlib/'),
                      ...mdFiles('en/design/40-examples/'), ...mdFiles('en/recipes/'),
-                     ...mdFiles('en/skills/kairos-authoring/')]) {   // 記述スキルも同一性検査の内（2026-10-26 外部レビュー第 14 回 ④-M3）
+                     ...mdFiles('en/skills/kairos-authoring/'), ...mdFiles('en/tck/')]) {   // 記述スキルも同一性検査の内（2026-10-26 外部レビュー第 14 回 ④-M3）
       const en = fences(read(p));
       const ja = fences(read(p.replace('en/', '')));
       if (en.length !== ja.length) { stale.push(`${p}: kairos フェンス数 ${en.length} ≠ 日本語側 ${ja.length}`); continue; }
@@ -440,7 +443,8 @@ describe('文書の整合性（現在形の文書 vs 実態）', () => {
         if (e.isDirectory()) {
           // hn/＝Show HN 用の短縮リダイレクト（redirect_to のスタブ・sitemap 除外）——404.md と同じくリンク到達の外（2026-09-05）
           // mcp/docs・mcp/dist＝kairos-lang-mcp の生成物（bundle-docs の複写と tsc の出力・git 管理外）——公開ツリーの文書ではない（2026-10-06）
-          if (['.git', 'node_modules', 'hn'].includes(e.name) || p === 'mcp/docs' || p === 'mcp/dist' || isPrivate(p)) continue;
+          // http/dist＝kairos-lang-http の tsc の出力（git 管理外・http/ に docs/ は無い）
+          if (['.git', 'node_modules', 'hn'].includes(e.name) || p === 'mcp/docs' || p === 'mcp/dist' || p === 'http/dist' || isPrivate(p)) continue;
           walk(`${p}/`);
         } else if (p.endsWith('.md') && !isPrivate(p) && p !== '404.md') all.add(p);   // 404.md はインフラページ（リンク到達の外・Pages が自動配信）
       }

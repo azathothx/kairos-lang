@@ -47,13 +47,16 @@ node src/cli.ts list --tsv examples/payday.kairos > payday.tsv   # Excel・Power
 ### `--json`（機械可読の報告）
 
 - `CliReport` を書き出す: `command`・`version`・`tz`・`from`・`to`・`results`・`coverage`・`warnings`。人間表示と同じ器から直列化するため両表示は乖離しない。
-- `results[]` の項目: `source`（式の字面）・`line`（1 起点の行番号）・`uid`（式の指紋）・`dates`・`points`（epoch ms）・`annotations`（`fromMs`／`toMs` 込み）・`stages`（`--explain` のときだけ）・`labels`（下記のときだけ）。
+- `results[]` の項目: `source`（式の字面）・`line`（1 起点の行番号）・`uid`（式の指紋）・`dates`・`points`（epoch ms）・`annotations`（`fromMs`／`toMs` 込み）・`stages`（`--explain` のときだけ）・`labels`（下記のときだけ）・`grain`（最後の段の整列・1.1.1）。
 - `labels`（1.0 追補 29）: **本体式の字面に現れる**ラベル付き束縛名（`external`／テーブルリテラルの `labels:`・`cycle`・`segmentBy` の `labels:`）がちょうど 1 つのとき（中間の束縛の右辺・値関数の中・カレンダー実体の中は辿らない＝`x = sekki |> filter(…)` を `x |> …` と書くと付かない）、各点にその束縛の射影 `B(d)` のラベルを添える（`dates` と同長・`string | null`）。表に無い点（`shift` の後など）・窓の外・範囲外は `null`。参照が 0 か 2 つ以上なら鍵ごと無い（式を分ければ各式に付く）。言語は不変＝点・註釈・被覆サマリは変わらない。
+- `grain`（1.1.1・組み込みの口）: 最後の段の整列タグ（ADR-36 の原子グリッド G）。`{ kind: "civil", step: 日数, phase, off: 日内 ms, tz }`（`off` 0 が終日の目盛り・`at(T09:00)` 級は `off` 32,400,000）か `{ kind: "elapsed", step: ms, phase }` か `null`。**静的主張（十分条件）**＝「全点が G の目盛り上にある」。`null` は「主張なし」であって「時刻の点」ではない（整列は式の導出構造に付く保守近似＝同じ外延でも式の形で `null` になり得る）。`null` のときは `dates` の字面で読む。空テーブル（空虚適合）は `null`。`phase` の基準は civil＝紀元（1970-01-01・tz の市民日）からの市民日序数 mod step・elapsed＝紀元 ms mod step。
+- `coverage[]`（被覆サマリ）の項目: `source`・`covering`・`asof`・`concluded`・`runwayDays`（評価 `to` から覆域終端までの日数・開端は `null`）に、1.1.1 で `startMs`／`endMs`（覆域の始端・排他終端の epoch ms・開端は `null`。区間リストは最小の始端と最大の終端＝穴は結果の註釈で分かる）・`start`／`end`（表示形）・`labelDomain`（`external` の `labels:` 宣言があるときだけ・宣言順。リテラルの並行 `labels:` は値域ではない）を足した＝供給源の継ぎ目（同じ値域の後継の表が覆域を継ぐか）を利用側が判定する器。
 - `points`／`fromMs` は「判定は外部」（ADR-37）の交差計算を呼び手が epoch ms のまま行うための器＝点の同一性。
 - `dates` はその市民ラベル。秒・ms は 0 でないときだけ（`:ss`・`.SSS`）。DST の重複（同じ壁時計が二度ある瞬間）はオフセット `±HH:MM` 付き。`points` と一対一（1.0 追補 23）。
 - `uid` は `.ics` の series の `UID` と同じ値。1 点の `UID` は `-series@` を `-<ms>@` に。同一性ではなく指紋（1.0 追補 26）。
 - エラーも JSON: stdout に `{command, version, error: {kind: usage|supply|static, message}}`。終了コード 1 は不変。`supply` は供給側の責任（解決失敗・`--supply` の束の形・解決値の契約違反＝1.0 追補 28）。
 - 形の正本は JSON Schema `schema/cli-report.schema.json`（https://kairos-lang.org/schema/cli-report.schema.json・draft 2020-12・後方互換の改訂のみ）。
+- 適合試験一式（TCK）の束と事例の形は `schema/tck.schema.json`（https://kairos-lang.org/schema/tck.schema.json）＝走らせ方は `tck/README.md`。
 
 ### `--ics`（iCalendar の書き出し）
 
@@ -161,6 +164,20 @@ r.results[0].dates;   // ['2026-01-23', …]
 パッケージとしては `kairos-lang`（`run` ほか）に加えて `kairos-lang/cli`（1.0.7）が CLI のコマンド関数（`cmdList`／`cmdNext`／
 `supplyResolver`／`errorReport`／`todayIn`）と `CliReport` の型を公開する——埋め込み用（別パッケージ kairos-lang-mcp が使う）。
 
+**組み込みの口（1.1.1・言語不変）**——参照実装を評価器として別の環境に組み込む利用側のための出口 4 つ（[90-open 3-25](../design/90-open-questions.md)）:
+
+- 配布物の `index.js` は `node:fs` を使わない（標準 premise は生成モジュール `stdlib-data.js` から）＝ブラウザの束・edge 実行環境でも `import` できる。`STDLIB_SOURCE`（標準 premise の Kairos ソース・依存順に連結）を読むために export する。**差し替えの口ではない**（標準 premise の定義は言語の一部。差し替えた評価器は参照実装と一致しない）。
+- `results[].grain`（上の `--json` の節）＝市民日の目盛りか時刻の目盛りかを字面に頼らず読む。
+- `coverage[]` の `startMs`／`endMs`／`start`／`end`／`labelDomain`（同）。
+- `RunOptions.limits`＝実体化の上限を既定より**下げる**口（メモリの小さい実行環境向け）: `{ gridWindows?, stridePoints?, strideRange? }`。既定は `DEFAULT_LIMITS`（2^24 窓・2^26 点・2^22 点＝出口）。既定より大きい値・0・非整数は使い方の誤りで止まる（黙って丸めない）。診断文は実際の上限値を印字する（既定値には出自の「（2^n）」を添える）。参照実装の上限であって言語の上限ではない。
+
+```ts
+import { run, STDLIB_SOURCE, DEFAULT_LIMITS } from 'kairos-lang';
+const r = run(source, { from: '2026-01-01', to: '2027-01-01', limits: { stridePoints: 2 ** 22, gridWindows: 2 ** 22 } });
+r.results[0].grain;      // { kind: 'civil', step: 1, phase: 0, off: 0, tz: 'Asia/Tokyo' } ／ { kind: 'elapsed', … } ／ null
+r.coverage[0].endMs;     // 覆域の排他終端（ms）・開端は null。labelDomain は external の labels: 宣言があるときだけ
+```
+
 ## 設計（仕様との対応）
 
 | 層 | ファイル | 対応する仕様 |
@@ -168,7 +185,7 @@ r.results[0].dates;   // ['2026-01-23', …]
 | 字句 | `src/lexer.ts` | §5.5・ADR-28（日付・幅リテラル、市民時/経過時間の混合エラー、Unicode 識別子） |
 | 構文 | `src/parser.ts` | §5.6 EBNF（前文・束縛・gen-expr・値式の優先順位・テーブルリテラル） |
 | 評価 | `src/eval.ts` | §3（窓生成語・機構 A・遅延解決）・§4（core 段・射影）・I1〜I8 の一部を実行時検査 |
-| 標準 premise | `stdlib/*.kairos`（gregorian・fiscal・isoweek を依存順にロード） | 各 stdlib ページ §1 の完全定義を **Kairos ソースのまま**評価器に食わせる（Kyureki はデータ入り premise のため同梱しない＝[`../stdlib/kyureki.md`](../stdlib/kyureki.md)） |
+| 標準 premise | `stdlib/*.kairos`（gregorian・fiscal・isoweek を依存順に埋め込んだ生成モジュール `src/stdlib-data.ts`＝`npm run gen`・1.1.1。旧: 読み込み時に `node:fs` で読んでいた） | 各 stdlib ページ §1 の完全定義を **Kairos ソースのまま**評価器に食わせる（Kyureki はデータ入り premise のため同梱しない＝[`../stdlib/kyureki.md`](../stdlib/kyureki.md)） |
 
 方針: **評価器は core 演算子だけを実装**し、`Gregorian`・糖衣・祝日カスケードはすべて Kairos ソースとして
 評価する（言語組み込みの魔法にしない＝「透明な標準ライブラリ」ADR-25 の検証）。
@@ -211,7 +228,7 @@ r.results[0].dates;   // ['2026-01-23', …]
 | 実体化地平線 | 実装定義。越えは `horizon-clip` 警告で知らせ、黙って切らない（ADR-37 判断 8） | `to`＋400 日 |
 | 時間の分解能 | 軸は連続。分解能は実装定義で、細かすぎる字句は黙って丸めず字句エラー（§5.5） | 1 ms |
 | tz データベース | 版は評価文脈の随伴（ADR-33 判断 10） | 実行環境の ICU（Intl）・遷移の構築範囲 [1969, 2101) |
-| 実体化する窓・点の数の上限 | 定めない | `grid` の経過時間幅の窓列は実体化しない（紀元からの算術＝添字⇄時刻を O(1) で引く。`within` → 選択子・`ordinalIn`・`snapTo`・`shift(unit:)` は幅によらず軽い）。全列挙が要る形だけ上限で止める＝窓列を点列に読む・`split`・`span` の全窓＝2^24＝16,777,216（窓列を点列に読む形も同じ上限）。`strideBy` の点列は実体化する（紀元または `from:` から計算範囲の端まで・上限 2^26＝67,108,864＝対応する Node のどの V8 でも配列の `push` が `RangeError` にならない長さ。`strideBy(1s)` は 1 日の範囲でも約 3,460 万点で通る）。上限を越えると誘導つき静的エラー＝ヒープが尽きて落ちる前に止める |
+| 実体化する窓・点の数の上限 | 定めない | `grid` の経過時間幅の窓列は実体化しない（紀元からの算術＝添字⇄時刻を O(1) で引く。`within` → 選択子・`ordinalIn`・`snapTo`・`shift(unit:)` は幅によらず軽い）。全列挙が要る形だけ上限で止める＝窓列を点列に読む・`split`・`span` の全窓＝2^24＝16,777,216（窓列を点列に読む形も同じ上限）。`strideBy` の経過時間幅の点列も実体化しない（`from:` からの算術。点列直読み・選択子・`take`／`takeLast`・`stride`・`filter(on:)` は評価範囲内の点だけを切り出す＝`strideBy(1s)` は 1 日の範囲で 86,400 点・0.2 秒未満・ヒープ 96 MB で通る。切り出す点数の上限は 2^22＝4,194,304＝出力の大きさの上限で、既定ヒープが尽きる前に止める〈実測では約 600 万点の出力で落ちる〉）。全列挙が要る形（述語 `filter`・`snapTo`・`shift`・`roll`・結合子・`segmentBy` のマーカー・窓インスタンス参照）は上限 2^26＝67,108,864（対応する Node のどの V8 でも配列の `push` が `RangeError` にならない長さ）で止める。上限を越えると誘導つき静的エラー＝ヒープが尽きて落ちる前に止める |
 | 年の桁 | 4 桁（0000〜9999）＝字句で言語が定める（実装定義ではない） | 同じ |
 
 うるう秒は実装定義ではなく言語のスコープ外（chronos は一様な理想化軸＝ADR-33・§1.4）。
@@ -223,7 +240,7 @@ r.results[0].dates;   // ['2026-01-23', …]
   - 市民日は「その日付になる最初の瞬間」からの半開区間（ADR-33 判断 4）。DST 切替日は 23／25 時間（1d＝市民日 ≠ 86400s＝ADR-11／12 の幅規約を実行検証）。
   - 前文 `tz:` メンバーは評価され、day グリッド・リテラルの錨打ち・紀元（1970-01-01T00:00 の逆像）・covering の端が premise 相対になる（ADR-33 の射影パラメータモデル）。
   - DST の隙間・重複に落ちる時刻リテラルは明示エラー（解決規約は将来の opt-in）。
-  - 整列タグ（ADR-36）の tz 名は実幾何と一致する。`tz:` 未宣言の premise は実行既定 tz へフォールバックし、タグと幾何は常に同じ tz。
+  - 整列タグ（ADR-36）の tz 名は実幾何と一致する（タグと幾何は常に同じ tz）。`tz:` 未宣言の在圏で写像を要する評価（日付リテラルの錨・市民時幅の grid・`snapTo(day)`・`at`・市民日グリッド・紀元）は誘導つき静的エラー（§3.6・ADR-33 判断 8＝1.1.1。1.1.0 までは実行既定 tz へ黙って落としていた）。実行既定 tz（`--tz`）の役目は評価範囲の端点と表示。
   - 残る近似: うるう秒はスコープ外（ADR-33＝乖離ではない）・遷移タイムラインの構築範囲は [1969, 2101)・tzdb 版はプロセスの ICU 版に固定（ADR-33 判断 10 の版差リスクは仕様どおり）。
   - 時刻付き anchor の civil grid 境界は「各市民日で anchor の壁時計時刻（ラベル読み）を最初に読む瞬間」（隙間は隙間明けの最初の瞬間・重複は最初の出現＝ADR-31 改訂 2）。市民日の開始点を anchor にすると日整列＝off 0。真夜中遷移 tz の 01:00 開始も日整列と読む。
 - **未実装**: `Modified` ロール（上位窓引数。roll の依存像も Following／Preceding の 2 規約のみ）・`everyInstant` の一般合成（`strideBy(w, from:)` のみ）。
@@ -237,6 +254,7 @@ r.results[0].dates;   // ['2026-01-23', …]
 - **有界実体化の端の扱い**: `span phase:>0` の頭・`split` の末尾には切れ端窓を張り、I5（全域パーティション）を実体化範囲内で保つ（これが無いと `ordinalIn(month, year, d)` が「枠窓の外」を誤報）。
   - 切れ端窓の `label:` は切れ端の先頭点で評価されるため、本来の窓と別のラベルが付き得る。窓インスタンス参照 `W(v)` ではこのずれが「別の年への漏れ」に増幅される（例: `Fiscal` の頭の切れ端 [1970-01-01, 1970-04-01) は FY1969 の尾だが先頭点の暦年 1970 が付き、`year(1970)` に混入）。実体化端を跨ぐインスタンス参照は評価範囲を内側に取って避ける（ADR-42 帰結の注記）。
   - 計算範囲（to＋約 400 日）越えの `snapTo`／`roll` 終端／`shift` はクリップ＋機械可読警告 `horizon-clip:` に降格済み（ADR-37 判断 8 の三分岐）。roll／shift の地平線判定は「軸の終端が評価 to 以遠まで実体化されているか」の近似。
+  - 述語の参照（`weekday` 等の cycle 射影・`ordinalIn`・`epochOrdinal`・`coincides`・ラベル射影）が計算範囲の先（または紀元より前）の点を引いたときも同じ側路（1.1.1・F161）: `filter` がその点を落として `horizon-clip: filter <点>（<語> は計算範囲 to+400日 の実体化地平線の先の点を参照できない——…）`。市民日への `snapTo`（F144）や表そのものが地平線の先の点を残す形で、1.0.5〜1.1.0 は「cycle: 点が対象窓の外」の硬エラーになっていた。述語の中の定数の参照（流れてきた点ではない）は落とす点が無いので明示エラーのまま（文言は地平線を言う）。
 - **範囲外出自（ADR-37）の近似**: 註釈は評価時の値随伴伝播（整列タグと同型）。
   - `stride` の位相汚染は「from: 以降で交差する註釈区間の尾部を +∞ へ拡張」の保守近似（stride は入力相対＝ADR-38）。
   - `snapTo` の註釈の像は端点を属する窓の先頭へ床処理。
@@ -247,7 +265,7 @@ r.results[0].dates;   // ['2026-01-23', …]
 
 ## テスト
 
-（42 ファイル・981 本〔doctest 込み〕。下記の個別解説に加え、後発の
+（44 ファイル・1058 本〔doctest 込み〕。下記の個別解説に加え、後発の
 `test/empty-table.test.ts`〔ADR-45〕・`test/external.test.ts`〔ADR-46・35 本〕・
 `test/cycle-labels.test.ts`〔ADR-47〕・`test/split-parent.test.ts`〔ADR-48〕・
 `test/take.test.ts`／`test/takelast.test.ts`〔ADR-49/52〕・`test/hour-window.test.ts`〔ADR-50〕・
@@ -259,7 +277,8 @@ r.results[0].dates;   // ['2026-01-23', …]
 `test/calendar.test.ts`〔カレンダーページの穴埋めの例が CLI と同じ点列・共有 URL の往復・6 本〕・
 `test/schema-and-explain.test.ts`〔JSON Schema 2 本と `--explain`・追補 23〕・`test/boundary-checklist.test.ts`〔境界チェックリスト 10 件の witness〕・
 `test/label-ordinal.test.ts`〔ADR-54＝1.1 の `labelOrdinal(B, x)`・24 本〕・
-`test/since-before.test.ts`〔ADR-55＝1.1 の時点どうしの順序比較と糖衣 `since`／`before`・32 本〕がある。）
+`test/since-before.test.ts`〔ADR-55＝1.1 の時点どうしの順序比較と糖衣 `since`／`before`・32 本〕・
+`test/tck.test.ts`〔[適合試験一式（TCK）](../tck/README.md)＝束のスキーマ適合・参照実装の自己適合・生成の決定性・委ねた束の鮮度・走行器が赤を出せること・14 本〕がある。）
 
 
 - `test/examples.test.ts` — spec §7 の全代表例。糖衣形と core 展開形の一致、JS Date による独立オラクル照合
@@ -267,7 +286,7 @@ r.results[0].dates;   // ['2026-01-23', …]
   導出）、会計暦、年干支、week/WKST、入れ子窓。
 - `test/projections.test.ts` — 射影一族と天文暦。期待値は NAOJ 令和8年暦要項
   （`../design/40-examples/95-reference-data.md`）: 立春 2/4・八十八夜 5/2・二百十日 9/1・旧正月 2/17。
-- `test/static-errors.test.ts` — 統治の静的エラー（幅の混合・core 語再定義・I4・I5・昇順・labels: 同長）。
+- `test/static-errors.test.ts` — 統治の静的エラー（幅の混合・core 語再定義・I4・I5・昇順・labels: 同長・受理境界＝covering の端は日付か 4 桁の年・& 混在は括弧必須）。
 - `test/stdlib-premises.test.ts` — 同梱 stdlib premise（Fiscal・ISOWeek）の回帰。ISO 週暦は JS 実装の
   isocalendar を独立オラクルに全数照合（label: 不要の等価変形の検証）。切れ端窓（I5）・div の floor
   （F63）の回帰を含む。

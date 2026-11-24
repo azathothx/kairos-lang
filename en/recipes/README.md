@@ -58,4 +58,4 @@ https://kairos-lang.org/en/playground/#s=<source>&f=<from>&t=<to>&z=<tz>
 
 - The Calendar adds `e=<example id>&v=<blank values, comma-separated>` to the same hash; the Playground reads only `s`, `f`, `t` and `z`.
 - In the browser: `b64e`/`b64d` in `playground/core.js`. In Node, `Buffer.from(src, 'utf8').toString('base64url')` gives the same value.
-- Subscriptions (webcal) and per-user storage belong to the receiving side that takes this shape.
+- The language-side pages do not offer subscriptions (webcal) or per-user storage; those belong to the receiving (supply) side that takes the expression and range in this shape.

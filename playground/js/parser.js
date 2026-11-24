@@ -246,12 +246,20 @@ class Parser {
             this.depth--;
         }
     }
-    /** 結合子 | & \（同一優先度・左結合） */
+    /** 結合子 | & \（同一優先度・左結合）。& が | や \ と括弧なしで同じ列に混在したら静的エラー
+     *  （順序依存のため括弧で明示する。§4.5・§5.6。90-open 3-22 (1)） */
     combineExpr() {
         let l = this.pipeExpr();
+        let first;
         for (;;) {
             this.skipContinuation();
             if (this.atPunct('|') || this.atPunct('&') || this.atPunct('\\')) {
+                const tok = this.peek();
+                if (first === undefined)
+                    first = tok.text;
+                else if (tok.text !== first && (tok.text === '&' || first === '&')) {
+                    throw new ParseError('& が絡む混在は括弧で順序を明示する（§4.5）', tok);
+                }
                 const op = this.next().text;
                 this.skipNewlines(); // 行末結合子＝次行へ継続（F91・ADR-44。|> の行末継続と同じ扱い）
                 const r = this.pipeExpr();
@@ -643,13 +651,35 @@ class Parser {
     coveringRange() {
         let a = null;
         if (!this.atPunct('..'))
-            a = this.ternary();
+            a = this.coveringEdge();
         this.eat('punct', '..');
         let b = null;
         const t = this.peek();
         if (t.kind === 'number' || t.kind === 'date')
-            b = this.ternary();
+            b = this.coveringEdge();
+        else if ((t.kind === 'name' && this.peek(1).text !== ':' && !WORD_OPS.has(t.text))
+            || (t.kind === 'punct' && (t.text === '(' || t.text === '_')))
+            this.coveringEdge(); // 束縛名・括弧・プレースホルダ
         return { a, b };
+    }
+    /** covering-edge = date-literal | digit4（§5.6）。値式は不可——`2026-01` が 2026 − 1 と黙って読まれていた
+     *  （90-open 3-21 (1)）。年の桁数（0000..9999）の検査は評価側（F141） */
+    coveringEdge() {
+        const t = this.peek();
+        const msg = 'covering の端は日付リテラルか 4 桁の年（値式は不可。§5.6）';
+        if (t.kind === 'number' || t.kind === 'date') {
+            const start = this.i;
+            const e = this.ternary();
+            if (this.i === start + 1)
+                return e;
+            const t1 = this.toks[start + 1], t2 = this.toks[start + 2];
+            if (t.kind === 'number' && t1?.text === '-' && t2?.kind === 'number') {
+                throw new ParseError(`${msg}——${t.text}-${t2.text} は日付リテラルではない（YYYY-MM-DD か YYYY）`, t);
+            }
+        }
+        if (t.kind === 'eof' || t.kind === 'newline')
+            return this.ternary(); // 端の欠落は従来の「式を期待」
+        throw new ParseError(msg, t);
     }
 }
 export { LexError };

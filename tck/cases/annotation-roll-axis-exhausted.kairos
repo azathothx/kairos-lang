@@ -1,0 +1,4 @@
+premise JPX { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon }
+@JPX
+sekkiA = [2026-02-04, 2026-05-05] covering: 2026..2026
+[2027-03-01] |> roll(Following, on: sekkiA)

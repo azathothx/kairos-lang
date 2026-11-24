@@ -78,8 +78,8 @@ everyDay |> filter(d => (ordinalIn(day, month, d) - 1) mod 7 == 0)
 - To step by an absolute magnitude (a width that does not ride the calendar), use
   [`strideBy`](strideBy.md).
 
-**Do not use `stride(1, from: p)` to cut "at or after p"** — the points are the same, but the transport row becomes
-the stride row and the out-of-coverage annotation swells to the end of the evaluation range (and there is no dual on
+**Do not use `stride(1, from: p)` to cut "at or after p"** — the points are the same, but the result is tracked as a stride instead of a plain filter (the transport row becomes
+the stride row), so the out-of-coverage annotation swells to the end of the evaluation range (and there is no dual on
 the end side). Cutting is [`since`](since.md) / [`before`](before.md) (expands to filter; 1.1; ADR-55).
 
 ## Related

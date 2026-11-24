@@ -12,7 +12,7 @@ for every 1.0 word** — the last placeholder `shiftBoundary` was settled as **`
 (see the [changelog](../../spec/CHANGELOG.md#v1-1), Japanese).
 
 Expressiveness is validated against 20 well-known schedule families
-(`design/40-examples/`) and by the reference implementation (`impl/`, 981 tests). All remaining
+(`design/40-examples/`) and by the reference implementation (`impl/`, 1058 tests); no "unwritable structure" remains. All remaining
 homework items are catalogued in `design/90-open-questions.md`, and none of them changes the semantics.
 
 For the RC-by-RC history, see the [changelog](../../spec/CHANGELOG.md) (Japanese).

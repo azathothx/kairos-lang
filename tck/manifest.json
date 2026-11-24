@@ -1,0 +1,624 @@
+{
+  "annotation-bizday-degrades": {
+    "command": "list",
+    "from": "2026-12-25",
+    "to": "2027-01-10",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/annotations.test.ts: bizDay 標準導出の退化は、するが観測可能（ADR-35 判断 3 の要請）"
+  },
+  "annotation-filter-drop": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2028-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/annotations.test.ts: filter: 覆域外の参照点は落として註釈（値は覆域内のぶんだけ正確に出る）"
+  },
+  "annotation-roll-axis-exhausted": {
+    "command": "list",
+    "from": "2027-01-01",
+    "to": "2027-06-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/annotations.test.ts: 着地先が無い＝軸の覆域外で尽きた → 空＋註釈（②）"
+  },
+  "annotation-shift-transport": {
+    "command": "list",
+    "from": "2028-01-01",
+    "to": "2028-06-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/annotations.test.ts: 註釈区間も n·U 平行移動する（覆域内へ移った先が註釈される）"
+  },
+  "annotation-union-no-cancel": {
+    "command": "list",
+    "from": "2026-06-01",
+    "to": "2026-07-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/annotations.test.ts: A | B で B の覆域でも A の註釈は消えない（恒常註釈＝被覆主張の動機）"
+  },
+  "annotation-unnamed-table": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/annotations.test.ts: covering 省略（列の端＝最狭の主張）は端の外を註釈する——`..` と正反対"
+  },
+  "coverage-asof-mismatch": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "Pin.h": {
+        "dates": [
+          "2026-01-05"
+        ],
+        "covering": "2026..2026",
+        "asof": "2026-07-13"
+      }
+    },
+    "origin": "impl/test/external.test.ts: 静的 asof:（版ピン）と解決値 asof の不一致は被覆サマリに常時表示"
+  },
+  "coverage-concluded-open-end": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/annotations.test.ts: 完結主張（開端 covering）は concluded として常時観測できる（残走路 null）"
+  },
+  "coverage-example-payday-list": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/cli.test.ts: cmdList（単体）——区間註釈と被覆サマリ（残走路 0）が載る（impl/examples/payday.kairos）"
+  },
+  "coverage-explicit-claim": {
+    "command": "list",
+    "from": "2026-06-01",
+    "to": "2026-07-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/annotations.test.ts: 束縛後置の covering: が成分の恒常註釈を主張の補集合で置き換える"
+  },
+  "labels-cycle-weekday": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-03-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/result-labels.test.ts: cycle だけを参照する式にも付く（weekday の射影）"
+  },
+  "labels-example-rokuyo": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-04-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/result-labels.test.ts: 同梱例 rokuyo: lunarMonth を参照する 3 式とも旧暦の月番号が付く（impl/examples/rokuyo.kairos）"
+  },
+  "labels-external-instants": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-03-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "H.sekki": {
+        "instants": [
+          1767600000000,
+          1768870800000,
+          1770235200000
+        ],
+        "covering": "2026..2026",
+        "asof": "2026-01-01",
+        "labels": [
+          "小寒",
+          "大寒",
+          "立春"
+        ]
+      }
+    },
+    "origin": "impl/test/result-labels.test.ts: external の labels: を参照する式は各点にラベル（dates と同長・順序も同じ）。filter の部分集合も同じ射影"
+  },
+  "labels-segmentby-window": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-05-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/result-labels.test.ts: segmentBy の labels: は窓の所属で読む——shift(-1) した朔日は前の窓のラベル・最初の窓の前（窓の外）は null"
+  },
+  "labels-shift-null": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-03-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "H.sekki": {
+        "instants": [
+          1767600000000,
+          1768870800000,
+          1770235200000
+        ],
+        "covering": "2026..2026",
+        "asof": "2026-01-01",
+        "labels": [
+          "小寒",
+          "大寒",
+          "立春"
+        ]
+      }
+    },
+    "origin": "impl/test/result-labels.test.ts: shift 後の点は表に無いので null（snapTo も同じ）"
+  },
+  "labels-two-bindings-absent": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-03-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/result-labels.test.ts: ラベル付き束縛を 2 つ参照する式には添えない——表と表"
+  },
+  "list-example-jp-holidays-window-clip": {
+    "command": "list",
+    "from": "2026-10-01",
+    "to": "2026-11-04",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/window-clip.test.ts: ② 対照: 同じ範囲 [10/1, 11/4) の list は dates が同じで window-clip を出す（shift(1) 11/3 → 11/4）"
+  },
+  "next-example-jp-holidays-no-window-clip": {
+    "command": "next",
+    "from": "2026-10-01",
+    "tz": "Asia/Tokyo",
+    "n": 2,
+    "horizonYears": 10,
+    "origin": "impl/test/window-clip.test.ts: ① 同梱例 jp-holidays: next は 10/12・11/3 を返し window-clip なし（to＝11/4・残走路 58 日は不変）"
+  },
+  "next-example-payday-3": {
+    "command": "next",
+    "from": "2026-08-06",
+    "tz": "Asia/Tokyo",
+    "n": 3,
+    "horizonYears": 10,
+    "origin": "impl/test/cli.test.ts: cmdNext（単体）——from 以降の次の 3 発火・to は最終発火日の翌日・残走路が答えの範囲と整合する"
+  },
+  "next-horizon-end-reports-window-clip": {
+    "command": "next",
+    "from": "2026-08-06",
+    "tz": "Asia/Tokyo",
+    "n": 1,
+    "horizonYears": 1,
+    "origin": "impl/test/window-clip.test.ts: ④ 対照: 地平線まで探して不足のときは従来どおり報告する（to＝地平線は --horizon で広げられる）"
+  },
+  "next-horizon-short": {
+    "command": "next",
+    "from": "2026-08-06",
+    "tz": "Asia/Tokyo",
+    "n": 3,
+    "horizonYears": 2,
+    "origin": "impl/test/cli.test.ts: 地平線まで探して不足なら見つかった分を返す（found < requested）"
+  },
+  "next-labels-cut": {
+    "command": "next",
+    "from": "2026-01-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "H.sekki": {
+        "instants": [
+          1767600000000,
+          1768870800000,
+          1770235200000
+        ],
+        "covering": "2026..2026",
+        "asof": "2026-01-01",
+        "labels": [
+          "小寒",
+          "大寒",
+          "立春"
+        ]
+      }
+    },
+    "n": 2,
+    "horizonYears": 1,
+    "origin": "impl/test/result-labels.test.ts: next: labels も要求件数で切る（dates と同長のまま）"
+  },
+  "static-at-anchor-argument": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-03-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/at-time-of-day.test.ts: (c) anchor 引数形（日時リテラル・裸日付リテラル）は誘導つき静的エラー"
+  },
+  "static-at-windowed-input": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-03-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/at-time-of-day.test.ts: (a) 窓付き入力は誘導つき静的エラー"
+  },
+  "static-binding-cycle": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/static-errors.test.ts: 引数なし束縛の循環参照も経路つき静的エラー（F110）"
+  },
+  "static-core-word-redefinition": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/static-errors.test.ts: core 語の再定義は静的エラー（§4.8）"
+  },
+  "static-coverage-claim-exceeds": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/annotations.test.ts: 必要条件検査: どの成分も語れない区間の完全性は主張できない"
+  },
+  "static-labelordinal-out-of-range": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/label-ordinal.test.ts: 値域外: 別の宣言のラベルを渡すと値域の表示つきで止まる"
+  },
+  "static-next-multiple-expressions": {
+    "command": "next",
+    "from": "2026-08-06",
+    "tz": "Asia/Tokyo",
+    "n": 1,
+    "horizonYears": 10,
+    "origin": "impl/test/cli.test.ts: 本体式が複数のファイルは明示エラー（どの式の「次」か曖昧なため）"
+  },
+  "static-no-body-expression": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/boundary-checklist.test.ts: F126 CLI list は本体式の無いファイル（空・premise だけ）を止める（it の題は「使い方エラー」だが kind は static＝実装どおり）"
+  },
+  "static-public-word-shadowed": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/static-errors.test.ts: day = day cycle […] の day(d) は公開語の側に解決され、誘導つきの「適用できない値」で止まる"
+  },
+  "static-range-reversed": {
+    "command": "list",
+    "from": "2026-02-01",
+    "to": "2026-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/boundary-checklist.test.ts: F117 評価範囲の逆順（to < from）（it の題は「使い方エラー」だが kind は static＝実装どおり）"
+  },
+  "static-reserved-word-1-1": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/since-before.test.ts: 3 語（labelOrdinal・since・before）は同じ規約の下"
+  },
+  "static-selector-without-window": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/static-errors.test.ts: 窓なしの選択子は型エラー（I4）"
+  },
+  "static-shift-non-integer": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/static-errors.test.ts: 窓単位 shift(1.5, unit: month)（F116）"
+  },
+  "static-since-time-literal": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/since-before.test.ts: 単独時刻: since(T14:00) は呼び出し時に ADR-51 の誘導"
+  },
+  "static-sugar-self-recursion": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/static-errors.test.ts: 糖衣定義の自己再帰は静的エラー（§4.8 の依存解析＝F110）"
+  },
+  "static-table-unsorted": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/static-errors.test.ts: テーブルリテラルの乱順は静的エラー（§3.8）"
+  },
+  "static-unresolved-name": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-04-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/boundary-checklist.test.ts: 文言（軽微 11・12・15・16）: 原因を指す（綴り違いは従来の文言のまま）"
+  },
+  "supply-covering-reversed": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2026-01-05"
+        ],
+        "covering": "2026..2025",
+        "asof": "2026-01-01"
+      }
+    },
+    "origin": "impl/test/boundary-checklist.test.ts: F141 covering の年は 4 桁（同じ検査の枝＝区間の端が逆順・external の解決値）"
+  },
+  "supply-covering-unreadable": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2026-01-05"
+        ],
+        "covering": "garbage",
+        "asof": "x"
+      }
+    },
+    "origin": "impl/test/external.test.ts: covering 字面が読めないのは契約違反"
+  },
+  "supply-covering-year-5-digits": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2026-01-05"
+        ],
+        "covering": "10000..10001",
+        "asof": "2026-01-01"
+      }
+    },
+    "origin": "impl/test/boundary-checklist.test.ts: F141 covering の年は 4 桁（external の解決値）"
+  },
+  "supply-date-format-invalid": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2026/01/05"
+        ],
+        "covering": "2026..2026",
+        "asof": "x"
+      }
+    },
+    "origin": "impl/src/eval.ts: 契約違反「日付の形式が不正」の投げ口（impl/test/external.test.ts の契約検査の枝・2026-10-30 機械レビュー所見 7 で追加）"
+  },
+  "supply-instants-non-integer": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "instants": [
+          1.5
+        ],
+        "covering": "2026..2026",
+        "asof": "x"
+      }
+    },
+    "origin": "impl/test/external.test.ts: instants の非整数は契約違反"
+  },
+  "supply-instants-out-of-time-range": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "instants": [
+          100000000000000000
+        ],
+        "covering": "2026..2026",
+        "asof": "x"
+      }
+    },
+    "origin": "impl/test/boundary-checklist.test.ts: F140 時刻として表せない instants は契約違反"
+  },
+  "supply-kind-mismatch": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "instants": [
+          0
+        ],
+        "covering": "2026..2026",
+        "asof": "x"
+      }
+    },
+    "origin": "impl/test/external.test.ts: kind 不一致（dates 宣言に instants）は契約違反"
+  },
+  "supply-label-outside-range": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2026-01-05"
+        ],
+        "covering": "2026..2026",
+        "asof": "x",
+        "labels": [
+          "c"
+        ]
+      }
+    },
+    "origin": "impl/test/external.test.ts: 宣言値域の外のラベルは契約違反"
+  },
+  "supply-labels-length": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2026-01-05"
+        ],
+        "covering": "2026..2026",
+        "asof": "x",
+        "labels": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "origin": "impl/test/external.test.ts: labels 宣言つきに同長違反は契約違反"
+  },
+  "supply-labels-missing": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2026-01-05"
+        ],
+        "covering": "2026..2026",
+        "asof": "x"
+      }
+    },
+    "origin": "impl/src/eval.ts: 契約違反「labels 宣言つきの external にラベルが来ない」の投げ口（impl/test に専用の witness なし・契約違反 14 種の 1 つ）"
+  },
+  "supply-labels-undeclared": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2026-01-05"
+        ],
+        "covering": "2026..2026",
+        "asof": "x",
+        "labels": [
+          "a"
+        ]
+      }
+    },
+    "origin": "impl/test/external.test.ts: labels 無宣言にラベル到着は契約違反（黙って捨てない）"
+  },
+  "supply-no-resolver": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/cli.test.ts: --supply 無しの external は供給エラー・終了コード 1（ADR-46 の既定）"
+  },
+  "supply-nonexistent-date": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2026-02-30"
+        ],
+        "covering": "2026..2026",
+        "asof": "x"
+      }
+    },
+    "origin": "impl/test/external.test.ts: 実在しない日付は契約違反（ADR-43 の再執行）"
+  },
+  "supply-point-outside-covering": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2027-01-05"
+        ],
+        "covering": "2026..2026",
+        "asof": "x"
+      }
+    },
+    "origin": "impl/test/external.test.ts: covering 外の点は契約違反（包含＝ADR-37 判断 1）"
+  },
+  "supply-unsorted-or-duplicate": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-02-01",
+    "tz": "Asia/Tokyo",
+    "supply": {
+      "h": {
+        "dates": [
+          "2026-01-05",
+          "2026-01-05"
+        ],
+        "covering": "2026..2026",
+        "asof": "x"
+      }
+    },
+    "origin": "impl/test/external.test.ts: 乱順・重複は契約違反"
+  },
+  "usage-next-horizon-zero": {
+    "command": "next",
+    "from": "2026-01-01",
+    "tz": "Asia/Tokyo",
+    "n": 1,
+    "horizonYears": 0,
+    "origin": "impl/src/cli.ts: posInt（--horizon は正の整数）——impl/test に --horizon 0 の witness なし（終了コード契約の枝）"
+  },
+  "usage-next-n-zero": {
+    "command": "next",
+    "from": "2026-01-01",
+    "tz": "Asia/Tokyo",
+    "n": 0,
+    "horizonYears": 1,
+    "origin": "impl/src/cli.ts: posInt（-n は正の整数）——impl/test に -n 0 の witness なし（終了コード契約の枝）"
+  },
+  "warning-horizon-clip-snapto": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2027-01-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/annotations.test.ts: snapTo: 計算範囲を越えたテーブル時点はクリップ＋警告（狭い評価範囲が書ける）"
+  },
+  "warning-horizon-clip-takelast": {
+    "command": "list",
+    "from": "2026-01-01",
+    "to": "2026-04-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/boundary-checklist.test.ts: 文言（軽微 11・12・15・16）——実体化下限で切れた不足は従来どおり警告（horizon-clip: takeLast）"
+  },
+  "warning-window-clip-none-when-widened": {
+    "command": "list",
+    "from": "2026-07-01",
+    "to": "2026-10-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/window-clip.test.ts: 対照: 範囲を広げれば点は出て警告なし（7〜9 月窓で ① の式は 7/31 を含む 3 点）"
+  },
+  "warning-window-clip-roll-preceding": {
+    "command": "list",
+    "from": "2026-08-01",
+    "to": "2026-09-01",
+    "tz": "Asia/Tokyo",
+    "origin": "impl/test/window-clip.test.ts: ① roll(Preceding): 8 月窓で 8/1（土）が 7/31 へ——from 側"
+  }
+}

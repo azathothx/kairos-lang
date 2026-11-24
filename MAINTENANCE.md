@@ -61,6 +61,7 @@ Playground の例（暮らしの例・業務の例）は前文に祝日表を埋
 - タグ `v1.0.x` を push すると `.github/workflows/publish-impl.yml`・`publish-mcp.yml` が起動し、environment「npm」の承認で npm に公開する（trusted publishing・来歴つき）。
   impl の公開後に Windows 単体 exe が組まれ、Release の資産に付く。各 workflow の冒頭の註に手順がある。
 - 公式 MCP Registry への登録は `mcp/server.json` の版を上げて `mcp-publisher validate` → `publish`。
+- `http/`（`kairos-lang-http`・HTTP の殻）は `publish-http.yml` が npm と GHCR（`ghcr.io/azathothx/kairos-lang-http:<版>`）へ出す仕組み（初回の公開はまだ＝1.1.1 の時点ではリポジトリに同梱だけ。タグで起動した実行は取り消す）。版は `impl/`・`mcp/` と揃える。
 - 版を出さなくても Kairos は壊れない。出すのは直したいものがあるときだけ。
 
 ## 5. 受け付けを止めるとき（保守モード）

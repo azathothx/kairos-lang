@@ -8,3 +8,6 @@ tools/*.log
 
 # AI 補助ベンチの結果（tools/bench-assist.mjs・非公開・モデル出力を含む）
 tools/bench-results/
+
+# Claude Code のローカル設定（機械ごとの設定・追跡しない）
+.claude/settings.local.json

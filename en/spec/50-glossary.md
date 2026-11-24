@@ -168,7 +168,7 @@ chapters of this specification and `stdlib/…` to the standard premise commenta
 | I1 | Fixed base (every element is a point on the single base Chronos) | §2.6 |
 | I2 | Closure (every operator is `(stream…, premise) → stream`) | §2.6 |
 | I3 | Explicit resolution (roll conventions and anchor resolution as mandatory arguments; silent bugs made syntactically impossible) | §2.6 |
-| I4 | Window-relative (selectors are relative to a containing window; no window is a type error) | §2.6 |
+| I4 | Window-relative (selectors are relative to a containing window; a selector with no containing window is a type error) | §2.6 |
 | I5 | Exhaustiveness verification (partition-type is checkable for exhaustiveness and non-overlap; interval-sequence-type makes gaps explicit) | §2.6 |
 | I6 | Context flow (TZ, WKST, asof, and out-of-coverage origin 〈interval annotations〉 flow as evaluation context / annotations) | §2.6 · §4.10 |
 | I7 | Pure and lazy (defined online over infinite streams) | §2.6 |

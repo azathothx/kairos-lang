@@ -1,0 +1,7 @@
+# 二十四節気（external・kind: instants・labels: 値域）
+premise H { calendar-system: Gregorian; tz: "Asia/Tokyo"; wkst: Mon; source: "x"
+  sekki = external(kind: instants, labels: [小寒, 大寒, 立春])
+}
+@H
+sekki |> shift(1, unit: day)
+sekki |> snapTo(day)

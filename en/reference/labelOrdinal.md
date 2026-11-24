@@ -101,7 +101,7 @@ of writing it (the 12-step conditional `monthLabelNo`), see "Using labels as num
 - **A parallel label list is not a domain** — the static `labels: [12, 1, 2, 3]` of `segmentBy` and
   the `labels:` of a table literal are **assignment lists** in window or point order; declaration
   order is no ordinal there (`m1` can sit at position 2). Passing one is a guided static error. If you
-  need numbers, write them into `labels:` directly (the stdlib/kyureki form) or subtract `epochOrdinal`s.
+  need numbers, write them into `labels:` directly (the stdlib/kyureki form) or as a difference of `epochOrdinal` values.
 
 - **A `label:` lambda cannot be enumerated** — `labelOrdinal(lunar, d)` is a static error. Pass the
   side that has a domain (`labelOrdinal(saku, lunar(d))`).

@@ -67,7 +67,7 @@ The evaluation range is used only for grading; the AI sees the requirement text 
 | C-03 | (control) | 毎週月曜と木曜の 10 時に進捗確認。 | 2 | 2026-01-05..2026-01-19 (timed) |
 | C-04 | (control) | 毎月の最初の営業日の 9:30 に朝礼。 | 1 | 2026-01-01..2026-04-01 (timed) |
 
-- P-13's "roll or holidays" is a disjunction: declaring either suffices.
+- P-13's "roll or holidays" is a disjunction: declaring either suffices (a declaration that reads "the first business day of a week whose Monday is a holiday" as holidays is also accepted).
 - P-16 ("every 3 days") has no anchor in the requirement, so seven interpretations are accepted: period 3 × 3 phases and period 4 ×
   4 phases. Both `counting` and `anchor` must be declared.
 - P-10 also accepts a declared reading that moves a reminder falling on a weekend or holiday to the preceding or following
